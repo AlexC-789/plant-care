@@ -1,0 +1,10 @@
+{
+  "name": "plant-care",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "test": "npm run test -w apps/mobile",
+    "typecheck": "npm run typecheck -w apps/mobile",
+    "lint": "npm run lint -w apps/mobile"
+  }
+}
