@@ -90,6 +90,7 @@ test('sign out calls supabase and returns to sign-in', async () => {
   await act(async () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
   });
-  expect(auth.signOut).toHaveBeenCalled();
+  // Local scope clears this device's session even when the server can't be reached.
+  expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   await waitFor(() => expect(view.getPathname()).toBe('/sign-in'));
 });

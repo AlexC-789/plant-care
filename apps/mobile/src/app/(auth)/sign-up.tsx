@@ -12,6 +12,11 @@ export default function SignUp() {
       onSubmit={async (email, password) => {
         const { data, error } = await supabase.auth.signUp({ email, password });
         if (error) return { error };
+        // With email confirmation on, Supabase hides existing accounts by returning a
+        // placeholder user with no identities instead of an error.
+        if (data.user && data.user.identities?.length === 0) {
+          return { error: { code: 'user_already_exists' } };
+        }
         // No session means the server requires email confirmation first.
         if (!data.session) {
           return { notice: 'Check your email to confirm your account, then sign in.' };

@@ -150,6 +150,24 @@ describe('sign-up', () => {
     );
   });
 
+  test('existing email with confirmation on (fake user, no identities) shows the sign-in hint', async () => {
+    auth.signUp.mockResolvedValue({
+      data: { session: null, user: { id: 'u', identities: [] } },
+      error: null,
+    });
+    await openApp('/sign-up');
+    await fill('a@example.com', 'password123');
+    await fireEvent.press(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() =>
+      expect(
+        screen.getByText('An account with this email already exists. Sign in instead.'),
+      ).toBeTruthy(),
+    );
+    expect(
+      screen.queryByText('Check your email to confirm your account, then sign in.'),
+    ).toBeNull();
+  });
+
   test('links to sign-in', async () => {
     const view = await openApp('/sign-up');
     await fireEvent.press(screen.getByText('Already have an account? Sign in'));

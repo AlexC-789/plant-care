@@ -62,7 +62,8 @@ export default function Settings() {
         accessibilityRole="button"
         accessibilityLabel="Sign out"
         onPress={() => {
-          void supabase.auth.signOut();
+          // Local scope clears this device's session even when offline.
+          void supabase.auth.signOut({ scope: 'local' });
         }}
         style={styles.signOut}>
         <Text style={styles.signOutText}>Sign out</Text>
