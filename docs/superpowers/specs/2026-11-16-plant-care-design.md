@@ -1,7 +1,7 @@
 # Plant Care System — Software Design
 
 Date: 2026-11-16
-Status: Draft for approval
+Status: Approved 2026-11-16
 Working name: "Plant Care" (product name TBD)
 Hardware reference: [Saucer & Stake Design v1](../../hardware/2026-11-16-saucer-and-stake-v1.md)
 
@@ -311,7 +311,7 @@ days" forecast; battery low (default < 20 %); device offline (3 missed syncs);
 fault (`no_moisture_rise`: "check the stake is in the soil and the tube
 isn't kinked"); new health issue on rescan; care reminders due.
 
-## 8. Personalization (approved by owner; ★ = added suggestions, to confirm)
+## 8. Personalization (all approved by owner; ★ = added in design review)
 - Nickname, photo, room for each plant.
 - Watering preference per plant: drier / default / wetter.
 - Notification preferences and low-water alert level.
