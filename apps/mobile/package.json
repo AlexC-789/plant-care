@@ -47,7 +47,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "node scripts/typegen.js && tsc --noEmit"
   },
   "private": true
 }
