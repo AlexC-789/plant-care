@@ -188,6 +188,11 @@ Deno.test('free details map to our enums', () => {
     ['Full sun', 'Needs direct sun', 'Low light or shade', 'Bright indirect light. Tolerates some shade.', 'Partial light', 'Medium', 'Sunny', undefined].map(lightFrom),
     ['direct', 'direct', 'low', 'bright_indirect', 'medium', 'medium', null, null],
   );
+  // Negated mentions are not the plant's light.
+  assertEquals(
+    ['Avoid direct sunlight', 'Bright indirect light, avoid direct sun', 'Bright indirect light. Keep out of direct sunlight.'].map(lightFrom),
+    [null, 'bright_indirect', 'bright_indirect'],
+  );
 });
 
 Deno.test('new species stores watering details; an unmappable one stores nulls', async () => {

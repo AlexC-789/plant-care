@@ -34,7 +34,8 @@ const LIGHT: [string[], string][] = [
   [['shade', 'low light'], 'low'],
 ];
 export const lightFrom = (text?: string): string | null => {
-  const t = text?.toLowerCase() ?? '';
+  // "Avoid direct sunlight" says what the plant dislikes, so drop negated phrases first.
+  const t = (text?.toLowerCase() ?? '').replace(/\b(avoid|no|not|out of|away from|protect(ed)? from|keep out of)\s+(\w+\s+){0,2}direct\s+sun\w*/g, '');
   return LIGHT.find(([words]) => words.some((w) => t.includes(w)))?.[1] ?? null;
 };
 
