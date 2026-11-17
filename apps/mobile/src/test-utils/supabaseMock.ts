@@ -19,6 +19,8 @@ export const supabase = {
     signOut: jest.fn().mockResolvedValue({ error: null }),
   },
   from: jest.fn(),
+  storage: { from: jest.fn() },
+  functions: { invoke: jest.fn() },
 };
 
 /** Simulate Supabase emitting an auth event (e.g. after sign-in). */
