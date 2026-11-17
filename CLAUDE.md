@@ -51,6 +51,9 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 - After changing `supabase/config.toml`, restart Supabase (`npx supabase stop` + `npm run db:start`).
 - Email confirmation is ON (sign-up → sign-in; resend has a 60 s cooldown matching
   `max_frequency`). Local emails go to Mailpit: http://127.0.0.1:54324.
+- Appearance: **light by default** (not the phone's setting); users can choose Dark in Settings.
+  Stored on the phone (`src/theme/appearance.ts`, AsyncStorage) and read before the first
+  frame. `useTheme()` follows this choice, never `useColorScheme()`.
 - UI follows `docs/superpowers/specs/2026-11-17-app-ui-design.md` (canvas linked there).
   Screens use `src/ui` + theme tokens only; raw colours outside `src/theme/` fail lint. Never cap
   font scaling (`maxFontSizeMultiplier`/`allowFontScaling={false}`). Icons: `Icon` (SF Symbols on
@@ -73,7 +76,7 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 - Animations use React Native's `Animated` (native driver where possible). Reanimated 4 can't
   load under Jest in this setup.
 - Launch: native splash is plain paper (blank image, theme background) → `LaunchAnimation`
-  (draws the pot, then fades out into the first screen) once per app run. The splash is hidden
+  (draws the pot ~0.7 s, rests 0.5 s, then fades out into the first screen) once per app run. The splash is hidden
   from the overlay's first layout, so the hand-off is paper to paper.
 - Don't add expo-status-bar's `<StatusBar>`: it hangs React's act() in Jest; the system style
   already follows light/dark.
