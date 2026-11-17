@@ -22,7 +22,9 @@ export function Row({ label, value, accessory = 'none', onPress, destructive, ch
   const stacked = useIsAccessibilitySize();
   const content = (
     <>
-      <Text color={destructive ? 'statusNow' : 'label'} style={stacked ? undefined : styles.label}>
+      <Text
+        color={destructive ? 'statusNow' : 'label'}
+        style={stacked ? undefined : value === undefined && !children ? styles.labelFill : styles.label}>
         {label}
       </Text>
       {children ??
@@ -64,6 +66,8 @@ const styles = StyleSheet.create({
   inline: { flexDirection: 'row', alignItems: 'center' },
   stacked: { flexDirection: 'column', alignItems: 'flex-start' },
   label: { flexShrink: 1 },
+  // No value: the label takes the row so accessories sit at the trailing edge.
+  labelFill: { flex: 1 },
   value: { flex: 1, textAlign: 'right' },
   pressed: { opacity: 0.6 },
 });

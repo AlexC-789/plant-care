@@ -132,6 +132,6 @@ const styles = StyleSheet.create({
   barSide: { flex: 1 },
   barRight: { alignItems: 'flex-end' },
   content: { padding: space.l, gap: space.xxl, paddingBottom: space.xxxl },
-  nameInput: { flex: 1, minHeight: space.touch - space.m * 2, padding: 0 },
+  nameInput: { flex: 1, minHeight: space.touch - space.m * 2, padding: 0, textAlign: 'right' },
   error: { marginHorizontal: space.xs },
 });

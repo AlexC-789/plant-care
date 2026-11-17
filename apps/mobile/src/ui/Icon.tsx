@@ -1,4 +1,5 @@
 import { SymbolView } from 'expo-symbols';
+import { Platform } from 'react-native';
 
 import { useTheme, type ColorToken } from '@/theme';
 
@@ -27,8 +28,10 @@ export function Icon({
       name={SYMBOLS[name]}
       size={size}
       tintColor={colors[color]}
-      accessibilityElementsHidden
-      importantForAccessibility="no"
+      // Decorative: hidden from screen readers (the iOS prop isn't a valid web attribute).
+      {...(Platform.OS === 'web'
+        ? { 'aria-hidden': true }
+        : { accessibilityElementsHidden: true, importantForAccessibility: 'no' as const })}
     />
   );
 }
