@@ -9,11 +9,22 @@ const MESSAGES: Record<string, string> = {
   weak_password: 'Password must be at least 8 characters.',
 };
 
+/**
+ * Messages from the sign-up email check (supabase/functions/before-user-created/check.ts),
+ * written for people, so they're shown as they are. Keep in sync with that file.
+ */
+const SERVER_MESSAGES = new Set([
+  "This email domain can't receive mail. Check the address.",
+  "Use a permanent email address. Temporary inboxes can't be used.",
+]);
+
 const NETWORK = "Can't reach the server. Check your connection and try again.";
 const FALLBACK = 'Something went wrong. Please try again.';
 
 export function authErrorMessage(error: unknown): string {
   if (isAuthRetryableFetchError(error) || error instanceof TypeError) return NETWORK;
+  const message = (error as { message?: unknown } | null)?.message;
+  if (typeof message === 'string' && SERVER_MESSAGES.has(message)) return message;
   const code = (error as { code?: unknown } | null)?.code;
   if (typeof code === 'string' && code in MESSAGES) return MESSAGES[code];
   return FALLBACK;

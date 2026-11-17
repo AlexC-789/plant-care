@@ -1,15 +1,16 @@
-import { Link, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 
 import { AuthForm } from '@/auth/AuthForm';
 import { EMAIL_CONFIRMED_URL, signInNoticeText } from '@/auth/emailConfirmation';
 import { supabase } from '@/lib/supabase';
+import { TextLink } from '@/ui';
 
 export default function SignIn() {
   const { email = '', notice } = useLocalSearchParams<{ email?: string; notice?: string }>();
 
   return (
     <AuthForm
-      title="Welcome back"
+      title="Sign in to Plant Care"
       submitLabel="Sign in"
       passwordAutoComplete="current-password"
       initialEmail={email}
@@ -28,11 +29,7 @@ export default function SignIn() {
         // On success the session listener redirects to the library.
         return { error: error ?? undefined };
       }}
-      footer={
-        <Link href="/sign-up" replace>
-          Don&apos;t have an account? Sign up
-        </Link>
-      }
+      footer={<TextLink href="/sign-up" replace label="Don't have an account? Sign up" />}
     />
   );
 }

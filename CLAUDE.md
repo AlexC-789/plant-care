@@ -16,8 +16,12 @@ apps/mobile/          Expo (SDK 58) + Expo Router app, TypeScript strict
   src/app/            routes only: (auth)/ signed-out, (app)/ signed-in
   src/lib/            supabase client, generated database.types.ts
   src/auth/ src/profile/ ...   feature code + __tests__
+  src/theme/          design tokens (colours light/dark, type, spacing, radii), useTheme(),
+                      useIsAccessibilitySize(); the ONLY place colour values live
+  src/ui/             shared building blocks: Text, Button, InsetGroup, Row, Icon, TextLink, PotDrawing
   src/test-utils/     supabaseMock for jest.mock('@/lib/supabase')
-supabase/             config.toml, migrations/, tests/database/ (pgTAP)
+supabase/             config.toml, migrations/, tests/database/ (pgTAP),
+                      functions/ (Edge Functions, Deno; tests: npm run fn:test)
 ```
 
 Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, don't trust memory).
@@ -25,7 +29,7 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 ## Commands (repo root)
 
 `npm test` · `npm run typecheck` · `npm run lint` · `npm run db:start` · `npm run db:reset` ·
-`npm run db:test` · `npm run db:types`. Run all of test/typecheck/lint/db:test before calling work done.
+`npm run db:test` · `npm run db:types` · `npm run fn:test`. Run all of test/typecheck/lint/db:test/fn:test before calling work done.
 
 ## Rules
 
@@ -38,8 +42,18 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
   writable by `authenticated` — use column-level grants.
 - Schema changes only via `supabase/migrations/`; then `npm run db:types`.
 - Gate paid features only through `useEntitlement()`.
+- Sign-up email check: `before-user-created` auth hook (Edge Function). It must fail open on
+  DNS problems; its user-facing messages are mirrored in `apps/mobile/src/auth/authErrors.ts`.
+  Edge Functions keep zero runtime npm deps (the local runtime may not reach npm).
+- After changing `supabase/config.toml`, restart Supabase (`npx supabase stop` + `npm run db:start`).
 - Email confirmation is ON (sign-up → sign-in; resend has a 60 s cooldown matching
   `max_frequency`). Local emails go to Mailpit: http://127.0.0.1:54324.
+- UI follows `docs/superpowers/specs/2026-11-17-app-ui-design.md` (canvas linked there).
+  Screens use `src/ui` + theme tokens only; raw colours outside `src/theme/` fail lint. Never cap
+  font scaling (`maxFontSizeMultiplier`/`allowFontScaling={false}`). Icons: `Icon` (SF Symbols on
+  iOS, Material Symbols elsewhere). No emoji.
+- Don't add expo-status-bar's `<StatusBar>`: it hangs React's act() in Jest; the system style
+  already follows light/dark.
 - Route files only in `src/app/`; tests go in `src/**/__tests__/` (not under `src/app/`).
 - Press handlers stay synchronous (`void doAsync()`); RNTL awaits async handlers.
 - Watering safety limits (≤ 40 ml/dose, ≤ 150 ml/24 h, never pump when float switch is low,

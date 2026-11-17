@@ -1,9 +1,10 @@
-import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { clearConfirmationUrl, readConfirmationUrl } from '@/auth/confirmationUrl';
 import { confirmationResult } from '@/auth/emailConfirmation';
+import { space, useTheme } from '@/theme';
+import { Text, TextLink } from '@/ui';
 
 const COPY = {
   confirmed: { title: 'Email confirmed', body: 'Go back to the app and sign in.' },
@@ -18,6 +19,7 @@ const COPY = {
  * It only shows a message; it never signs anyone in.
  */
 export default function EmailConfirmed() {
+  const { colors } = useTheme();
   const [result] = useState(() => {
     const { search, hash } = readConfirmationUrl();
     return confirmationResult(search, hash);
@@ -29,14 +31,14 @@ export default function EmailConfirmed() {
 
   const { title, body } = COPY[result];
   return (
-    <View style={styles.container}>
-      <Text style={styles.title} accessibilityRole="header">
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Text variant="title" accessibilityRole="header" style={styles.center}>
         {title}
       </Text>
-      <Text style={styles.body}>{body}</Text>
-      <Link href="/sign-in" style={styles.link}>
-        Sign in
-      </Link>
+      <Text variant="callout" color="secondaryLabel" style={styles.center}>
+        {body}
+      </Text>
+      <TextLink href="/sign-in" label="Sign in" />
     </View>
   );
 }
@@ -46,11 +48,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
-    gap: 12,
-    backgroundColor: '#fff',
+    padding: space.xxl,
+    gap: space.m,
   },
-  title: { fontSize: 26, fontWeight: '600' },
-  body: { fontSize: 16, color: '#444', textAlign: 'center' },
-  link: { marginTop: 12, color: '#2e7d32', fontSize: 16, fontWeight: '600' },
+  center: { textAlign: 'center', maxWidth: 360 },
 });

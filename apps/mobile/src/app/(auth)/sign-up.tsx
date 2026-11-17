@@ -1,8 +1,9 @@
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 
 import { AuthForm } from '@/auth/AuthForm';
 import { EMAIL_CONFIRMED_URL, type SignInNotice } from '@/auth/emailConfirmation';
 import { supabase } from '@/lib/supabase';
+import { TextLink } from '@/ui';
 
 export default function SignUp() {
   return (
@@ -32,11 +33,7 @@ export default function SignUp() {
         router.replace({ pathname: '/sign-in', params: { email, notice } });
         return {};
       }}
-      footer={
-        <Link href="/sign-in" replace>
-          Already have an account? Sign in
-        </Link>
-      }
+      footer={<TextLink href="/sign-in" replace label="Already have an account? Sign in" />}
     />
   );
 }

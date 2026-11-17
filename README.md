@@ -37,6 +37,29 @@ The link target comes from `EXPO_PUBLIC_EMAIL_CONFIRMED_URL` in `apps/mobile/.en
 (default `http://127.0.0.1:8081/email-confirmed`) and must be listed in
 `additional_redirect_urls` in `supabase/config.toml`.
 
+## Sign-up email check
+
+Supabase runs `supabase/functions/before-user-created` before every new account is
+created. It rejects throwaway inboxes (a vendored copy of the CC0
+[disposable-email-domains](https://github.com/disposable-email-domains/disposable-email-domains)
+list) and domains that can't receive mail. If DNS isn't working, sign-ups are allowed and the
+confirmation email remains the check.
+
+- Function tests: `npm run fn:test` (uses the `deno` dev dependency).
+- **After changing `supabase/config.toml`, restart Supabase** (`npx supabase stop`, then
+  `npm run db:start`). Settings such as email confirmation and the hook only apply after a restart.
+- Refresh the throwaway list: download `disposable_email_blocklist.conf` from the repo above and
+  regenerate `supabase/functions/before-user-created/disposable_domains.ts` (one quoted domain per line).
+- Hosted project (milestone 4), **in this order** (an enabled hook whose function is missing or
+  has the wrong secret makes every sign-up fail):
+  1. In the dashboard, create the "Before User Created" HTTP hook (still disabled) pointing at
+     the function URL, and copy its secret.
+  2. `npx supabase secrets set BEFORE_USER_CREATED_HOOK_SECRET=<that secret>`
+  3. `npx supabase functions deploy before-user-created --no-verify-jwt`
+  4. Enable the hook, then sign up once with a real address (should reach "We sent a
+     confirmation link") and once with `x@mailinator.com` (should be rejected).
+  5. Check the function logs: "allowing <domain>" warnings mean DNS isn't working there.
+
 ## Run the app
 
 ```bash
@@ -58,6 +81,7 @@ phone on the same Wi-Fi, and restart `expo start`.
 | `npm run db:start` / `db:stop` | Start/stop local Supabase |
 | `npm run db:reset` | Recreate the local database from migrations |
 | `npm run db:test` | Database tests (pgTAP) incl. security rules |
+| `npm run fn:test` | Edge Function tests (Deno) |
 | `npm run db:types` | Regenerate `apps/mobile/src/lib/database.types.ts` after a migration |
 
 Local Supabase Studio (database browser): http://127.0.0.1:54323

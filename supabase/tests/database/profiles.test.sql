@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(13);
+select plan(14);
 
 -- helpers ---------------------------------------------------------------
 create function pg_temp.new_user(uid uuid, mail text) returns void language sql as $$
@@ -28,8 +28,8 @@ select is(
   1, 'signup creates exactly one profile');
 select results_eq(
   $$ select units, subscription_status from public.profiles where user_id = '11111111-1111-1111-1111-111111111111' $$,
-  $$ values ('metric'::text, 'none'::text) $$,
-  'new profile defaults to metric units and no subscription');
+  $$ values ('auto'::text, 'none'::text) $$,
+  'new profile defaults to automatic units and no subscription');
 
 -- as user A ---------------------------------------------------------------
 select pg_temp.as_user('11111111-1111-1111-1111-111111111111');
@@ -54,9 +54,12 @@ select throws_ok(
 select throws_ok(
   $$ delete from public.profiles $$,
   '42501', null, 'user cannot delete profiles');
+select lives_ok(
+  $$ update public.profiles set units = 'auto' where user_id = '11111111-1111-1111-1111-111111111111' $$,
+  'user can choose automatic units');
 select throws_ok(
   $$ update public.profiles set units = 'furlongs' $$,
-  '23514', null, 'units must be metric or imperial');
+  '23514', null, 'units must be auto, metric or imperial');
 
 reset role;
 select is(
