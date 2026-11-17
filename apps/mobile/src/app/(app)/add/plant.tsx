@@ -31,7 +31,8 @@ export default function PlantStep() {
   const runIdentify = () => {
     setMessage(null);
     identify.mutate(
-      draft.photos.map((p) => p.path),
+      // The problem photo is for the health check only; identify takes whole, leaf and flower.
+      draft.photos.filter((p) => p.kind !== 'problem').map((p) => p.path),
       {
         onSuccess: (r) => {
           if (r.isPlant && r.suggestions.length) set({ scanId: r.scanId, suggestions: r.suggestions.slice(0, 3) });
@@ -55,14 +56,12 @@ export default function PlantStep() {
         scanId: draft.scanId,
       });
       // A problem-spot photo starts a health check (not awaited; the detail shows its progress) and lives on as that scan.
-      const spot = draft.photos.find((p) => p.kind === 'flower');
+      const spot = draft.photos.find((p) => p.kind === 'problem');
       const checking = !!(whole && spot);
       if (checking) check.mutate({ plantId: plant.id, photoPaths: [whole.path, spot.path] });
-      // Other extra photos only live on as part of an identify scan.
-      if (!draft.scanId) {
-        const extra = draft.photos.filter((p) => p.kind === 'leaf' || (p.kind === 'flower' && !checking)).map((p) => p.path);
-        void deletePhotos(extra).catch(() => {});
-      }
+      // Leaf and flower photos only live on as part of an identify scan; an unused problem photo is deleted too.
+      const gone = draft.photos.filter((p) => (p.kind === 'leaf' || p.kind === 'flower') && !draft.scanId || (p.kind === 'problem' && !checking));
+      if (gone.length) void deletePhotos(gone.map((p) => p.path)).catch(() => {});
       router.back();
       router.push(`/plant/${plant.id}`);
     } catch {

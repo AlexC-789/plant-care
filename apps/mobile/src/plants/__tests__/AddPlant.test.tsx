@@ -59,7 +59,7 @@ beforeEach(() => {
   mocked(ImagePicker.launchCameraAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///raw.jpg' }] });
   mocked(photos.preparePhoto).mockResolvedValue({ uri: 'file:///prepared.jpg', width: 1, height: 1 });
   mocked(photos.uploadPhoto).mockImplementation(async () => `u/${++uploads}.jpg`);
-  mocked(api.createPlant).mockResolvedValue({ id: 'new-plant' });
+  mocked(api.createPlant).mockResolvedValue({ id: 'new-plant', name: 'Fern' });
   mocked(api.searchLocalSpecies).mockResolvedValue([]);
   mocked(api.searchPlantNames).mockResolvedValue([]);
   auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
@@ -94,13 +94,13 @@ test('shows the title, heading and hint; Identify needs a whole-plant photo', as
   expect(screen.queryByRole('button', { name: 'Identify' })).toBeNull();
 });
 
-test('guided capture: three cards with copy; leaf and flower can be skipped', async () => {
+test('guided capture: four cards with copy; leaf, flower and problem spot can be skipped', async () => {
   await open('/add/capture');
-  for (const t of ['Whole plant', 'One leaf', 'Flower or problem spot'])
+  for (const t of ['Whole plant', 'One leaf', 'Flower', 'Problem spot', "If it's flowering", 'If something looks wrong'])
     expect(screen.getByText(t)).toBeTruthy();
   expect(screen.getByText('Step back so the whole plant and pot fit')).toBeTruthy();
-  expect(screen.getAllByRole('button', { name: 'Skip' })).toHaveLength(2);
-  expect(screen.getAllByRole('button', { name: 'Choose from library' })).toHaveLength(3);
+  expect(screen.getAllByRole('button', { name: 'Skip' })).toHaveLength(3);
+  expect(screen.getAllByRole('button', { name: 'Choose from library' })).toHaveLength(4);
 });
 
 test('uploads on capture, shows a thumbnail, Remove deletes the upload', async () => {
@@ -222,12 +222,12 @@ test('Continue needs a name, then saves without a type or photo and opens the pl
   await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/plant/new-plant'));
 });
 
-test('Continue deletes a leaf photo that was never identified', async () => {
+test('Continue deletes leaf and flower photos that were never identified', async () => {
   await open();
   await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
-  await addPhotos([0, 1]);
+  await addPhotos([0, 1, 2]);
   await press('Continue');
-  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg']));
+  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg', 'u/3.jpg']));
   expect(mocked(api.createPlant).mock.calls[0][0]).toMatchObject({ photoPath: 'u/1.jpg' });
   expect(api.checkHealth).not.toHaveBeenCalled();
 });
@@ -236,7 +236,7 @@ test('a problem-spot photo starts a health check on Continue and is kept; naviga
   mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
   await open();
   await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
-  await addPhotos([0, 1, 2]);
+  await addPhotos([0, 1, 3]);
   await press('Continue');
   await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/plant/new-plant'));
   expect(api.checkHealth).toHaveBeenCalledWith('new-plant', ['u/1.jpg', 'u/3.jpg']);
@@ -247,10 +247,18 @@ test('a problem-spot photo starts a health check on Continue and is kept; naviga
 test('a problem-spot photo without a whole-plant photo runs no check and is deleted', async () => {
   await open();
   await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
-  await addPhotos([2]);
+  await addPhotos([3]);
   await press('Continue');
   await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']));
   expect(api.checkHealth).not.toHaveBeenCalled();
+});
+
+test('Identify sends whole, leaf and flower but never the problem photo', async () => {
+  mocked(api.identifyPlant).mockResolvedValue({ scanId: 'sc', isPlant: true, suggestions: [monstera] });
+  await open();
+  await addPhotos([0, 1, 2, 3]);
+  await press('Identify');
+  await waitFor(() => expect(api.identifyPlant).toHaveBeenCalledWith(['u/1.jpg', 'u/2.jpg', 'u/3.jpg']));
 });
 
 test('Cancel deletes every uploaded photo and saves nothing', async () => {

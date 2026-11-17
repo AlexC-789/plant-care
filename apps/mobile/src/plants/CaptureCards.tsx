@@ -15,7 +15,8 @@ export type CaptureCard = { kind: string; title: string; hint: string; optional?
 export const ADD_CARDS: CaptureCard[] = [
   { kind: 'whole', title: 'Whole plant', hint: 'Step back so the whole plant and pot fit' },
   { kind: 'leaf', title: 'One leaf', hint: 'Fill the frame with one healthy leaf', optional: true },
-  { kind: 'flower', title: 'Flower or problem spot', hint: "If it's flowering, or something looks wrong", optional: true },
+  { kind: 'flower', title: 'Flower', hint: "If it's flowering", optional: true },
+  { kind: 'problem', title: 'Problem spot', hint: 'If something looks wrong', optional: true },
 ];
 
 const DENIED = {
