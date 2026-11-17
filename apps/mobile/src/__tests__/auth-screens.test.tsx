@@ -210,6 +210,25 @@ describe('sign-up', () => {
     ).toBeNull();
   });
 
+  test('a rejected email domain shows the server message and stays on sign-up', async () => {
+    auth.signUp.mockResolvedValue({
+      data: { session: null, user: null },
+      error: {
+        status: 400,
+        code: 'unknown',
+        message: "This email domain can't receive mail. Check the address.",
+      },
+    });
+    const view = await openApp('/sign-up');
+    await fill('hdsjs@ajshs.fur', 'password123');
+    await fireEvent.press(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() =>
+      expect(screen.getByText("This email domain can't receive mail. Check the address.")).toBeTruthy(),
+    );
+    expect(view.getPathname()).toBe('/sign-up');
+    expect(screen.getByRole('button', { name: 'Create account' })).toBeEnabled();
+  });
+
   test('links to sign-in', async () => {
     const view = await openApp('/sign-up');
     await fireEvent.press(screen.getByText('Already have an account? Sign in'));
