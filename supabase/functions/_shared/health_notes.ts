@@ -32,10 +32,10 @@ const NOTES = new Map<string, Omit<HealthNote, 'healthy'>>(Object.entries({
   'spider mites': { note: 'There may be tiny mites on it. Look for fine webs.', advice: 'Rinse the leaves and keep the air around it less dry.' },
 }));
 
-/** Healthy probability >= 0.8 -> healthy; else a mapped top issue >= 0.5; otherwise unsure. */
+/** Healthy probability >= 0.8 -> healthy; else a mapped top issue >= 0.3 (Plant.id's own scores run low); otherwise unsure. */
 export function healthNote(r: HealthResult): HealthNote {
   if (r.isHealthyProbability >= 0.8) return { healthy: true, note: HEALTHY_NOTE, advice: null };
   const top = r.issues[0];
-  const mapped = top && top.probability >= 0.5 ? NOTES.get(top.name.toLowerCase()) : undefined;
+  const mapped = top && top.probability >= 0.3 ? NOTES.get(top.name.toLowerCase()) : undefined;
   return mapped ? { healthy: false, ...mapped } : { healthy: null, note: UNSURE_NOTE, advice: null };
 }

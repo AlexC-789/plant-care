@@ -212,13 +212,13 @@ Deno.test('health: issues sorted by probability desc, non-finite dropped; missin
   assertEquals(h.isPlantProbability, 0);
 });
 
-Deno.test('healthNote: healthy >= 0.8, mapped top issue >= 0.5, otherwise unsure; never a raw name', () => {
+Deno.test('healthNote: healthy >= 0.8, mapped top issue >= 0.3, otherwise unsure; never a raw name', () => {
   const r = (isHealthyProbability: number, issues: { name: string; probability: number }[] = []) =>
     ({ isPlantProbability: 1, isHealthyProbability, issues });
   assertEquals(HEALTHY_NOTE, 'It looks healthy in this photo.');
   assertEquals(UNSURE_NOTE, "Couldn't tell from this photo. Try one with the leaves in view.");
   assertEquals(healthNote(r(0.8)), { healthy: true, note: HEALTHY_NOTE, advice: null });
-  assertEquals(healthNote(r(0.79, [{ name: 'water excess or uneven watering', probability: 0.5 }])), {
+  assertEquals(healthNote(r(0.79, [{ name: 'water excess or uneven watering', probability: 0.3 }])), {
     healthy: false,
     note: 'Some leaves look yellow. Often too much water.',
     advice: 'Let the top few centimetres of soil dry before watering again.',
@@ -226,7 +226,9 @@ Deno.test('healthNote: healthy >= 0.8, mapped top issue >= 0.5, otherwise unsure
   // case-insensitive on the provider name
   assertEquals(healthNote(r(0.1, [{ name: 'Water Deficiency', probability: 0.9 }])).healthy, false);
   const unsure = { healthy: null, note: UNSURE_NOTE, advice: null };
-  assertEquals(healthNote(r(0.1, [{ name: 'fungi', probability: 0.49 }])), unsure);
+  assertEquals(healthNote(r(0.1, [{ name: 'fungi', probability: 0.29 }])), unsure);
+  // live orchid case: healthy 0.032, top "nutrient deficiency" just under 0.5
+  assertEquals(healthNote(r(0.032, [{ name: 'nutrient deficiency', probability: 0.4999 }])).note, 'The leaves look pale. It may need feeding.');
   assertEquals(healthNote(r(0.1, [{ name: 'Some Obscure Pathogen', probability: 0.9 }])), unsure);
   assertEquals(healthNote(r(0.1, [{ name: 'constructor', probability: 0.9 }])), unsure);
   assertEquals(healthNote(r(0.1)), unsure);

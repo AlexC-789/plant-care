@@ -115,11 +115,11 @@ Deno.test('healthy >= 0.8: healthy copy; request carries all images; scan linked
   assertEquals(JSON.parse(String(pid[0].init?.body)).images, [JPEG_B64, JPEG_B64]);
   assertEquals(w.scans, [{
     user_id: U, kind: 'health', plant_id: PLANT, photo_paths: [P1, P2], status: 'ok', is_plant: 1,
-    health: { healthy: true, note: 'It looks healthy in this photo.', advice: null },
+    health: { healthy: true, note: 'It looks healthy in this photo.', advice: null, top_issue: null },
   }]);
 });
 
-Deno.test('top issue >= 0.5 and mapped: plain-words note and advice (recorded fixture)', async () => {
+Deno.test('top issue >= 0.3 and mapped: plain-words note and advice (recorded fixture)', async () => {
   const w = world();
   const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
   assertEquals(body, {
@@ -128,12 +128,16 @@ Deno.test('top issue >= 0.5 and mapped: plain-words note and advice (recorded fi
     note: 'Some leaves look yellow. Often too much water.',
     advice: 'Let the top few centimetres of soil dry before watering again.',
   });
-  assertEquals(w.scans[0].health, { healthy: false, note: body.note, advice: body.advice });
+  assertEquals(Object.keys(body).sort(), ['advice', 'healthy', 'note', 'scanId']);
+  assertEquals(w.scans[0].health, {
+    healthy: false, note: body.note, advice: body.advice,
+    top_issue: { name: 'water excess or uneven watering', probability: 0.51401126 },
+  });
   assertFalse(JSON.stringify(body).includes('water excess'));
 });
 
-Deno.test('top issue < 0.5, or unmapped: unsure copy, never the provider name', async () => {
-  for (const s of [[{ name: 'fungi', probability: 0.49 }], [{ name: 'Phytophthora obscura', probability: 0.9 }], []]) {
+Deno.test('top issue < 0.3, or unmapped: unsure copy, never the provider name', async () => {
+  for (const s of [[{ name: 'fungi', probability: 0.29 }], [{ name: 'Phytophthora obscura', probability: 0.9 }], []]) {
     const w = world({ plantId: health(0.3, s) });
     const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
     assertEquals(body, { scanId: 'scan-1', ...UNSURE }, JSON.stringify(s));
@@ -146,7 +150,7 @@ Deno.test('not a plant: status not_plant, unsure copy', async () => {
   const w = world({ plantId: health(0.9, [], 0.2) });
   const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
   assertEquals(body, { scanId: 'scan-1', ...UNSURE });
-  assertEquals([w.scans[0].status, w.scans[0].is_plant, w.scans[0].health], ['not_plant', 0.2, UNSURE]);
+  assertEquals([w.scans[0].status, w.scans[0].is_plant, w.scans[0].health], ['not_plant', 0.2, { ...UNSURE, top_issue: null }]);
 });
 
 Deno.test('provider error or timeout: 502 uniform body, error scan stored, nothing secret logged', async () => {

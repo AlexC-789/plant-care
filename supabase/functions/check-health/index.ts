@@ -65,7 +65,9 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
 
     const isPlant = result.isPlantProbability >= 0.5;
     const health = isPlant ? healthNote(result) : { healthy: null, note: UNSURE_NOTE, advice: null };
-    const scanId = await insertScan(deps, { ...scan, status: isPlant ? 'ok' : 'not_plant', is_plant: result.isPlantProbability, health });
+    // top_issue is stored for threshold tuning only: never in the response or a log line
+    const stored = { ...health, top_issue: isPlant ? result.issues[0] ?? null : null };
+    const scanId = await insertScan(deps, { ...scan, status: isPlant ? 'ok' : 'not_plant', is_plant: result.isPlantProbability, health: stored });
     return respond(json({ scanId, ...health }), isPlant ? 'ok' : 'not_plant');
   } catch {
     return respond(jsonError(500, 'Something went wrong.'), 'error');
