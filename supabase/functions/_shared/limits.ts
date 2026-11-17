@@ -16,12 +16,14 @@ async function count(db: Deps, table: string, filter: string): Promise<number> {
   return total;
 }
 
+// shortcut: the daily limit is count-then-act; a parallel burst can slightly exceed it, use an atomic RPC if abused.
 /** Plant.id calls that cost credits (ok + not_plant) in the last 24 h. */
 export function countRecentPlantIdCalls(db: Deps, userId: string): Promise<number> {
   const since = new Date(Date.now() - DAY_MS).toISOString();
   return count(db, 'scans', `user_id=eq.${userId}&status=in.(ok,not_plant)&created_at=gt.${since}`);
 }
 
+// shortcut: count-then-act like the daily limit, and search_log has no cleanup; add a purge job when it grows.
 /** Counts the user's searches in the last hour; logs this one and returns true when under the limit. */
 export async function searchAllowed(db: Deps, userId: string): Promise<boolean> {
   const since = new Date(Date.now() - HOUR_MS).toISOString();

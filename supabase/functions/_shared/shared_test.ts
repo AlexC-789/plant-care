@@ -67,7 +67,15 @@ Deno.test('requireUser: valid token, missing header, rejected token, unreachable
   assertEquals(ok.calls[0][0].pathname, '/auth/v1/user');
   assertEquals((await requireUser(new Request('http://x/'), ok) as Response).status, 401);
   assertEquals((await requireUser(req, deps(() => json({}, 401))) as Response).status, 401);
-  assertEquals((await requireUser(req, deps(() => { throw new Error('down'); })) as Response).status, 401);
+  assertEquals((await requireUser(req, deps(() => json({}, 403))) as Response).status, 401);
+});
+
+Deno.test('requireUser: auth outage is 503, missing env is 500', async () => {
+  const req = new Request('http://x/', { headers: { authorization: 'Bearer tok' } });
+  assertEquals((await requireUser(req, deps(() => { throw new Error('down'); })) as Response).status, 503);
+  assertEquals((await requireUser(req, deps(() => json({}, 500))) as Response).status, 503);
+  assertEquals((await requireUser(req, { ...deps(() => json({ id: U })), serviceRoleKey: '' }) as Response).status, 500);
+  assertEquals((await requireUser(req, { ...deps(() => json({ id: U })), supabaseUrl: '' }) as Response).status, 500);
 });
 
 Deno.test('countRecentPlantIdCalls queries ok + not_plant in the last 24h', async () => {

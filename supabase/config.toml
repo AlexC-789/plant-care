@@ -409,6 +409,9 @@ BEFORE_USER_CREATED_HOOK_SECRET = "v1,whsec_FGWOwkjOm48kj0VfyRS/UCGhY4WsYU7BQ2fM
 [functions.before-user-created]
 verify_jwt = false
 
+[functions.identify-plant]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
