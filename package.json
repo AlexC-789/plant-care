@@ -12,7 +12,8 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
-    "db:types": "supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts"
+    "db:types": "supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts",
+    "fn:test": "deno test --allow-read --allow-env --allow-net=jsr.io supabase/functions"
   },
   "devDependencies": {
     "deno": "^2.9.6",
