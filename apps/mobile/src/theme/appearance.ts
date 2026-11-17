@@ -6,6 +6,8 @@ import { Appearance as RNAppearance } from 'react-native';
 export type Appearance = 'light' | 'dark';
 
 const STORAGE_KEY = 'plant-care.appearance';
+/** Never hold the native splash on a stalled storage read: fall back to light after this. */
+const LOAD_TIMEOUT_MS = 400;
 
 type State = { appearance: Appearance; loaded: boolean };
 let state: State = { appearance: 'light', loaded: false };
@@ -33,10 +35,18 @@ function applyToPlatform(appearance: Appearance) {
 /** Read the saved choice (call once at start-up). Any failure leaves the default, light. */
 export async function loadStoredAppearance(): Promise<void> {
   let stored: string | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
   try {
-    stored = await AsyncStorage.getItem(STORAGE_KEY);
+    stored = await Promise.race([
+      AsyncStorage.getItem(STORAGE_KEY),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), LOAD_TIMEOUT_MS);
+      }),
+    ]);
   } catch {
     stored = null;
+  } finally {
+    clearTimeout(timer);
   }
   const appearance: Appearance = stored === 'dark' ? 'dark' : 'light';
   applyToPlatform(appearance);

@@ -66,3 +66,19 @@ test('a storage failure on load still finishes loading (light)', async () => {
   expect(result.current.loaded).toBe(true);
   expect(result.current.t.scheme).toBe('light');
 });
+
+test('a storage read that never answers falls back to light within 400 ms (splash never stuck)', async () => {
+  jest.useFakeTimers();
+  try {
+    jest.spyOn(AsyncStorage, 'getItem').mockReturnValue(new Promise(() => {}));
+    const { result } = await renderHook(() => ({ loaded: useAppearanceLoaded(), t: useTheme() }));
+    void loadStoredAppearance();
+    await act(async () => jest.advanceTimersByTime(399));
+    expect(result.current.loaded).toBe(false);
+    await act(async () => jest.advanceTimersByTime(1));
+    expect(result.current.loaded).toBe(true);
+    expect(result.current.t.scheme).toBe('light');
+  } finally {
+    jest.useRealTimers();
+  }
+});
