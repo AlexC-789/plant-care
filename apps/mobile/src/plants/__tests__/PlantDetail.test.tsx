@@ -1,3 +1,4 @@
+import { StyleSheet } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
@@ -51,8 +52,7 @@ const monstera = {
   watering: 'Let the top soil dry out.',
 };
 const fern = { id: 'p1', name: 'Fernando', room: 'Kitchen', species_id: 's1', custom_type: null, photo_path: 'u/p.jpg' };
-const LIMIT =
-  "You've reached the identification limit for now. Search for the plant type, or try again later.";
+const LIMIT = "You've reached the health check limit for now. Try again later.";
 
 let uploads = 0;
 beforeEach(() => {
@@ -136,6 +136,7 @@ test('a failed load with no cache shows a dash, not a guessed value', async () =
   mocked(api.fetchPlant).mockRejectedValue(new Error('x'));
   await open();
   await screen.findByText('—', undefined, { timeout: 5000 });
+  expect(StyleSheet.flatten(screen.getByTestId('plant-hero').props.style).backgroundColor).toBe('#FFFDF9');
 });
 
 test('health card shows the latest result with its date, and the Check button', async () => {

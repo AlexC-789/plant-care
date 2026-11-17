@@ -65,6 +65,10 @@ export async function handler(req: Request, deps: IdentifyDeps): Promise<Respons
     const user = await requireUser(req, deps);
     if (user instanceof Response) return respond(user, `auth_${user.status}`);
     userId = user.userId;
+    if (!deps.plantIdApiKey) {
+      console.error(JSON.stringify({ fn: 'identify-plant', requestId, outcome: 'misconfigured' }));
+      return respond(jsonError(500, 'Something went wrong.'), 'misconfigured');
+    }
 
     const body = await readJsonBody(req);
     if (body instanceof Response) return respond(body, `body_${body.status}`);

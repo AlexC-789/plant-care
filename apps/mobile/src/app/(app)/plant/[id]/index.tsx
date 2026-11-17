@@ -51,9 +51,10 @@ export default function PlantDetail() {
         }}
       />
       <View
+        testID="plant-hero"
         style={[
           styles.hero,
-          { backgroundColor: !plant || (path && !photoUrl) ? colors.skeleton : colors.surface },
+          { backgroundColor: (!plant && loading) || (path && !photoUrl) ? colors.skeleton : colors.surface },
         ]}>
         {photoUrl && path ? (
           <Image

@@ -13,7 +13,7 @@ const CARDS: CaptureCard[] = [
   { kind: 'problem', title: 'Problem spot', hint: 'If something looks wrong', optional: true },
 ];
 // The server's own message for a 429; any other failure reads as "couldn't check".
-const LIMIT = "You've reached the identification limit for now. Search for the plant type, or try again later.";
+const LIMIT = "You've reached the health check limit for now. Try again later.";
 
 export default function Health() {
   const { id } = useLocalSearchParams<{ id: string }>();

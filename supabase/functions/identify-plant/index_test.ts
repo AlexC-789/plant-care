@@ -199,3 +199,21 @@ Deno.test('new species stores watering details; an unmappable one stores nulls',
   assertEquals([a.moisture_category, a.watering, a.light], ['moist', 'Keep the soil evenly moist.', 'bright_indirect']);
   assertEquals([b.moisture_category, b.watering, b.light], [null, null, null]);
 });
+
+Deno.test('missing PLANT_ID_API_KEY is a uniform 500 before any download or scan, logged as misconfigured', async () => {
+  const w = world();
+  const errors: string[] = [];
+  const realError = console.error;
+  console.error = (...a: unknown[]) => void errors.push(a.join(' '));
+  try {
+    const res = await handler(req({ photoPaths: [P1] }), { ...w.deps, plantIdApiKey: '' });
+    assertEquals(res.status, 500);
+    assertEquals(await res.json(), { error: 'Something went wrong.' });
+  } finally {
+    console.error = realError;
+  }
+  assertFalse(w.calls.some((c) => c.url.pathname.startsWith('/storage') || c.url.host === 'plant.id'));
+  assertEquals(w.scans, []);
+  assertEquals(errors.length, 1);
+  assertEquals(JSON.parse(errors[0]).outcome, 'misconfigured');
+});

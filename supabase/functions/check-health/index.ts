@@ -12,8 +12,8 @@ export interface CheckHealthDeps extends Deps {
   plantIdApiKey: string;
 }
 
-// shared with identify-plant: one limit for both
-const LIMIT_MESSAGE = "You've reached the identification limit for now. Search for the plant type, or try again later.";
+// the daily limit is shared with identify-plant, the copy is not
+const LIMIT_MESSAGE = "You've reached the health check limit for now. Try again later.";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function handler(req: Request, deps: CheckHealthDeps): Promise<Response> {
@@ -29,6 +29,10 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
     const user = await requireUser(req, deps);
     if (user instanceof Response) return respond(user, `auth_${user.status}`);
     userId = user.userId;
+    if (!deps.plantIdApiKey) {
+      console.error(JSON.stringify({ fn: 'check-health', requestId, outcome: 'misconfigured' }));
+      return respond(jsonError(500, 'Something went wrong.'), 'misconfigured');
+    }
 
     const body = await readJsonBody(req);
     if (body instanceof Response) return respond(body, `body_${body.status}`);

@@ -29,7 +29,7 @@
         "expo-image-picker",
         {
           "cameraPermission": "Plant Care uses the camera to photograph your plants.",
-          "photosPermission": "Plant Care uses your photos so you can pick one of your plant."
+          "photosPermission": "Plant Care uses your photos so you can choose a photo of your plant."
         }
       ],
       [

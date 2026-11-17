@@ -91,11 +91,11 @@ Deno.test('plant not owned (or missing): 403 before any Storage read or Plant.id
   assertEquals(w.scans, []);
 });
 
-Deno.test('limit is shared with identify: 20 counted calls 429 with the identify copy; 19 allowed', async () => {
+Deno.test('limit is shared with identify: 20 counted calls 429 with the health copy; 19 allowed', async () => {
   const w = world({ recent: 20 });
   const res = await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps);
   assertEquals(res.status, 429);
-  assertEquals(await res.json(), { error: "You've reached the identification limit for now. Search for the plant type, or try again later." });
+  assertEquals(await res.json(), { error: "You've reached the health check limit for now. Try again later." });
   const count = w.calls.find((c) => c.init?.method === 'HEAD')!.url;
   // no kind filter: identify and health scans count together
   assertEquals(count.searchParams.get('kind'), null);
@@ -170,4 +170,22 @@ Deno.test('unexpected failure: 500 uniform body', async () => {
   const res = await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps);
   assertEquals(res.status, 500);
   assertEquals(await res.json(), { error: 'Something went wrong.' });
+});
+
+Deno.test('missing PLANT_ID_API_KEY is a uniform 500 before any download or scan, logged as misconfigured', async () => {
+  const w = world();
+  const errors: string[] = [];
+  const realError = console.error;
+  console.error = (...a: unknown[]) => void errors.push(a.join(' '));
+  try {
+    const res = await handler(req({ plantId: PLANT, photoPaths: [P1] }), { ...w.deps, plantIdApiKey: '' });
+    assertEquals(res.status, 500);
+    assertEquals(await res.json(), { error: 'Something went wrong.' });
+  } finally {
+    console.error = realError;
+  }
+  assertEquals(w.calls.filter((c) => c.url.pathname.startsWith('/storage') || c.url.host === 'plant.id').length, 0);
+  assertEquals(w.scans, []);
+  assertEquals(errors.length, 1);
+  assertEquals(JSON.parse(errors[0]).outcome, 'misconfigured');
 });
