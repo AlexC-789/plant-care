@@ -26,6 +26,11 @@ with the device milestones and must slot in without rework.
 - The owner creates the Plant.id account; the key lives in `supabase/functions/.env` (git-ignored)
   locally and in Supabase secrets when hosted.
 
+**Plant.id costs (Kindwise FAQ, checked 2026-11-17):** 1 credit per successful identification
+(any number of photos); +1 if health is added to the same request (we don't); detail endpoints 0.5
+(we don't use them); name search free; €0.01–0.05 per credit by volume; 100 free credits on sign-up;
+photos best at 1–2 MP, never above 2 MP.
+
 ## 3. Goals / non-goals / anti-goals
 **Goals:** add/list/view/edit/delete plants with photos; identification with up to 3 suggestions;
 an on-demand health check with a one-line result; plant-type search over our own database;
@@ -208,7 +213,8 @@ allow a user to read/write/delete only under their own `user_id/` prefix (tested
   `(app)/add/plant` (cover), `(app)/add/search` (type search), `(app)/add/capture` (guided capture).
 - Data via TanStack Query: `['plants', userId]` infinite query (20/page, `created_at desc`);
   `['plant', id]`; `['species', id]`. Mutations update the cache; delete removes from it.
-- Photos: `expo-image-manipulator` → longest side 1280 px, JPEG 0.7 before upload. Display via
+- Photos: `expo-image-manipulator` → longest side 1600 px (≤ 2 MP, Kindwise's recommended 1–2 MP
+  range), JPEG 0.7 before upload. Display via
   `expo-image` with signed URLs (1 h), `cacheKey` = storage path so a new signed URL doesn't
   re-download; list requests sign the page's paths in one call.
 - New deps: `expo-image-picker`, `expo-image-manipulator`, `expo-image` (via `npx expo install`).
