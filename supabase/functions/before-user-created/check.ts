@@ -33,6 +33,9 @@ async function receivesMail(domain: string, lookup: Lookup): Promise<boolean> {
   return false;
 }
 
+/** A domain that always receives mail; if it doesn't resolve, DNS itself is broken. */
+const CANARY_DOMAIN = 'gmail.com';
+
 function timeout(ms: number): Promise<'timeout'> {
   return new Promise((resolve) => setTimeout(() => resolve('timeout'), ms));
 }
@@ -47,12 +50,22 @@ export async function checkEmail(email: string, lookup: Lookup, timeoutMs = 2000
   if (!domain) return { ok: true }; // malformed addresses are rejected by Supabase itself
   if (isDisposable(domain)) return { ok: false, message: DISPOSABLE_MESSAGE };
 
-  try {
-    const result = await Promise.race([receivesMail(domain, lookup), timeout(timeoutMs)]);
-    if (result === 'timeout' || result) return { ok: true };
+  const decide = async (): Promise<Decision> => {
+    try {
+      if (await receivesMail(domain, lookup)) return { ok: true };
+    } catch (error) {
+      if (!(error instanceof DomainNotFound)) return { ok: true };
+    }
+    // Before rejecting, make sure DNS works at all: a broken resolver can report
+    // "no records" for everything.
+    try {
+      if (!(await receivesMail(CANARY_DOMAIN, lookup))) return { ok: true };
+    } catch {
+      return { ok: true };
+    }
     return { ok: false, message: NO_MAIL_MESSAGE };
-  } catch (error) {
-    if (error instanceof DomainNotFound) return { ok: false, message: NO_MAIL_MESSAGE };
-    return { ok: true };
-  }
+  };
+
+  const result = await Promise.race([decide(), timeout(timeoutMs)]);
+  return result === 'timeout' ? { ok: true } : result;
 }

@@ -287,9 +287,13 @@ max_frequency = "5s"
 # inactivity_timeout = "8h"
 
 # This hook runs before a new user is created and allows developers to reject the request based on the incoming user object.
-# [auth.hook.before_user_created]
-# enabled = true
-# uri = "pg-functions://postgres/auth/before-user-created-hook"
+# Rejects sign-ups whose email domain is disposable or can't receive mail
+# (supabase/functions/before-user-created). Restart Supabase after changing this.
+[auth.hook.before_user_created]
+enabled = true
+uri = "http://host.docker.internal:54321/functions/v1/before-user-created"
+# LOCAL DEVELOPMENT ONLY. The hosted project uses its own secret from the dashboard.
+secrets = "v1,whsec_FGWOwkjOm48kj0VfyRS/UCGhY4WsYU7BQ2fMzhL04xY="
 
 # This hook runs before a token is issued and allows you to add additional claims based on the authentication method used.
 # [auth.hook.custom_access_token]
@@ -397,8 +401,13 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+# LOCAL DEVELOPMENT ONLY: must match [auth.hook.before_user_created].secrets above.
+BEFORE_USER_CREATED_HOOK_SECRET = "v1,whsec_FGWOwkjOm48kj0VfyRS/UCGhY4WsYU7BQ2fMzhL04xY="
+
+# Called by Supabase Auth (signed webhook), not by users, so no user JWT.
+[functions.before-user-created]
+verify_jwt = false
 
 [analytics]
 enabled = true

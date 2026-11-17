@@ -1,4 +1,4 @@
-import { assertEquals } from 'jsr:@std/assert@1';
+import { assertEquals } from '@std/assert';
 
 import { checkEmail, DomainNotFound, type Lookup } from './check.ts';
 
@@ -21,13 +21,15 @@ Deno.test('a domain with MX records is allowed', async () => {
   assertEquals(await checkEmail('maya@gmail.com', lookup), { ok: true });
 });
 
+const WORKING = { 'gmail.com MX': ['gmail-smtp-in.l.google.com'] };
+
 Deno.test('a domain that does not exist is rejected', async () => {
-  const { lookup } = dns({}, { notFound: ['ajshs.fur'] });
+  const { lookup } = dns(WORKING, { notFound: ['ajshs.fur'] });
   assertEquals(await checkEmail('hdsjs@ajshs.fur', lookup), { ok: false, message: NO_MAIL });
 });
 
 Deno.test('a domain with no MX, A or AAAA records is rejected', async () => {
-  const { lookup } = dns({});
+  const { lookup } = dns(WORKING);
   assertEquals(await checkEmail('a@parked.example', lookup), { ok: false, message: NO_MAIL });
 });
 
@@ -66,4 +68,15 @@ Deno.test('a DNS error other than not-found allows the sign-up (fail open)', asy
 Deno.test('a DNS lookup slower than the timeout allows the sign-up', async () => {
   const lookup: Lookup = () => new Promise((resolve) => setTimeout(() => resolve([]), 200));
   assertEquals(await checkEmail('a@slow.example', lookup, 20), { ok: true });
+});
+
+Deno.test('when even a well-known domain has no records, DNS is broken: allow', async () => {
+  const { lookup } = dns({}); // every lookup empty, gmail.com included
+  assertEquals(await checkEmail('hdsjs@ajshs.fur', lookup), { ok: true });
+});
+
+Deno.test('rejection requires the well-known domain to resolve', async () => {
+  const { lookup, calls } = dns({ 'gmail.com MX': ['gmail-smtp-in.l.google.com'] });
+  assertEquals(await checkEmail('hdsjs@ajshs.fur', lookup), { ok: false, message: NO_MAIL });
+  assertEquals(calls.includes('gmail.com MX'), true);
 });
