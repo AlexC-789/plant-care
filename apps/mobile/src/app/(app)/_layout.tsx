@@ -1,4 +1,4 @@
-import { Link, Redirect, Stack, useRouter, type Href } from 'expo-router';
+import { Link, Redirect, Stack, useRouter } from 'expo-router';
 import { Platform, Pressable, View } from 'react-native';
 
 import { useSession } from '@/auth/AuthProvider';
@@ -33,7 +33,7 @@ function AddButton() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Add a pot"
-      onPress={() => router.push('/add/plant' as Href)}
+      onPress={() => router.push('/add/plant')}
       style={{
         width: space.touch,
         height: space.touch,
@@ -82,6 +82,7 @@ export default function AppLayout() {
           ),
         }}
       />
+      <Stack.Screen name="add" options={{ presentation: 'fullScreenModal', headerShown: false }} />
       <Stack.Screen
         name="settings"
         options={{

@@ -20,8 +20,8 @@ export default function Plants() {
   } = usePlants();
   const plants = data?.pages.flatMap((p) => p.plants) ?? [];
   const photoUrls = Object.assign({}, ...(data?.pages.map((p) => p.photoUrls) ?? []));
-  // shortcut: `as Href` until Tasks 10/11 add these routes (typed routes), then drop the casts.
-  const add = () => router.push('/add/plant' as Href);
+  // shortcut: `as Href` on the plant route until Task 11 adds it (typed routes), then drop the cast.
+  const add = () => router.push('/add/plant');
 
   // Shown in place of rows: skeleton while loading, the error with no cache, or the empty state.
   const placeholder = data ? (
