@@ -113,6 +113,13 @@ describe('sign-in', () => {
     await waitFor(() => expect(screen.getByText('Email or password is incorrect.')).toBeTruthy());
   });
 
+  test('opened directly, shows no notice and an empty email', async () => {
+    await openApp('/sign-in');
+    expect(screen.getByLabelText('Email')).toHaveDisplayValue('');
+    expect(screen.queryByText(/We sent a confirmation link/)).toBeNull();
+    expect(screen.queryByText('Account created. Sign in to continue.')).toBeNull();
+  });
+
   test('links to sign-up', async () => {
     const view = await openApp('/sign-in');
     await fireEvent.press(screen.getByText("Don't have an account? Sign up"));
@@ -121,18 +128,40 @@ describe('sign-in', () => {
 });
 
 describe('sign-up', () => {
-  test('when email confirmation is required, tells the user to check their email', async () => {
+  test('after sign-up, goes to sign-in with the email filled in and a confirmation notice', async () => {
     auth.signUp.mockResolvedValue({
-      data: { session: null, user: { id: 'u' } },
+      data: { session: null, user: { id: 'u', identities: [{}] } },
       error: null,
     });
-    await openApp('/sign-up');
+    const view = await openApp('/sign-up');
     await fill('new@example.com', 'password123');
     await fireEvent.press(screen.getByRole('button', { name: 'Create account' }));
-    await waitFor(() =>
-      expect(screen.getByText('Check your email to confirm your account, then sign in.')).toBeTruthy(),
-    );
-    expect(auth.signUp).toHaveBeenCalledWith({ email: 'new@example.com', password: 'password123' });
+    await waitFor(() => expect(view.getPathname()).toBe('/sign-in'));
+    expect(screen.getByLabelText('Email')).toHaveDisplayValue('new@example.com');
+    expect(
+      screen.getByText(
+        'We sent a confirmation link to new@example.com. Confirm your email, then sign in.',
+      ),
+    ).toBeTruthy();
+    expect(auth.signUp).toHaveBeenCalledWith({
+      email: 'new@example.com',
+      password: 'password123',
+      options: { emailRedirectTo: 'http://127.0.0.1:8081/email-confirmed' },
+    });
+  });
+
+  test('if the server signs the new user in anyway, signs out and asks them to sign in', async () => {
+    auth.signUp.mockResolvedValue({
+      data: { session: fakeSession, user: { id: 'u', identities: [{}] } },
+      error: null,
+    });
+    const view = await openApp('/sign-up');
+    await fill('new@example.com', 'password123');
+    await fireEvent.press(screen.getByRole('button', { name: 'Create account' }));
+    await waitFor(() => expect(view.getPathname()).toBe('/sign-in'));
+    expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
+    expect(screen.getByText('Account created. Sign in to continue.')).toBeTruthy();
+    expect(screen.getByLabelText('Email')).toHaveDisplayValue('new@example.com');
   });
 
   test('existing email shows the sign-in hint', async () => {

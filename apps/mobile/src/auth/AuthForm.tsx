@@ -21,14 +21,24 @@ type Props = {
   passwordAutoComplete: 'current-password' | 'new-password';
   onSubmit: (email: string, password: string) => Promise<AuthSubmitResult>;
   footer: ReactNode;
+  initialEmail?: string;
+  initialNotice?: string;
 };
 
-export function AuthForm({ title, submitLabel, passwordAutoComplete, onSubmit, footer }: Props) {
-  const [email, setEmail] = useState('');
+export function AuthForm({
+  title,
+  submitLabel,
+  passwordAutoComplete,
+  onSubmit,
+  footer,
+  initialEmail = '',
+  initialNotice,
+}: Props) {
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<CredentialErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(initialNotice ?? null);
   const [pending, setPending] = useState(false);
   const inFlight = useRef(false);
 
