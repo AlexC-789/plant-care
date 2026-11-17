@@ -56,6 +56,8 @@ function EditForm({ plant }: { plant: Plant }) {
     if (!trimmed) return;
     setFailed(false);
     const photo_path = fresh[0]?.path ?? (removed ? null : undefined);
+    // Once the save starts the row may point at the new photo: closing the sheet must not delete it.
+    unsaved.current = undefined;
     try {
       await update.mutateAsync({
         id: plant.id,
@@ -67,9 +69,9 @@ function EditForm({ plant }: { plant: Plant }) {
         },
       });
     } catch {
+      unsaved.current = fresh[0]?.path;
       return setFailed(true);
     }
-    unsaved.current = undefined;
     // The row no longer points at the old object, so it is safe to delete.
     if (photo_path !== undefined && oldPath) void deletePhotos([oldPath]).catch(() => {});
     router.back();

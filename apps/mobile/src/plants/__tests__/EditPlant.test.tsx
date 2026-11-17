@@ -151,3 +151,14 @@ test('Delete asks first (copy, Cancel keeps it), then deletes row + all photos a
   expect(calls).toContain('plants.delete');
   await waitFor(() => expect(screen).toHavePathname('/'));
 });
+
+test('closing the sheet while a save with a new photo is in flight keeps that photo', async () => {
+  mocked(api.updatePlant).mockReturnValue(new Promise(() => {}));
+  const { unmount } = await open();
+  await press('Take photo');
+  await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalledTimes(1));
+  await press('Done');
+  await waitFor(() => expect(api.updatePlant).toHaveBeenCalled());
+  await act(async () => unmount());
+  expect(photos.deletePhotos).not.toHaveBeenCalled();
+});
