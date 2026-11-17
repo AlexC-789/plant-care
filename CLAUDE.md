@@ -18,7 +18,10 @@ apps/mobile/          Expo (SDK 58) + Expo Router app, TypeScript strict
   src/auth/ src/profile/ ...   feature code + __tests__
   src/theme/          design tokens (colours light/dark, type, spacing, radii), useTheme(),
                       useIsAccessibilitySize(); the ONLY place colour values live
-  src/ui/             shared building blocks: Text, Button, InsetGroup, Row, Icon, TextLink, PotDrawing
+  src/ui/             shared building blocks: Text, Button, InsetGroup, Row, Icon, TextLink, PotDrawing,
+                      Skeleton/SkeletonText/SkeletonRow/LoadingGroup, ShimmerProvider
+  src/launch/         launch animation + once-per-run gate
+  src/lib/queryClient.ts  the client cache (TanStack Query)
   src/test-utils/     supabaseMock for jest.mock('@/lib/supabase')
 supabase/             config.toml, migrations/, tests/database/ (pgTAP),
                       functions/ (Edge Functions, Deno; tests: npm run fn:test)
@@ -52,6 +55,22 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
   Screens use `src/ui` + theme tokens only; raw colours outside `src/theme/` fail lint. Never cap
   font scaling (`maxFontSizeMultiplier`/`allowFontScaling={false}`). Icons: `Icon` (SF Symbols on
   iOS, Material Symbols elsewhere). No emoji.
+- **Loading rules (owner, 2026-11-17), every screen** — `docs/superpowers/specs/2026-11-17-loading-rules-design.md`:
+  1. Lazy loading: fetch per screen, on demand, paged; images via `expo-image` (load when shown,
+     cached); long lists virtualised (`FlatList`/`FlashList`, never `ScrollView` + `map`); heavy
+     rarely-used modules load with their screen.
+  2. UI before data: render the full layout immediately; never a blank screen or a
+     full-screen spinner (`ActivityIndicator` only inside a busy button).
+  3. Loading looks like the UI: wrap placeholders in `LoadingGroup` (300 ms delay, one
+     "Loading" announcement) using `Skeleton` / `SkeletonText` / `SkeletonRow`. The shared
+     shimmer is the only looping motion allowed; static under Reduce Motion (`useReduceMotion`).
+- Server data on the phone goes through TanStack Query (`src/lib/queryClient.ts`): show cached
+  data instantly, refresh in the background; the cache is cleared on sign-out. No Redis until
+  rate limiting or sustained DB load needs it.
+- Animations use React Native's `Animated` (native driver where possible). Reanimated 4 can't
+  load under Jest in this setup.
+- Launch: native splash (pot drawing PNGs in `assets/images/`) → `LaunchAnimation` once per
+  app run. If `POT_PATHS` changes, regenerate the splash PNGs.
 - Don't add expo-status-bar's `<StatusBar>`: it hangs React's act() in Jest; the system style
   already follows light/dark.
 - Route files only in `src/app/`; tests go in `src/**/__tests__/` (not under `src/app/`).

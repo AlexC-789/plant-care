@@ -1,7 +1,7 @@
 # Loading rules and skeleton shimmer: design (small change)
 
 Date: 2026-11-17
-Status: Draft for approval
+Status: Approved 2026-11-17
 Amends: [App UI design](2026-11-17-app-ui-design.md) §3 Motion and §5 loading states
 
 ## Intent
@@ -48,7 +48,8 @@ afterwards, and anything still loading shows a placeholder in the shape of what'
 - Faint: new tokens `skeleton` (base) and `skeletonHighlight` (band), light and dark.
 - Shown only after 300 ms, so fast loads never flash. Content cross-fades in over 150 ms.
 - Reduce Motion on → static skeletons, no sweep.
-- Runs on the UI thread (Reanimated). Soft band edge via `expo-linear-gradient`.
+- Runs on the UI thread (React Native `Animated`, native driver). Soft band edge via
+  `expo-linear-gradient`.
 - This is the only looping motion allowed in the app.
 
 ## Approaches
