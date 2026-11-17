@@ -167,6 +167,7 @@ export type Database = {
           origin: string;
           plantid_name: string | null;
           scientific_name: string;
+          search_text: string | null;
           updated_at: string;
           watering: string | null;
         };
@@ -181,6 +182,7 @@ export type Database = {
           origin: string;
           plantid_name?: string | null;
           scientific_name: string;
+          search_text?: never;
           updated_at?: string;
           watering?: string | null;
         };
@@ -194,6 +196,7 @@ export type Database = {
           origin?: string;
           plantid_name?: string | null;
           scientific_name?: string;
+          search_text?: never;
           updated_at?: string;
           watering?: string | null;
         };

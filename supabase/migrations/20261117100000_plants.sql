@@ -15,7 +15,8 @@ create table public.species (
   updated_at        timestamptz not null default now()
 );
 
--- One lowercase string of all names so a single trigram index serves ILIKE search.
+-- One lowercase string of all names so a single trigram index serves ILIKE search
+-- (the app filters `search_text`).
 -- shortcut: array_to_string is only stable, but is safe here; upgrade if names ever depend on locale settings.
 create function public.species_search_text(scientific_name text, common_names text[])
 returns text
@@ -24,8 +25,12 @@ immutable
 set search_path = ''
 as $$ select lower(scientific_name || ' ' || coalesce(array_to_string(common_names, ' '), '')) $$;
 
-create index species_names_trgm on public.species
-  using gin (public.species_search_text(scientific_name, common_names) extensions.gin_trgm_ops);
+revoke execute on function public.species_search_text(text, text[]) from public, anon, authenticated;
+
+alter table public.species
+  add column search_text text generated always as (public.species_search_text(scientific_name, common_names)) stored;
+
+create index species_search_text_trgm on public.species using gin (search_text extensions.gin_trgm_ops);
 
 create table public.plants (
   id           uuid primary key default gen_random_uuid(),

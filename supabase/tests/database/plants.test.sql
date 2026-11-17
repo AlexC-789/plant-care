@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(26);
+select plan(29);
 
 create function pg_temp.new_user(uid uuid, mail text) returns void language sql as $$
   insert into auth.users (id, email, aud, role, instance_id)
@@ -37,7 +37,7 @@ select is((select count(*)::int from public.plants), 1, 'A sees only own plants'
 select is((select count(*)::int from public.scans), 2, 'A sees only own scans');
 select is((select count(*)::int from public.species), 1, 'A can read species');
 select cmp_ok(
-  (select count(*)::int from public.species where public.species_search_text(scientific_name, common_names) ilike '%swiss%'),
+  (select count(*)::int from public.species where search_text ilike '%swiss%'),
   '=', 1, 'species names are searchable with ILIKE');
 
 select lives_ok($$ insert into public.plants (name, room) values ('Fern', 'Kitchen') $$, 'A can insert own plant');
@@ -68,7 +68,14 @@ update public.scans set plant_id = 'aaaaaaaa-0000-0000-0000-000000000001' where 
 select throws_ok($$ update public.scans set plant_id = 'bbbbbbbb-0000-0000-0000-000000000001'
   where id = 'aaaaaaaa-0000-0000-0000-000000000052' $$, '42501', null, 'A cannot link a scan to B''s plant');
 
+update public.scans set plant_id = 'aaaaaaaa-0000-0000-0000-000000000001' where id = 'bbbbbbbb-0000-0000-0000-000000000051';
+select throws_ok($$ delete from public.scans $$, '42501', null, 'users cannot delete scans');
+select throws_ok($$ update public.plants set user_id = '22222222-2222-2222-2222-222222222222' $$,
+  '42501', null, 'users cannot reassign a plant''s owner');
+
 reset role;
+select is((select plant_id from public.scans where id = 'bbbbbbbb-0000-0000-0000-000000000051'), null,
+  'A could not link B''s scan');
 select is((select plant_id from public.scans where id = 'aaaaaaaa-0000-0000-0000-000000000051'),
   'aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'link was stored');
 select is((select name from public.plants where id = 'bbbbbbbb-0000-0000-0000-000000000001'),
@@ -81,8 +88,10 @@ reset role;
 select is((select plant_id from public.scans where id = 'aaaaaaaa-0000-0000-0000-000000000051'),
   'aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'a linked scan cannot be re-linked');
 
--- cascade
+-- cascade, deleting as the owner
+select pg_temp.as_user('11111111-1111-1111-1111-111111111111');
 delete from public.plants where id = 'aaaaaaaa-0000-0000-0000-000000000001';
+reset role;
 select is((select count(*)::int from public.scans where id = 'aaaaaaaa-0000-0000-0000-000000000051'),
   0, 'deleting a plant deletes its scans');
 
