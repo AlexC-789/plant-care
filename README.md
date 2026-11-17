@@ -72,7 +72,10 @@ PLANT_ID_API_KEY=<your key>
 Restart so it is picked up: `npx supabase stop` then `npm run db:start` (or restart
 `npx supabase functions serve`). Hosted: `npx supabase secrets set PLANT_ID_API_KEY=<your key>`.
 
-After pulling milestone 2, run `npm ci` (new `expo-image-picker` and `expo-image-manipulator`).
+After pulling milestone 2, run `npm ci` (new `expo-image-picker` and `expo-image-manipulator`) and
+restart Supabase (`npx supabase stop` then `npm run db:start`) so the new Edge Functions are served;
+`docker logs supabase_edge_runtime_plant-care` should list `identify-plant`, `check-health`, `search-plants`.
+A failed Plant.id call logs `outcome: "provider_error"` with Plant.id's HTTP `status` (401/403 key, 402/429 credits).
 
 ## Run the app
 
