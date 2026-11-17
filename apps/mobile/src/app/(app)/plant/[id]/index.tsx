@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
-import { Stack, useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
@@ -70,8 +70,7 @@ export default function PlantDetail() {
           <Button
             label="Edit plant"
             variant="plain"
-            // shortcut: `as Href` until Task 12 adds the edit route (typed routes), then drop the cast.
-            onPress={() => (setMenu(false), router.push(`/plant/${id}/edit` as Href))}
+            onPress={() => (setMenu(false), router.push(`/plant/${id}/edit`))}
           />
         </View>
       ) : null}

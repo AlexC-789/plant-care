@@ -84,6 +84,10 @@ export default function AppLayout() {
       />
       <Stack.Screen name="add" options={{ presentation: 'fullScreenModal', headerShown: false }} />
       <Stack.Screen
+        name="plant/[id]/edit"
+        options={{ presentation: 'modal', title: 'Edit plant', headerBackVisible: false }}
+      />
+      <Stack.Screen
         name="settings"
         options={{
           // iOS page sheet with the native navigation bar (title + Done).
