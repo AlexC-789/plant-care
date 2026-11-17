@@ -1,4 +1,4 @@
-import { randomUUID } from 'expo-crypto';
+import { uuid } from 'expo';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import { supabase } from '@/lib/supabase';
@@ -21,7 +21,7 @@ export async function preparePhoto(uri: string): Promise<PreparedPhoto> {
 }
 
 export async function uploadPhoto(userId: string, photo: PreparedPhoto): Promise<string> {
-  const path = `${userId}/${randomUUID()}.jpg`;
+  const path = `${userId}/${uuid.v4()}.jpg`;
   const body = await (await fetch(photo.uri)).arrayBuffer();
   const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType: 'image/jpeg' });
   if (error) throw error;

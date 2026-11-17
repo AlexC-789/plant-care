@@ -5,7 +5,7 @@ import { deletePhotos, preparePhoto, signPhotoUrls, uploadPhoto } from '@/plants
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories must be self-contained
 jest.mock('@/lib/supabase', () => require('@/test-utils/supabaseMock'));
-jest.mock('expo-crypto', () => ({ randomUUID: () => 'uuid-1' }));
+jest.mock('expo', () => ({ uuid: { v4: () => 'uuid-1' } }));
 jest.mock('expo-image-manipulator', () => ({
   ImageManipulator: { manipulate: jest.fn() },
   SaveFormat: { JPEG: 'jpeg' },
