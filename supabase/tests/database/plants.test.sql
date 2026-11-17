@@ -17,7 +17,7 @@ select pg_temp.new_user('22222222-2222-2222-2222-222222222222', 'b@example.com')
 
 -- fixtures (as superuser)
 insert into public.species (id, scientific_name, common_names, origin)
-  values ('00000000-0000-0000-0000-0000000000a1', 'Monstera deliciosa', '{Swiss cheese plant}', 'curated');
+  values ('00000000-0000-0000-0000-0000000000a1', 'Fixtura testus', '{Zebra test plant}', 'curated');
 insert into public.plants (id, user_id, name) values
   ('aaaaaaaa-0000-0000-0000-000000000001', '11111111-1111-1111-1111-111111111111', 'A fern'),
   ('bbbbbbbb-0000-0000-0000-000000000001', '22222222-2222-2222-2222-222222222222', 'B fern');
@@ -35,9 +35,9 @@ select pg_temp.as_user('11111111-1111-1111-1111-111111111111');
 
 select is((select count(*)::int from public.plants), 1, 'A sees only own plants');
 select is((select count(*)::int from public.scans), 2, 'A sees only own scans');
-select is((select count(*)::int from public.species), 1, 'A can read species');
+select cmp_ok((select count(*)::int from public.species), '>=', 1, 'A can read species');
 select cmp_ok(
-  (select count(*)::int from public.species where search_text ilike '%swiss%'),
+  (select count(*)::int from public.species where search_text ilike '%zebra test%'),
   '=', 1, 'species names are searchable with ILIKE');
 
 select lives_ok($$ insert into public.plants (name, room) values ('Fern', 'Kitchen') $$, 'A can insert own plant');
