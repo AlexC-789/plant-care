@@ -120,12 +120,12 @@ Shape carries the meaning and colour only confirms it. No emoji anywhere.
     - Edit plant (sheet; Delete plant is here)
     - Module settings (push): battery, Wi-Fi / Change Wi-Fi, teach the stake again, move to another plant, remove module
 - **Add a pot**, in 6 named steps:
-  1. Plant (photo, name, type, room; saved immediately)
+  1. Plant (photo, then Plant.id suggestions with a one-line health note, name, room; saved immediately)
   2. Module (wake it, then the iOS hotspot join alert)
   3. Wi-Fi (pick a network, password, connecting checklist, errors)
-  4. Pot (width options come from the module model)
+  4. Pot (measured width with a Stepper, 6 to 60 cm or ½ in steps; optional, editable later)
   5. Stake (dry reading, then wet reading, about 3 min, with a determinate ring)
-  6. Tank (fill to the line)
+  6. Tank (open the cap on the saucer's fill hole and pour until the water reaches the top of the hole)
 
   Then "All set" with the notification pre-prompt. A failure or interruption leaves a saved plant with a "Finish setup" row that resumes at the last completed step.
 - **Push notifications** deep-link to the plant's detail.
@@ -150,7 +150,7 @@ Left out on purpose:
 | 6 | forecast under 2 days of water | Soon | Water runs out in about 2 days. | passive, daytime |
 | 7 | battery < 20 % | Soon | Battery is low. Charge it this week. | passive, daytime |
 | 8 | paused | Quiet (in "Doing well") | Paused until Friday. Soil is fine. | none |
-| 9 | fine | Fine | Doing well. Next drink in about 2 days. If the forecast is unsure: "Doing well. Watered this morning." | none |
+| 9 | fine | Fine | Doing well. Next drink in about 2 days. Until there's enough history: "Doing well. Still learning how fast it drinks." | none |
 
 - Modifiers append to the winning sentence rather than compete with it: "· Drink queued" and "· as of 09:12" for stale data.
 - Home shows a summary line under the title ("3 need you · 3 doing well") and two sections. "Needs you" holds every row with an action for the owner (#1 to #7, plus "Setup isn't finished"). "Doing well" holds #8 and #9. The section headers are dropped when everything is fine.
@@ -169,15 +169,23 @@ Left out on purpose:
   - There's no "wet" option and no free slider. The copy states the 150 ml/day cap.
 - **I refilled it:** "To the top" is the default. "Only partly" offers ¼, ½ or ¾.
 - **Pause:** the banner says "Starts at the next check-in, by about 14:20" until the module confirms, since it could still water before then. "Resume watering" undoes it.
+- **Forecasts** ("next drink in about…", "lasts about…", "runs out in about…") appear only after 3 days of readings and at least 2 drinks. They are always rounded ("about 2 days", "about a week").
+- **Plant.id** shows up to 3 suggestions, with confidence as words ("Very likely", "Possibly") and never %. Search is always available. On failure: "Couldn't tell from this photo."
+- **Pot and saucer sizes are not standard.** Nothing in the app depends on a size table: the pot width is a measured number, and tank volume and fill-hole position come from per-device data when it exists.
 - **Times** follow the device locale (12- or 24-hour). Mockups use 24-hour.
 - **Notifications:** "Turn on" fires the system prompt if permission was never asked, and opens Settings if it was denied.
 
-## 7. Open questions for the owner
+## 7. Decisions and open questions
 
-1. **Give a drink and pause need new device commands** (`water_once`, `pause_until`). The spec's v1 command set defers "Water now" and doesn't include pause. Are they OK for this milestone, and should the simulator support them first?
-2. **Tank filling on the real hardware.** The design shows a fill spout on the stake and a fill-line window on the saucer, which are placeholders. Is there a fill port or window, or do users lift the pot?
-3. **Module sizes.** Which saucer models exist, which pot-width ranges does each fit, and does the app learn the model from the device at pairing (needed for step 4 and the tank volume)?
-4. **Subscription moment, the biggest gap for a demand test.** Where does the paywall sit, what's free, and what does a lapsed subscription look like for a device that's still watering? My recommendation: place it after "All set" on the first pot, and keep watering and alerts free forever (safety), so only extras are gated through `useEntitlement()`.
-5. **Forecasts.** "Next drink in about 2 days" and "runs out in about 2 days" need a confidence rule. What should the minimum history be before we show them?
-6. **Plant.id in onboarding.** Is identifying the type from the setup photo in scope for the demo, given that each call costs money?
-7. **Product name and app icon.** The design uses "Plant Care" as a placeholder.
+Decided with the owner (2026-11-17):
+- Tank filling is through a small capped hole on the saucer. "Full" means water up to the top of the hole.
+- Pot and saucer sizes are undecided and not standard. The pot width is measured and optional.
+- Plant.id identification is in onboarding for the demo.
+- "Plant Care" stays as the placeholder name and icon.
+- Subscription: probably limits the number of pots plus some extras. Not designed yet.
+
+Still open:
+1. **New device commands** `water_once` (Give a drink) and `pause_until` (Pause watering). Neither is in the spec's v1 command set. Both arrive at the next check-in and stay inside the firmware safety limits. Proposal: add them to the simulator first.
+2. **Forecast threshold:** 3 days of readings and 2 drinks is the proposed default. Tune it with simulator data.
+3. **Fill-hole check on the prototype:** does the water visibly reach the hole when the tank is full? If not, "full" needs another cue (for example a marked jug).
+4. **Subscription:** the free pot count, what else is gated, and what a lapsed plan does. Constraint: existing pots never stop watering or alerting when a plan lapses. Gate only through `useEntitlement()`; the natural moment is tapping "+" at the limit.
