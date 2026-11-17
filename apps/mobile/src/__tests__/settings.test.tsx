@@ -1,6 +1,9 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { queryClient } from '@/lib/queryClient';
+import { resetAppearanceForTests } from '@/theme';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/profile/useProfile';
 import { fakeSession } from '@/test-utils/supabaseMock';
@@ -56,6 +59,7 @@ async function openSettings() {
 
 beforeEach(() => {
   queryClient.clear();
+  resetAppearanceForTests();
   jest.clearAllMocks();
 });
 
@@ -149,4 +153,31 @@ test('a failed load with nothing cached shows a dash, never a wrong plan', async
   });
   expect(screen.getByText('—')).toBeTruthy();
   expect(screen.queryByText('Free (testing)')).toBeNull();
+});
+
+describe('Appearance', () => {
+  test('Light is chosen by default', async () => {
+    mockProfile(profile);
+    await openSettings();
+    expect(screen.getByText('Appearance')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Light' })).toBeSelected();
+    expect(screen.getByRole('button', { name: 'Dark' })).not.toBeSelected();
+  });
+
+  test('choosing Dark selects it and saves it on the phone', async () => {
+    mockProfile(profile);
+    await openSettings();
+    await fireEvent.press(screen.getByRole('button', { name: 'Dark' }));
+    expect(screen.getByRole('button', { name: 'Dark' })).toBeSelected();
+    await waitFor(async () => expect(await AsyncStorage.getItem('plant-care.appearance')).toBe('dark'));
+  });
+
+  test('signing out keeps the choice', async () => {
+    mockProfile(profile);
+    await openSettings();
+    await fireEvent.press(screen.getByRole('button', { name: 'Dark' }));
+    const { emitAuthEvent } = jest.requireMock('@/lib/supabase');
+    await act(async () => emitAuthEvent('SIGNED_OUT', null));
+    expect(await AsyncStorage.getItem('plant-care.appearance')).toBe('dark');
+  });
 });

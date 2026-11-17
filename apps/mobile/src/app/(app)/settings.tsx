@@ -3,10 +3,15 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSession } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { useProfile, type ProfileUpdate } from '@/profile/useProfile';
-import { space, useTheme } from '@/theme';
+import { space, useAppearance, useTheme, type Appearance } from '@/theme';
 import { FadeIn, InsetGroup, LoadingGroup, Row, SkeletonRow, SkeletonText, Text } from '@/ui';
 
 type Units = NonNullable<ProfileUpdate['units']>;
+
+const APPEARANCES: { value: Appearance; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
 
 const UNITS: { value: Units; label: string }[] = [
   { value: 'auto', label: 'Automatic' },
@@ -19,12 +24,24 @@ export default function Settings() {
   const { session } = useSession();
   const { profile, isLoading, error, update } = useProfile();
   const { colors } = useTheme();
+  const { appearance, setAppearance } = useAppearance();
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}>
+      <InsetGroup header="Appearance">
+        {APPEARANCES.map(({ value, label }) => (
+          <Row
+            key={value}
+            label={label}
+            accessory={appearance === value ? 'checkmark' : 'none'}
+            onPress={() => setAppearance(value)}
+          />
+        ))}
+      </InsetGroup>
+
       <InsetGroup header="Units" footer="Automatic follows your phone's region.">
         {isLoading ? (
           <LoadingGroup>
