@@ -1,7 +1,7 @@
 # Appearance setting and launch timing: design (small change)
 
 Date: 2026-11-17
-Status: Draft for approval
+Status: Approved 2026-11-17
 Amends: [App UI design](2026-11-17-app-ui-design.md) (it said "theme follows system")
 
 ## Owner decisions (2026-11-17)
