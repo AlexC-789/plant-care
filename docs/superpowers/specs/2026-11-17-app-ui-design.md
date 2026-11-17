@@ -145,7 +145,7 @@ Left out on purpose:
 | 1 | fault no_moisture_rise | Now | Watering stopped · Check the stake is in the soil | active, 8:00 to 21:00 |
 | 2 | float_low | Now | Tank needs refilling | active, 8:00 to 21:00 |
 | 3 | soil dry and can't water (paused or tank) | Now | Soil is dry and watering is paused | time-sensitive (the only one) |
-| 4 | 3 missed check-ins (if the last battery reading was low: Now, "…its battery was low, so it has probably stopped") | Quiet (in "Needs you") | Not heard from since 09:12 · It should keep watering on its own | active, 8:00 to 21:00 |
+| 4 | 3 missed check-ins (if the last battery reading was low: Now, "…its battery was low, so it has probably stopped") | Quiet (in "Needs you") | Not heard from since 09:12 (the reassurance "It should keep watering on its last plan" is in the detail banner and push) | active, 8:00 to 21:00 |
 | 5 | soil above band | Soon | Soil is very wet · Watering is on hold | passive, daytime; Now after 3 days |
 | 6 | forecast under 2 days of water | Soon | Water runs out in about 2 days | passive, daytime |
 | 7 | battery < 20 % | Soon | Battery is low · Charge it this week | passive, daytime |
