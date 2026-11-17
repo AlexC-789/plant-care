@@ -5,6 +5,7 @@ const MESSAGES: Record<string, string> = {
   email_exists: 'An account with this email already exists. Sign in instead.',
   invalid_credentials: 'Email or password is incorrect.',
   email_not_confirmed: 'Confirm your email first. Check your inbox, then sign in.',
+  over_email_send_rate_limit: 'Too many emails sent. Wait a few minutes and try again.',
   weak_password: 'Password must be at least 8 characters.',
 };
 

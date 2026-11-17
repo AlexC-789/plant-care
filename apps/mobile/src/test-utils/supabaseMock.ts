@@ -15,6 +15,7 @@ export const supabase = {
     }),
     signInWithPassword: jest.fn(),
     signUp: jest.fn(),
+    resend: jest.fn(),
     signOut: jest.fn().mockResolvedValue({ error: null }),
   },
   from: jest.fn(),

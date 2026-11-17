@@ -203,3 +203,103 @@ describe('sign-up', () => {
     await waitFor(() => expect(view.getPathname()).toBe('/sign-in'));
   });
 });
+
+describe('resend confirmation email', () => {
+  const RESEND = 'Resend confirmation email';
+  const REDIRECT = { emailRedirectTo: 'http://127.0.0.1:8081/email-confirmed' };
+
+  async function failSignInUnconfirmed(url = '/sign-in', email = 'a@example.com') {
+    auth.signInWithPassword.mockResolvedValue({
+      data: { session: null, user: null },
+      error: { code: 'email_not_confirmed' },
+    });
+    await openApp(url);
+    if (email) await fill(email, 'password123');
+    else await fireEvent.changeText(screen.getByLabelText('Password'), 'password123');
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
+    await waitFor(() =>
+      expect(screen.getByText('Confirm your email first. Check your inbox, then sign in.')).toBeTruthy(),
+    );
+  }
+
+  afterEach(() => jest.useRealTimers());
+
+  test('is offered only after an email-not-confirmed error', async () => {
+    auth.signInWithPassword.mockResolvedValue({
+      data: { session: null, user: null },
+      error: { code: 'invalid_credentials' },
+    });
+    await openApp('/sign-in');
+    await fill('a@example.com', 'password123');
+    await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
+    await waitFor(() => expect(screen.getByText('Email or password is incorrect.')).toBeTruthy());
+    expect(screen.queryByRole('button', { name: RESEND })).toBeNull();
+  });
+
+  test('resends to the email in the field and confirms', async () => {
+    auth.resend.mockResolvedValue({ data: {}, error: null });
+    await failSignInUnconfirmed();
+    await fireEvent.press(screen.getByRole('button', { name: RESEND }));
+    expect(auth.resend).toHaveBeenCalledTimes(1);
+    expect(auth.resend).toHaveBeenCalledWith({ type: 'signup', email: 'a@example.com', options: REDIRECT });
+    await waitFor(() => expect(screen.getByText('Confirmation email sent to a@example.com.')).toBeTruthy());
+  });
+
+  test('uses the edited email, trimmed', async () => {
+    auth.resend.mockResolvedValue({ data: {}, error: null });
+    await failSignInUnconfirmed();
+    await fireEvent.changeText(screen.getByLabelText('Email'), ' b@example.com ');
+    await fireEvent.press(screen.getByRole('button', { name: RESEND }));
+    expect(auth.resend).toHaveBeenCalledWith({ type: 'signup', email: 'b@example.com', options: REDIRECT });
+  });
+
+  test('an invalid email shows the validation message and sends nothing', async () => {
+    await failSignInUnconfirmed();
+    await fireEvent.changeText(screen.getByLabelText('Email'), 'nope');
+    await fireEvent.press(screen.getByRole('button', { name: RESEND }));
+    expect(screen.getByText('Enter a valid email address.')).toBeTruthy();
+    expect(auth.resend).not.toHaveBeenCalled();
+  });
+
+  test('double tap sends one request; disabled while sending', async () => {
+    let resolve!: (v: unknown) => void;
+    auth.resend.mockReturnValue(new Promise((r) => (resolve = r)));
+    await failSignInUnconfirmed();
+    const button = screen.getByRole('button', { name: RESEND });
+    await fireEvent.press(button);
+    await fireEvent.press(button);
+    expect(auth.resend).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('button', { name: RESEND })).toBeDisabled();
+    await act(async () => resolve({ data: {}, error: null }));
+  });
+
+  test('rate limit error shows a message and does not start the cooldown', async () => {
+    auth.resend.mockResolvedValue({ data: {}, error: { code: 'over_email_send_rate_limit' } });
+    await failSignInUnconfirmed();
+    await fireEvent.press(screen.getByRole('button', { name: RESEND }));
+    await waitFor(() =>
+      expect(screen.getByText('Too many emails sent. Wait a few minutes and try again.')).toBeTruthy(),
+    );
+    expect(screen.getByRole('button', { name: RESEND })).toBeEnabled();
+  });
+
+  test('after a resend, counts down 60 seconds before allowing another', async () => {
+    jest.useFakeTimers();
+    auth.resend.mockResolvedValue({ data: {}, error: null });
+    await failSignInUnconfirmed();
+    await fireEvent.press(screen.getByRole('button', { name: RESEND }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Resend in 60s' })).toBeDisabled());
+    await act(async () => jest.advanceTimersByTime(1000));
+    expect(screen.getByRole('button', { name: 'Resend in 59s' })).toBeDisabled();
+    await act(async () => jest.advanceTimersByTime(59000));
+    expect(screen.getByRole('button', { name: RESEND })).toBeEnabled();
+    await fireEvent.press(screen.getByRole('button', { name: RESEND }));
+    expect(auth.resend).toHaveBeenCalledTimes(2);
+  });
+
+  test('arriving from sign-up, the countdown has already started', async () => {
+    jest.useFakeTimers();
+    await failSignInUnconfirmed('/sign-in?email=a%40example.com&notice=confirm-sent', '');
+    expect(screen.getByRole('button', { name: /^Resend in \d+s$/ })).toBeDisabled();
+  });
+});
