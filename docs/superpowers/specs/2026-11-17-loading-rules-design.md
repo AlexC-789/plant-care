@@ -20,6 +20,28 @@ afterwards, and anything still loading shows a placeholder in the shape of what'
 3. **Loading looks like the UI.** Anything waiting for data shows a `Skeleton` in its own shape
    (text line, photo block, row) until the data arrives, then cross-fades to the content.
 
+## Client cache (owner, 2026-11-17)
+- Server data on the phone goes through one client cache (TanStack Query): a screen shows
+  what it loaded last time instantly, then refreshes in the background. This is the "cache"
+  that matters at this scale. No Redis: Postgres handles this load, and a server cache outside
+  RLS risks showing one user another's data. Revisit Redis/Upstash for rate limiting, or if
+  database CPU stays above ~60%.
+- Applied now to the profile (`useProfile`), so Settings opens instantly on a second visit.
+  Cached data is cleared on sign-out.
+
+## Launch animation (owner, 2026-11-17)
+- On a cold start, after the native splash, the app plays a short logo animation, then
+  cross-fades into the first screen.
+- **Logo (placeholder until a real one exists):** the app's hairline drawing (saucer, pot,
+  stake). The animation **draws the lines in** like a pen sketch, then the leaves settle,
+  about 700 ms in total, ease-out, no bounce. Paper background, `secondaryLabel` ink.
+- It plays *while* the saved login is read, so it never adds waiting on top. The first screen
+  appears when both are done (normally right at the end of the animation).
+- Cold start only, not when returning from the background. Reduce Motion: the drawing simply
+  fades in and out (300 ms).
+- This replaces "keep the native splash up" below: the native splash shows the same drawing,
+  static, so the hand-off is seamless.
+
 ## Shimmer (owner chose the gentle sweep; amends "nothing loops")
 - A soft light band sweeps across skeletons once every 1.6 s. Every skeleton on screen shares
   one timing, so a list reads as one surface.
@@ -38,8 +60,8 @@ afterwards, and anything still loading shows a placeholder in the shape of what'
 - **`Skeleton` building block** in `src/ui/`: `Skeleton({ width, height, radius })`,
   `SkeletonText({ variant, width })` (height from the text style), `SkeletonRow` (an InsetGroup
   row placeholder), plus a delay hook so nothing shows for the first 300 ms.
-- **App start:** keep the native splash screen up while the saved login is read (usually under
-  100 ms) instead of showing a spinner, then show the real screen.
+- **App start:** native splash (static drawing) → launch animation (above) → first screen.
+  No spinner.
 - **Settings:** the email row shows at once (it comes from the login). The Units rows and the
   Subscription value show skeletons until the profile loads, instead of an empty list and
   "Free (testing)".
@@ -50,7 +72,10 @@ afterwards, and anything still loading shows a placeholder in the shape of what'
   labelled for screen readers as "Loading" and hidden individually.
 - Settings: skeletons while the profile is loading, real rows after; never "Free (testing)"
   before the profile arrives.
-- App start: no spinner; the splash stays up until the session is known.
+- App start: no spinner; the launch animation shows until both it has finished and the
+  session is known; Reduce Motion uses the fade; it doesn't replay on resume.
+- `useProfile` through the cache: second open shows cached data with no skeleton; sign-out
+  clears it.
 - Browser screenshots of Settings loading in light and dark.
 
 ## Left for later
