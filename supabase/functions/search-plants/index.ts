@@ -19,6 +19,7 @@ export async function handler(req: Request, deps: SearchDeps): Promise<Response>
   const requestId = req.headers.get('sb-request-id') ?? req.headers.get('x-request-id') ?? crypto.randomUUID();
   let userId = '-';
   let outcome = 'error';
+  let providerStatus: number | undefined;
   const respond = (res: Response, o: string) => {
     outcome = o;
     return res;
@@ -44,6 +45,7 @@ export async function handler(req: Request, deps: SearchDeps): Promise<Response>
       hits = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch }).nameSearch(value);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
+      providerStatus = e.status;
       return respond(jsonError(502, "Couldn't search right now. Try again."), 'provider_error');
     }
     if (kind === 'query') return respond(json({ hits: hits.slice(0, 10) }), 'ok');
@@ -63,7 +65,7 @@ export async function handler(req: Request, deps: SearchDeps): Promise<Response>
   } catch {
     return respond(jsonError(500, 'Something went wrong.'), 'error');
   } finally {
-    console.log(JSON.stringify({ fn: 'search-plants', requestId, userId, outcome }));
+    console.log(JSON.stringify({ fn: 'search-plants', requestId, userId, outcome, status: providerStatus }));
   }
 }
 

@@ -20,6 +20,7 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
   const requestId = req.headers.get('sb-request-id') ?? req.headers.get('x-request-id') ?? crypto.randomUUID();
   let userId = '-';
   let outcome = 'error';
+  let providerStatus: number | undefined;
   const respond = (res: Response, o: string) => {
     outcome = o;
     return res;
@@ -57,6 +58,7 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
       result = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch }).health(images);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
+      providerStatus = e.status;
       await insertScan(deps, { ...scan, status: 'error' });
       return respond(jsonError(502, "Couldn't check right now. Try again."), 'provider_error');
     }
@@ -68,7 +70,7 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
   } catch {
     return respond(jsonError(500, 'Something went wrong.'), 'error');
   } finally {
-    console.log(JSON.stringify({ fn: 'check-health', requestId, userId, outcome }));
+    console.log(JSON.stringify({ fn: 'check-health', requestId, userId, outcome, status: providerStatus }));
   }
 }
 

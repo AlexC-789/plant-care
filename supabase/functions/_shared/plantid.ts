@@ -29,9 +29,12 @@ export interface NameHit {
 
 /** Any network, timeout or non-2xx failure. The message never carries the key or provider text. */
 export class ProviderError extends Error {
-  constructor(message = 'Plant.id request failed') {
+  /** Plant.id's HTTP status when it answered non-2xx; undefined for network errors and timeouts. */
+  status?: number;
+  constructor(message = 'Plant.id request failed', status?: number) {
     super(message);
     this.name = 'ProviderError';
+    this.status = status;
   }
 }
 
@@ -62,7 +65,7 @@ export class PlantIdClient {
       });
       if (!res.ok) {
         await res.body?.cancel();
-        throw new ProviderError(`Plant.id responded ${res.status}`);
+        throw new ProviderError(`Plant.id responded ${res.status}`, res.status);
       }
       return await res.json();
     } catch (e) {

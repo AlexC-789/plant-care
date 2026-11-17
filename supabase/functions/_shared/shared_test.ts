@@ -161,6 +161,13 @@ Deno.test('provider failures become ProviderError without key or provider body',
   }
 });
 
+Deno.test('non-2xx carries the HTTP status; network failures and timeouts have none', async () => {
+  const e = await assertRejects(() => client(() => new Response('x', { status: 402 })).identify(['a']), ProviderError);
+  assertEquals(e.status, 402);
+  const net = await assertRejects(() => client(() => { throw new Error('dns'); }).identify(['a']), ProviderError);
+  assertEquals(net.status, undefined);
+});
+
 Deno.test('timeout aborts into ProviderError', async () => {
   const slow = client((_u, init) => new Promise<Response>((_res, rej) => init!.signal!.addEventListener('abort', () => rej(init!.signal!.reason))) as unknown as Response, 20);
   assertInstanceOf(await slow.identify(['a']).catch((e) => e), ProviderError);

@@ -156,13 +156,14 @@ Deno.test('provider failure: 502 uniform body, error scan stored, no key leaked'
   const orig = console.log;
   console.log = (...a) => logs.push(a.join(' '));
   try {
-    const w = world({ plantId: () => new Response(`boom ${KEY}`, { status: 500 }) });
+    const w = world({ plantId: () => new Response(`boom ${KEY}`, { status: 401 }) });
     const res = await handler(req({ photoPaths: [P1] }), w.deps);
     assertEquals(res.status, 502);
     assertEquals(await res.json(), { error: "Couldn't identify right now. Try again." });
     assertEquals(w.scans.map((s) => s.status), ['error']);
     const out = logs.join('\n');
     assert(out.includes(U) && out.includes('provider_error'));
+    assertEquals(JSON.parse(logs[0]).status, 401);
     for (const secret of [KEY, 'srk', JPEG_B64]) assertFalse(out.includes(secret));
   } finally {
     console.log = orig;
