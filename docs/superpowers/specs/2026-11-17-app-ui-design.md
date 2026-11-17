@@ -100,7 +100,7 @@ Shape carries the meaning and colour only confirms it. No emoji anywhere.
 
 - **Default motion:** system transitions, and a spring with damping 1.0 / response 0.35. Nothing loops or pulses, and there are no spinners for remote actions.
 - **Give a drink:** the button cross-fades into the queued row (200 ms ease-out with a 2 px blur bridge), with `impact(.light)`.
-- **Refill confirmed:** the water line rises with a spring (damping 0.85 / response 0.6) and `notification(.success)` fires on the same frame. This is the only bounce in the app.
+- **Refill confirmed:** the water line rises slowly with a critically damped spring (damping 1.0 / response 0.6, no overshoot) and `notification(.success)` fires on the same frame. Nothing in the app bounces.
 - **Pickers:** `selection` haptic. Final setup step: `success`. Setup failure: `error`.
 - **Remote status changes** cross-fade with no haptic.
 - **Reduce Motion:** 150 ms opacity cross-fades. **Reduce Transparency:** bars go solid (automatic).
@@ -142,20 +142,21 @@ Left out on purpose:
 
 | # | Condition | Level | Home sentence | Push |
 |---|---|---|---|---|
-| 1 | fault no_moisture_rise | Now | Watering stopped. Check the stake is in the soil. | active, 8:00 to 21:00 |
-| 2 | float_low | Now | Tank needs refilling. | active, 8:00 to 21:00 |
-| 3 | soil dry and can't water (paused or tank) | Now | Soil is dry and watering is paused. | time-sensitive (the only one) |
-| 4 | 3 missed check-ins (if the last battery reading was low: Now, "…its battery was low, so it has probably stopped") | Quiet (in "Needs you") | Not heard from since 09:12. It should keep watering on its own. | active, 8:00 to 21:00 |
-| 5 | soil above band | Soon | Soil is very wet, so watering is on hold. | passive, daytime; Now after 3 days |
-| 6 | forecast under 2 days of water | Soon | Water runs out in about 2 days. | passive, daytime |
-| 7 | battery < 20 % | Soon | Battery is low. Charge it this week. | passive, daytime |
-| 8 | paused | Quiet (in "Doing well") | Paused until Friday. Soil is fine. | none |
-| 9 | fine | Fine | Doing well. Next drink in about 2 days. Until there's enough history: "Doing well. Still learning how fast it drinks." | none |
+| 1 | fault no_moisture_rise | Now | Watering stopped · Check the stake is in the soil | active, 8:00 to 21:00 |
+| 2 | float_low | Now | Tank needs refilling | active, 8:00 to 21:00 |
+| 3 | soil dry and can't water (paused or tank) | Now | Soil is dry and watering is paused | time-sensitive (the only one) |
+| 4 | 3 missed check-ins (if the last battery reading was low: Now, "…its battery was low, so it has probably stopped") | Quiet (in "Needs you") | Not heard from since 09:12 · It should keep watering on its own | active, 8:00 to 21:00 |
+| 5 | soil above band | Soon | Soil is very wet · Watering is on hold | passive, daytime; Now after 3 days |
+| 6 | forecast under 2 days of water | Soon | Water runs out in about 2 days | passive, daytime |
+| 7 | battery < 20 % | Soon | Battery is low · Charge it this week | passive, daytime |
+| 8 | paused | Quiet (in "Doing well") | Paused until Friday · Soil is fine | none |
+| 9 | fine | Fine | Doing well · Next drink in about 2 days. Until there's enough history: "Doing well · Still learning how fast it drinks" | none |
 
+- Status lines are dot-joined with no final period; banners and push bodies use full sentences.
 - Modifiers append to the winning sentence rather than compete with it: "· Drink queued" and "· as of 09:12" for stale data.
 - Home shows a summary line under the title ("3 need you · 3 doing well") and two sections. "Needs you" holds every row with an action for the owner (#1 to #7, plus "Setup isn't finished"). "Doing well" holds #8 and #9. The section headers are dropped when everything is fine.
 - When the phone is offline, the cached list is shown under a grey banner and values are never blanked.
-- If the float switch still reads low after "I refilled it": "Still reads low. Check the tank is pushed in all the way."
+- If the float switch still reads low after "I refilled it": "Still reads low · Check the tank is pushed in all the way"
 
 ## 6. Actions and safety honesty
 
@@ -175,7 +176,29 @@ Left out on purpose:
 - **Times** follow the device locale (12- or 24-hour). Mockups use 24-hour.
 - **Notifications:** "Turn on" fires the system prompt if permission was never asked, and opens Settings if it was denied.
 
-## 7. Decisions and open questions
+## 7. Plant photo prompts (for demo mockups and App Store shots)
+
+The owner's own photo is the main visual moment, so mockups should use real-looking photos rather than drawn stand-ins. Run these with any image model and keep one style across the set.
+
+**Shared style (append to every subject):** natural-light interior photograph, a houseplant in a matte glazed ceramic pot standing on a pale oak windowsill, soft morning window light from the left, warm off-white plaster wall behind with plenty of empty space above the plant, gentle shadow under the pot, true-to-life colour, shallow depth of field, 50 mm lens, eye level, no people, no text, no logos, no props, 4:3.
+
+| Plant | Subject line |
+|---|---|
+| Fern | a full Boston fern with arching fronds in a cream glazed pot |
+| Monstera | a young monstera with three split leaves in a terracotta-red glazed pot |
+| Pothos | a golden pothos trailing over the rim of a white glazed pot |
+| Snake plant | an upright snake plant with yellow-edged leaves in a charcoal matte pot |
+| Calathea | a calathea with striped oval leaves in a rust glazed pot |
+| Olive tree | a small potted olive tree with silvery leaves in a sand-coloured pot |
+
+**Placement:**
+- Detail hero (390×280 pt): keep the pot in the lower half so the nav buttons sit on calm wall.
+- Home rows (60 pt square): crop to the leaves, not the pot.
+- Dark mode uses the same photos, unchanged.
+
+Until real photos exist, the canvas keeps the drawn stand-ins.
+
+## 8. Decisions and open questions
 
 Decided with the owner (2026-11-17):
 - Tank filling is through a small capped hole on the saucer. "Full" means water up to the top of the hole.
