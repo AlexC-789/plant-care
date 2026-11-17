@@ -48,7 +48,10 @@ export function AboutPlant({ species }: { species: Species }) {
             {description}
           </Text>
           {description.length > LONG ? (
-            <TextLink label={open ? 'Less' : 'More'} onPress={() => setOpen((o) => !o)} />
+            // TextLink pads its sides; pull it back so "More" lines up with the text.
+            <View style={styles.more}>
+              <TextLink label={open ? 'Less' : 'More'} onPress={() => setOpen((o) => !o)} />
+            </View>
           ) : null}
         </>
       ) : null}
@@ -60,4 +63,5 @@ const styles = StyleSheet.create({
   card: { borderRadius: radius.group, padding: space.l, gap: space.m },
   fact: { flexDirection: 'row', alignItems: 'center', gap: space.m },
   factText: { flex: 1 },
+  more: { marginLeft: -space.s, alignSelf: 'flex-start' },
 });
