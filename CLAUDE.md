@@ -85,4 +85,6 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 - Watering safety limits (≤ 40 ml/dose, ≤ 150 ml/24 h, never pump when float switch is low,
   stop after 2 doses with no moisture rise) live in firmware and the shared watering module.
   Never relax them; plans must stay inside them.
+- **Ponytail (owner, 2026-11-17):** the laziest solution that works — YAGNI, standard library
+  first, one line over fifty. Applies to every implementation and review.
 - Test-first (superpowers TDD). Commit per task.
