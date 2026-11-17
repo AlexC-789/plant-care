@@ -11,4 +11,5 @@ supabase/.branches/
 
 # Edge Function secrets (e.g. PLANT_ID_API_KEY) — local only, never commit
 supabase/functions/.env
+supabase/functions/**/.env
 supabase/.env
