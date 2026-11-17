@@ -1,7 +1,7 @@
 # Email confirmation — Design (small change)
 
 Date: 2026-11-17
-Status: Draft for approval
+Status: Approved 2026-11-17
 Builds on: milestone 1 (`docs/superpowers/specs/2026-11-16-plant-care-design.md`, branch `m1-foundation`)
 
 ## Intent
@@ -60,6 +60,9 @@ End-to-end in the browser against local Supabase: sign up → email in Mailpit �
 click link → "Email confirmed" → sign in works; signing in before confirming shows
 the resend button; an already-used link shows "Link expired".
 
-## Left for later
-Hosting the web build and adding its URL to the hosted Supabase redirect allow-list
-(milestone 4). Branded email templates (milestone 8).
+## Left for later (milestone 4 unless noted)
+- Host the web build publicly; set `EXPO_PUBLIC_EMAIL_CONFIRMED_URL` to its
+  `/email-confirmed` page and add it to the hosted Supabase redirect allow-list.
+- Custom SMTP sender (e.g. Resend or Postmark) on your own domain: hosted Supabase's
+  built-in email is for testing only and sends just a few emails per hour.
+- Branded email templates (milestone 8).
