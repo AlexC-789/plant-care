@@ -1,0 +1,201 @@
+# Milestone 2: plant library and identification — design
+
+Date: 2026-11-17
+Status: Draft (builder check pending)
+Builds on: [Software design](2026-11-16-plant-care-design.md) §5.3, §6, §7 · [App UI design](2026-11-17-app-ui-design.md) (canvas boards *Home*, *Plant detail*, *Add a pot* step 1/1b) · [Loading rules](2026-11-17-loading-rules-design.md)
+
+## 1. Intent
+Owners can build their plant library: add a plant with photos, have Plant.id say what it is and
+how healthy it looks, see all plants on the Plants home, open one, edit it, delete it. This is
+step 1 of the canvas's six-step "Add a pot"; steps 2–6 (module, Wi-Fi, pot, stake, tank) arrive
+with the device milestones and must slot in without rework.
+
+## 2. Owner decisions (2026-11-17)
+- Plant.id (Kindwise) is the identification provider, included in this milestone.
+- Several photos per identification (accuracy). **Guided photos** now; a Face-ID-style **guided
+  scan with an on-device "is this a plant?" check** is a later milestone (7b in the main spec),
+  started once the owner has an Apple Developer account (it needs a development build).
+- Photos are uploaded first, then identified by our server function (approach A below).
+- Until the on-device check exists, wasted scans are limited by: identify only on an explicit tap,
+  a daily per-user scan limit, and Plant.id's own "is this a plant" result.
+
+## 3. Goals / non-goals / anti-goals
+**Goals:** add/list/view/edit/delete plants with photos; identification with up to 3 suggestions
+and a one-line health note; plant-type search; "About this plant" facts; everything under the
+loading rules and in Light and Dark.
+
+**Non-goals (this milestone):** module pairing and every device status (milestones 4+); rescan and
+photo timeline (milestone 3); guided scan (7b); care reminders, away mode (milestone 6);
+sharing plants; editing species facts.
+
+**Anti-goals:**
+- One user seeing another's plants or photos (database rules + storage rules, both tested).
+- Plant.id key in the app, or the app calling Plant.id directly.
+- Losing a plant because identification failed (the plant saves without it).
+- Runaway Plant.id spend (limit + explicit tap).
+- Showing a percentage or a confident-sounding guess Plant.id isn't sure about.
+
+## 4. Approaches
+**Photo → identification**
+- **A. Upload, then identify (chosen):** the phone shrinks photos and uploads them to the user's
+  private storage folder; `identify-plant` reads them there and calls Plant.id. Uploads once;
+  retries are free of re-uploads; the first photo becomes the plant photo.
+- B. Send photos to the function (rejected): photos travel twice; retry re-uploads.
+
+**Capture**
+- **Guided photos, up to 3 (chosen now):** whole plant (required), leaf close-up (recommended),
+  flower or problem spot (optional). Works in Expo Go.
+- Guided scan + on-device check: later (7b).
+
+## 5. User flows
+
+### 5.1 Plants home (canvas *Home*)
+- Large serif title "Plants"; toolbar `person.crop.circle` (Settings) and **`plus` (Add a pot)**.
+- Summary line under the title once there are plants: "{n} need you" — in M2 every plant is
+  "Setup isn't finished", so the summary reads e.g. "2 need you".
+- One section "Needs you" containing rows: 60 pt photo (rounded 14; no photo → small pot drawing on
+  `surface`), serif name (`title3`), status line `Setup isn't finished · Add its module` with the
+  `statusQuiet` symbol. The section header is dropped when every row is in it (design rule).
+- Sorted newest first. Paged: 20 per page, more loaded as you scroll (virtualised list).
+- Loading: 2 skeleton rows (canvas). Error with nothing cached: "Couldn't reach Plant Care. Your
+  pots keep watering on their own. Check your connection and try again." + "Try again" (canvas
+  copy; the second sentence stays because it's true for the product, though no pot exists yet
+  in M2 — builder may drop it while there are no modules).
+- Empty: pot drawing, "No plants yet", "Add your first pot and it'll look after its own watering
+  from then on." and an **Add a pot** button (canvas). The "next build" note goes.
+- Pull to refresh. Tapping a row pushes Plant detail.
+
+### 5.2 Add a pot — step 1 "Your plant" (canvas 1 / 1b)
+Full-screen cover, title "Plant · 1 of 6", Cancel top-right.
+1. Heading "Which plant is this for?". Fields: **Add photo**, **Name**, **Plant type** (opens a
+   searchable list), **Room** (optional free text). Hint: "Not sure what it is? Add a photo and
+   we'll suggest a type. The type sets how damp the soil should stay." Primary button **Continue**.
+2. **Add photo** opens the guided capture (5.3). When photos come back, the screen shows them and
+   an **Identify** button (the explicit tap that spends a credit).
+3. Identify → "Looking at your photo…" over the first photo (usually 2–5 s) → **1b "Is it one of
+   these?"**: up to 3 suggestions (common name, scientific name, confidence word), top one
+   preselected only if "Very likely", "None of these, search instead", the health line (only when
+   confident), primary button "Use {common name}".
+4. Choosing a suggestion fills Plant type; Name is prefilled with the common name only if empty.
+5. **Continue** saves the plant immediately (with or without photo/type; Name required) and, since
+   steps 2–6 don't exist yet, closes the cover and opens the new plant's detail.
+- Failure or "not a plant": "Couldn't tell from this photo. Try one with a whole leaf in view, or
+  search." Search is always available. The photos stay attached to the plant either way.
+- Limit reached: "You've reached the identification limit for now. Search for the plant type, or
+  try again later." (rolling 24 h window, so no "tomorrow").
+- Cancel before Continue: nothing is saved; uploaded photos are deleted.
+
+### 5.3 Guided capture
+- Three cards in order: **Whole plant** ("Step back so the whole plant and pot fit"), **One leaf**
+  ("Fill the frame with one healthy leaf"; Skip), **Flower or problem spot** ("If it's flowering,
+  or something looks wrong"; Skip).
+- Each card: **Take photo** (system camera via `expo-image-picker` launchCamera) or **Choose from
+  library**. Thumbnails can be retaken or removed. At least the whole-plant photo is needed to
+  identify.
+- Camera / photo permissions requested when first used, with a one-line reason; denied → a row
+  with "Open Settings".
+
+### 5.4 Plant type search
+Pushed list with a search field. Uses Plant.id's name search (no credits), debounced 300 ms,
+results "Common name — Scientific name". Picking one sets Plant type (and creates/reuses the
+species record). If nothing matches: "Use “{typed text}” as the type" (stored as a custom type
+with no facts).
+
+### 5.5 Plant detail (canvas *Plant detail*, M2 subset)
+- Hero photo 390×280 under the translucent nav bar (pot drawing on `surface` when no photo); title
+  name (serif `title`), subtitle "{type} · {room}".
+- **Setup banner** (soon style): "Setup isn't finished" / "The module steps arrive in the next
+  build." (no button in M2, so nothing does nothing).
+- **Health** (only if the latest scan had a confident result): the same one-line note.
+- **About this plant**: description (3 lines, "More" expands), light, watering — from the species
+  record. Hidden for custom types.
+- "…" menu → **Edit plant**.
+- Loading: skeletons for the title block and About; the photo area shows `skeleton` colour.
+
+### 5.6 Edit plant
+Sheet with Done: photo (replace via guided capture without identifying, or remove), Name, Plant
+type (search), Room. **Delete plant** at the bottom (destructive) → confirmation "Delete {name}?
+Its photos are deleted too. This can't be undone." Delete removes the row, its photos and scans.
+
+## 6. Data
+New migration. All user tables: RLS owner-only, pgTAP tests incl. cross-user.
+- `species` — shared reference data: `id uuid pk`, `plantid_entity_id text unique null`,
+  `scientific_name text not null`, `common_name text`, `description text`, `best_light text`,
+  `best_watering text`, `watering_min int`, `watering_max int` (Plant.id 1–3 scale),
+  `source jsonb`, `updated_at`. Readable by `authenticated`; written only by the service role.
+- `plants` — `id uuid pk`, `user_id`, `name text not null` (1–60 chars), `species_id uuid null →
+  species`, `custom_type text null`, `room text null` (≤ 40), `photo_path text null`,
+  `setup_step smallint not null default 1` (1 = plant saved; device steps later),
+  `created_at`, `updated_at`. Owner can select/insert/update/delete own rows.
+- `scans` — `id uuid pk`, `user_id`, `plant_id uuid null → plants on delete cascade`,
+  `photo_paths text[]`, `status text` (`ok` | `not_plant` | `error`), `is_plant numeric`,
+  `suggestions jsonb`, `health jsonb`, `created_at`. Owner can select own rows; inserts only by
+  the function (service role). **Linking (builder's call):** identify runs before the plant
+  exists, so the scan is saved with `plant_id` null and its id is returned; on Continue the app
+  sets `plant_id`. The owner may update only that column, only while it is null, and only to a
+  plant they own (column grant + RLS check, pgTAP-tested). The plant's health note comes from its
+  latest linked `ok` scan.
+- Spec §6 columns for later milestones (`watering_preference`, `low_water_alert_ml`, light) are
+  added when used.
+
+**Photos (builder's call):** the first photo becomes `plants.photo_path`; the leaf and
+flower/problem photos are kept only as part of their scan (`scans.photo_paths`) and are deleted on
+Continue if never identified. Deleting a plant deletes its photo and all its scans' photos.
+Uploads orphaned by a killed app before Continue/Cancel are accepted for now (a cleanup job is
+noted for store readiness).
+
+**Storage:** private bucket `plant-photos`; objects at `{user_id}/{uuid}.jpg`; storage policies
+allow a user to read/write/delete only under their own `user_id/` prefix (tested).
+
+## 7. Server functions (Edge Functions, zero runtime npm deps, Plant.id key in secrets)
+- **`identify-plant`** (user JWT required): body `{ photoPaths: string[] (1–3), plantId?: uuid }`.
+  - Rejects paths outside the caller's folder (403).
+  - Limit (builder's call): 20 identifications per user per rolling 24 h, counting only scans
+    that reached Plant.id successfully (`ok` and `not_plant`, which spend credits); provider
+    errors don't count → 429 with the limit message.
+  - Downloads the photos (service role), calls Plant.id v3 identification with all images,
+    `health` included, details: common names, description, watering, best light, best watering.
+  - Stores a `scans` row; upserts `species` for each suggestion (keyed by Plant.id entity id).
+  - Returns `{ isPlant: boolean, suggestions: [{ speciesId, commonName, scientificName,
+    confidence: 'very_likely' | 'likely' | 'possibly' }] (≤ 3), health: { healthy: boolean,
+    note: string } | null }`.
+  - Confidence words: ≥ 0.7 very likely, ≥ 0.35 likely, otherwise possibly; suggestions below
+    0.05 dropped. `isPlant` false when Plant.id's is_plant probability < 0.5 → no suggestions.
+  - Health note only when confident (healthy ≥ 0.8 → "It looks healthy in this photo."; else the
+    top issue ≥ 0.5 mapped to plain words, e.g. "Some leaves look yellow. Often too much water.";
+    otherwise null).
+  - Timeout 20 s / provider error → 502 "Couldn't identify right now. Try again." No credit
+    logic on our side beyond the limit; the scan row is still written with the error.
+- **`search-plants`** (user JWT): `{ query }` (≥ 2 chars) → Plant.id name search → up to 10
+  `{ commonName, scientificName, entityId }`; choosing one calls `identify`-free species upsert
+  (`species-from-search`, same function with `{ entityId }`) to store facts. (Builder may merge
+  these into one `plant-species` function.)
+- Hook for later: `identify-plant` stays the single provider boundary, so swapping providers is
+  backend-only.
+
+## 8. App structure
+- Routes: `(app)/index` (library), `(app)/plant/[id]` (detail), `(app)/plant/[id]/edit` (sheet),
+  `(app)/add/plant` (cover), `(app)/add/search` (type search), `(app)/add/capture` (guided capture).
+- Data via TanStack Query: `['plants', userId]` infinite query (20/page, `created_at desc`);
+  `['plant', id]`; `['species', id]`. Mutations update the cache; delete removes from it.
+- Photos: `expo-image-manipulator` → longest side 1280 px, JPEG 0.7 before upload. Display via
+  `expo-image` with signed URLs (1 h), `cacheKey` = storage path so a new signed URL doesn't
+  re-download; list requests sign the page's paths in one call.
+- New deps: `expo-image-picker`, `expo-image-manipulator`, `expo-image` (via `npx expo install`).
+
+## 9. Testing
+- pgTAP: plants/scans RLS incl. cross-user; species read-only for users; storage policies (own
+  prefix only); constraints (name length, room length).
+- Function tests (Deno, injected fetch): path ownership 403; limit 429 at 21st; Plant.id request
+  shape (all images, health, details); confidence mapping; is_plant false → no suggestions; health
+  note rules; provider timeout → 502; species upsert idempotent; search proxies and clamps.
+- App: library (skeletons, empty state, paging, error with/without cache), add flow (identify only
+  on tap, suggestion preselect rule, name prefill rule, save without type, cancel cleans up,
+  limit message), guided capture (skip rules, at least one photo), search, detail (setup banner,
+  About hidden for custom type), edit + delete confirmation.
+- Browser screenshots light/dark; on-phone check by the owner (camera works in Expo Go).
+
+## 10. Left to the builder
+Exact component breakdown, list row/section components, debounce helper, how the Plant.id
+response is parsed (within the mapping rules), image cache details, whether search lives in one
+function or two.

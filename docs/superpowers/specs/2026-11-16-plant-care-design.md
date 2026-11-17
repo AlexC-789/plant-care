@@ -347,14 +347,21 @@ isn't kinked"); new health issue on rescan; care reminders due.
 
 ## 11. Build order (milestones)
 1. **Foundation:** repo, Expo app shell, local Supabase, auth, CLAUDE.md.
-2. **Library:** plants CRUD with photos; library and detail screens.
-3. **Scanning:** scan-plant + Plant.id; scan flow; species facts; photo timeline.
+2. **Library + identification:** plants CRUD with photos; library and detail screens;
+   "Add a pot" step 1 with guided photos and Plant.id identification + health note;
+   species facts. (Amended 2026-11-17: identification moved here from milestone 3.)
+3. **Scanning extras:** rescan, photo timeline.
 4. **Devices (simulated):** device-claim, device-sync, simulator, live status,
    water-left estimate, battery, "I refilled it"; hosted Supabase.
 5. **Watering plans:** plan generator, plan display, watering preference.
 6. **Alerts & reminders:** push notifications, care reminders, away mode.
 7. **Firmware:** ESP32-C3 firmware with the same protocol, duty cycle, watering
    logic and safety limits; pairing + calibration on the real prototype.
+7b. **Guided scan (after the owner has an Apple Developer account):** Face-ID-style
+   scan around the plant (motion-guided ring, auto-capture when steady, then a leaf
+   close-up) with an on-device "is this a plant?" check (ML Kit image labelling) so no
+   Plant.id credit is spent on non-plants. Needs a development build (EAS) instead of
+   Expo Go. Guided photos remain as the fallback.
 8. **Store readiness (later):** social sign-in, RevenueCat, privacy policy,
    account deletion, EAS builds, TestFlight / Play internal testing.
 
