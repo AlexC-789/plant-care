@@ -39,8 +39,10 @@ afterwards, and anything still loading shows a placeholder in the shape of what'
   appears when both are done (normally right at the end of the animation).
 - Cold start only, not when returning from the background. Reduce Motion: the drawing simply
   fades in and out (300 ms).
-- This replaces "keep the native splash up" below: the native splash shows the same drawing,
-  static, so the hand-off is seamless.
+- The native splash is plain paper (no image) and is hidden from the overlay's first layout,
+  so the hand-off is paper to paper and the drawing appears once, as it sketches itself in.
+  (Changed in review: a static drawing on the splash blanked and redrew.) The overlay fades
+  out into the first screen (250 ms; 150 ms with Reduce Motion).
 
 ## Shimmer (owner chose the gentle sweep; amends "nothing loops")
 - A soft light band sweeps across skeletons once every 1.6 s. Every skeleton on screen shares

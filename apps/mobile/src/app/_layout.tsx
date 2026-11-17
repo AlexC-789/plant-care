@@ -11,23 +11,34 @@ import { queryClient } from '@/lib/queryClient';
 import { useTheme } from '@/theme';
 import { ShimmerProvider } from '@/ui';
 
-// Keep the native splash (the same pot drawing) up until the launch animation takes over.
+// Keep the native splash (plain paper) up until the launch animation's first frame is on
+// screen, so the hand-off is paper to paper with no flash.
 void SplashScreen.preventAutoHideAsync().catch(() => {});
+const hideSplash = () => void SplashScreen.hideAsync().catch(() => {});
 
 function RootNavigator() {
   const { isLoading } = useSession();
   const { colors } = useTheme();
-  const { showLaunch, onAnimationDone } = useLaunchGate(isLoading);
+  const { mounted, fadingOut, onAnimationDone, onExited } = useLaunchGate(isLoading);
 
+  // Without a launch animation (e.g. the root remounted), hide the native splash now;
+  // otherwise the overlay hides it once its first frame is on screen.
   useEffect(() => {
-    void SplashScreen.hideAsync().catch(() => {});
-  }, []);
+    if (!mounted) hideSplash();
+  }, [mounted]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       {/* (app) and (auth) layouts redirect based on the session. */}
       {isLoading ? null : <Slot />}
-      {showLaunch ? <LaunchAnimation onDone={onAnimationDone} /> : null}
+      {mounted ? (
+        <LaunchAnimation
+          onDone={onAnimationDone}
+          fadingOut={fadingOut}
+          onExited={onExited}
+          onReady={hideSplash}
+        />
+      ) : null}
     </View>
   );
 }

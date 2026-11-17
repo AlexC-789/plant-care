@@ -4,7 +4,7 @@ import { Animated, StyleSheet, View, type DimensionValue } from 'react-native';
 
 import { space, typography, useTheme, type TextStyleName } from '@/theme';
 
-import { useShimmer } from './ShimmerProvider';
+import { useShimmer, useShimmerRegistration } from './ShimmerProvider';
 
 const SKELETON_DELAY_MS = 300;
 const BAND_WIDTH = 120;
@@ -39,6 +39,7 @@ type SkeletonProps = { width?: DimensionValue; height: number; radius?: number; 
 export function Skeleton({ width = '100%', height, radius = 6, testID }: SkeletonProps) {
   const { colors } = useTheme();
   const progress = useShimmer();
+  useShimmerRegistration();
   const [measured, setMeasured] = useState(0);
 
   const translateX = progress?.interpolate({

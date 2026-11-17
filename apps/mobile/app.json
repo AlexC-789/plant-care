@@ -29,11 +29,11 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#F4F1EB",
-          "image": "./assets/images/splash-pot.png",
-          "imageWidth": 160,
+          "image": "./assets/images/splash-blank.png",
+          "imageWidth": 1,
           "dark": {
             "backgroundColor": "#161412",
-            "image": "./assets/images/splash-pot-dark.png"
+            "image": "./assets/images/splash-blank.png"
           }
         }
       ]

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet } from 'react-native';
 import Svg, { Path, type PathProps } from 'react-native-svg';
 
 import { useReduceMotion, useTheme } from '@/theme';
@@ -7,6 +7,8 @@ import { POT_PATHS } from '@/ui/PotDrawing';
 
 export const LAUNCH_DURATION_MS = 700;
 const REDUCED_DURATION_MS = 300;
+const FADE_OUT_MS = 250;
+const REDUCED_FADE_OUT_MS = 150;
 const DRAW_WIDTH = 160;
 /** Longer than any stroke in the drawing, so offset = DASH hides a stroke fully. */
 const DASH = 400;
@@ -25,9 +27,20 @@ const AnimatedPath = Animated.createAnimatedComponent(PathWithoutCollapsable);
  * ~700 ms, ease-out, no bounce. Reduce Motion: the drawing simply fades in (~300 ms).
  * The same drawing is on the native splash, so the hand-off is seamless.
  */
-export function LaunchAnimation({ onDone }: { onDone: () => void }) {
+type Props = {
+  onDone: () => void;
+  /** Start fading the overlay out into the first screen. */
+  fadingOut?: boolean;
+  onExited?: () => void;
+  /** First frame laid out: safe to hide the native splash. */
+  onReady?: () => void;
+};
+
+export function LaunchAnimation({ onDone, fadingOut = false, onExited, onReady }: Props) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
+  const [overlayOpacity] = useState(() => new Animated.Value(1));
+  const [ready, setReady] = useState(false);
   const [body] = useState(() => POT_PATHS.body.map(() => new Animated.Value(DASH)));
   const [leaves] = useState(() => POT_PATHS.leaves.map(() => new Animated.Value(DASH)));
   const [opacity] = useState(() => new Animated.Value(0));
@@ -61,12 +74,37 @@ export function LaunchAnimation({ onDone }: { onDone: () => void }) {
     return () => animation.stop();
   }, [reduceMotion, body, leaves, opacity, onDone]);
 
+  useEffect(() => {
+    if (!fadingOut) return;
+    const fade = Animated.timing(overlayOpacity, {
+      toValue: 0,
+      duration: reduceMotion ? REDUCED_FADE_OUT_MS : FADE_OUT_MS,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: false, // same driver as the drawing it fades
+    });
+    fade.start(({ finished }) => {
+      if (finished) onExited?.();
+    });
+    return () => fade.stop();
+  }, [fadingOut, reduceMotion, overlayOpacity, onExited]);
+
   return (
-    <View
+    <Animated.View
       testID="launch"
       accessible
       accessibilityLabel="Plant Care"
-      style={[StyleSheet.absoluteFill, styles.center, { backgroundColor: colors.background }]}>
+      accessibilityViewIsModal
+      pointerEvents={fadingOut ? 'none' : 'auto'}
+      onLayout={() => {
+        if (ready) return;
+        setReady(true);
+        onReady?.();
+      }}
+      style={[
+        StyleSheet.absoluteFill,
+        styles.center,
+        { backgroundColor: colors.background, opacity: overlayOpacity },
+      ]}>
       <Animated.View style={{ opacity }}>
         <Svg
           width={DRAW_WIDTH}
@@ -85,7 +123,7 @@ export function LaunchAnimation({ onDone }: { onDone: () => void }) {
           ))}
         </Svg>
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 

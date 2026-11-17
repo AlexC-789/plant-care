@@ -133,3 +133,20 @@ test('while the profile loads: email at once, skeletons for units and plan, no w
   expect(screen.queryByText('Free (testing)')).toBeNull();
   expect(screen.queryByRole('button', { name: 'Automatic' })).toBeNull();
 });
+
+test('a failed load with nothing cached shows a dash, never a wrong plan', async () => {
+  (supabase.from as jest.Mock).mockImplementation(() => {
+    const b: Record<string, jest.Mock> = {};
+    b.select = jest.fn(() => b);
+    b.eq = jest.fn(() => b);
+    b.single = jest.fn(async () => ({ data: null, error: { message: 'offline' } }));
+    return b;
+  });
+  auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
+  await renderRouter('src/app', { initialUrl: '/settings' });
+  await waitFor(() => expect(screen.getByText("Couldn't load your profile.")).toBeTruthy(), {
+    timeout: 4000,
+  });
+  expect(screen.getByText('—')).toBeTruthy();
+  expect(screen.queryByText('Free (testing)')).toBeNull();
+});

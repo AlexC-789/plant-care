@@ -4,7 +4,7 @@ import { useSession } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { useProfile, type ProfileUpdate } from '@/profile/useProfile';
 import { space, useTheme } from '@/theme';
-import { InsetGroup, LoadingGroup, Row, SkeletonRow, SkeletonText, Text } from '@/ui';
+import { FadeIn, InsetGroup, LoadingGroup, Row, SkeletonRow, SkeletonText, Text } from '@/ui';
 
 type Units = NonNullable<ProfileUpdate['units']>;
 
@@ -33,19 +33,22 @@ export default function Settings() {
             ))}
           </LoadingGroup>
         ) : null}
-        {isLoading ? null : UNITS.map(({ value, label }) => {
-          const selected = profile?.units === value;
-          return (
-            <Row
-              key={value}
-              label={label}
-              accessory={selected ? 'checkmark' : 'none'}
-              onPress={() => {
-                if (!selected) void update({ units: value });
-              }}
-            />
-          );
-        })}
+        {isLoading
+          ? null
+          : UNITS.map(({ value, label }) => {
+              const selected = profile?.units === value;
+              return (
+                <FadeIn key={value}>
+                  <Row
+                    label={label}
+                    accessory={selected ? 'checkmark' : 'none'}
+                    onPress={() => {
+                      if (!selected) void update({ units: value });
+                    }}
+                  />
+                </FadeIn>
+              );
+            })}
       </InsetGroup>
 
       <InsetGroup header="Plan">
@@ -58,10 +61,14 @@ export default function Settings() {
             </View>
           </Row>
         ) : (
-          <Row
-            label="Subscription"
-            value={profile?.subscription_status === 'active' ? 'Active' : 'Free (testing)'}
-          />
+          <FadeIn>
+            <Row
+              label="Subscription"
+              value={
+                !profile ? '—' : profile.subscription_status === 'active' ? 'Active' : 'Free (testing)'
+              }
+            />
+          </FadeIn>
         )}
       </InsetGroup>
 

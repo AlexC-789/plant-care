@@ -8,20 +8,29 @@ export function resetLaunchForTests() {
 }
 
 /**
- * Show the launch animation until it has finished AND the saved session is known,
- * so it never adds waiting on top of loading and never leaves a blank frame.
+ * The launch overlay stays until its drawing has finished AND the saved session is known
+ * (never a blank frame), then fades out into the first screen and unmounts.
  */
 export function useLaunchGate(sessionLoading: boolean): {
-  showLaunch: boolean;
+  mounted: boolean;
+  fadingOut: boolean;
   onAnimationDone: () => void;
+  onExited: () => void;
 } {
   const [shouldPlay] = useState(() => !played);
   const [animationDone, setAnimationDone] = useState(false);
+  const [exited, setExited] = useState(false);
 
   const onAnimationDone = useCallback(() => {
     played = true;
     setAnimationDone(true);
   }, []);
+  const onExited = useCallback(() => setExited(true), []);
 
-  return { showLaunch: shouldPlay && (!animationDone || sessionLoading), onAnimationDone };
+  return {
+    mounted: shouldPlay && !exited,
+    fadingOut: animationDone && !sessionLoading,
+    onAnimationDone,
+    onExited,
+  };
 }

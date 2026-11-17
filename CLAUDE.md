@@ -62,15 +62,19 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
   2. UI before data: render the full layout immediately; never a blank screen or a
      full-screen spinner (`ActivityIndicator` only inside a busy button).
   3. Loading looks like the UI: wrap placeholders in `LoadingGroup` (300 ms delay, one
-     "Loading" announcement) using `Skeleton` / `SkeletonText` / `SkeletonRow`. The shared
-     shimmer is the only looping motion allowed; static under Reduce Motion (`useReduceMotion`).
+     "Loading" announcement) using `Skeleton` / `SkeletonText` / `SkeletonRow`; wrap arriving
+     content in `FadeIn` (150 ms). The shared shimmer is the only looping motion allowed, runs
+     only while a skeleton is mounted, and is static under Reduce Motion (`useReduceMotion`).
 - Server data on the phone goes through TanStack Query (`src/lib/queryClient.ts`): show cached
-  data instantly, refresh in the background; the cache is cleared on sign-out. No Redis until
+  data instantly (kept 24 h), refresh in the background and when the app returns to the
+  foreground; the cache is cleared on sign-out. A failed load with no cache shows "—", never a
+  guessed value. No Redis until
   rate limiting or sustained DB load needs it.
 - Animations use React Native's `Animated` (native driver where possible). Reanimated 4 can't
   load under Jest in this setup.
-- Launch: native splash (pot drawing PNGs in `assets/images/`) → `LaunchAnimation` once per
-  app run. If `POT_PATHS` changes, regenerate the splash PNGs.
+- Launch: native splash is plain paper (blank image, theme background) → `LaunchAnimation`
+  (draws the pot, then fades out into the first screen) once per app run. The splash is hidden
+  from the overlay's first layout, so the hand-off is paper to paper.
 - Don't add expo-status-bar's `<StatusBar>`: it hangs React's act() in Jest; the system style
   already follows light/dark.
 - Route files only in `src/app/`; tests go in `src/**/__tests__/` (not under `src/app/`).
