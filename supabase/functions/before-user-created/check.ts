@@ -50,22 +50,31 @@ export async function checkEmail(email: string, lookup: Lookup, timeoutMs = 2000
   if (!domain) return { ok: true }; // malformed addresses are rejected by Supabase itself
   if (isDisposable(domain)) return { ok: false, message: DISPOSABLE_MESSAGE };
 
+  // Every fall-back-to-allow is logged (domain only, never the address) so a broken
+  // DNS setup doesn't silently disable the check.
+  const allowBecause = (reason: string): Decision => {
+    console.warn(`before-user-created: allowing ${domain} (${reason})`);
+    return { ok: true };
+  };
+
   const decide = async (): Promise<Decision> => {
     try {
       if (await receivesMail(domain, lookup)) return { ok: true };
     } catch (error) {
-      if (!(error instanceof DomainNotFound)) return { ok: true };
+      if (!(error instanceof DomainNotFound)) return allowBecause(`DNS error: ${error}`);
     }
     // Before rejecting, make sure DNS works at all: a broken resolver can report
     // "no records" for everything.
     try {
-      if (!(await receivesMail(CANARY_DOMAIN, lookup))) return { ok: true };
-    } catch {
-      return { ok: true };
+      if (!(await receivesMail(CANARY_DOMAIN, lookup))) {
+        return allowBecause(`DNS looks broken: ${CANARY_DOMAIN} has no records`);
+      }
+    } catch (error) {
+      return allowBecause(`DNS error on ${CANARY_DOMAIN}: ${error}`);
     }
     return { ok: false, message: NO_MAIL_MESSAGE };
   };
 
   const result = await Promise.race([decide(), timeout(timeoutMs)]);
-  return result === 'timeout' ? { ok: true } : result;
+  return result === 'timeout' ? allowBecause(`DNS lookup over ${timeoutMs} ms`) : result;
 }

@@ -80,3 +80,20 @@ Deno.test('rejection requires the well-known domain to resolve', async () => {
   assertEquals(await checkEmail('hdsjs@ajshs.fur', lookup), { ok: false, message: NO_MAIL });
   assertEquals(calls.includes('gmail.com MX'), true);
 });
+
+Deno.test('falling back to allow logs a warning with the domain only', async () => {
+  const warnings: string[] = [];
+  const original = console.warn;
+  console.warn = (...args: unknown[]) => warnings.push(args.join(' '));
+  try {
+    const lookup: Lookup = () => Promise.reject(new Error('SERVFAIL'));
+    await checkEmail('secret.person@example.org', lookup);
+    const { lookup: broken } = dns({});
+    await checkEmail('someone@ajshs.fur', broken);
+    assertEquals(warnings.length, 2);
+    assertEquals(warnings.some((w) => w.includes('example.org')), true);
+    assertEquals(warnings.some((w) => w.includes('secret.person')), false);
+  } finally {
+    console.warn = original;
+  }
+});

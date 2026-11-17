@@ -1,7 +1,7 @@
 # Email domain check at sign-up: design (small change)
 
 Date: 2026-11-17
-Status: Draft for approval
+Status: Approved 2026-11-17
 Builds on: email confirmation (`2026-11-17-email-confirmation-design.md`), branch `ui-foundation`
 
 ## Intent
@@ -29,8 +29,12 @@ Edge Function `before-user-created` receives the new user's email and, in order:
    "This email domain can't receive mail. Check the address."
 3. Otherwise allow.
 
-**Fail open:** if the DNS lookup itself errors or times out (2 s), allow the sign-up.
-Confirmation still protects us, and an outage never blocks real people.
+**Fail open:** if the DNS lookup itself errors or times out (2 s), or the resolver can't
+resolve a known-good domain, allow the sign-up and log a warning (domain only). A missing hook
+secret also allows (and logs an error). Confirmation still protects us.
+Not covered by fail-open: an enabled hook whose function isn't deployed, or whose secret
+doesn't match. Supabase Auth then fails the sign-up, so the README's hosted checklist ends
+with a smoke test.
 
 Only the domain is looked up. The address is never sent anywhere.
 
@@ -39,7 +43,7 @@ the function as a file with its source and date. Refresh it by hand when needed.
 
 **Security:** the hook request is signed (Standard Webhooks). The function rejects
 unsigned or wrongly signed calls with 401. Local development uses a dev-only secret in
-`supabase/config.toml` and `supabase/functions/.env`. Hosted secrets are set in the dashboard
+`supabase/config.toml` (hook and `[edge_runtime.secrets]`). Hosted secrets are set in the dashboard
 (milestone 4).
 
 **App:** the hook's message reaches the app as a sign-up error. `authErrorMessage` shows those

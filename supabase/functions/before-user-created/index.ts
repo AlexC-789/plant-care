@@ -21,6 +21,11 @@ const dnsLookup: Lookup = async (domain, type) => {
 };
 
 export async function handler(req: Request, { secret, lookup }: Deps): Promise<Response> {
+  if (!secret) {
+    // Misconfiguration must never block sign-ups: allow, and make it visible in the logs.
+    console.error('before-user-created: BEFORE_USER_CREATED_HOOK_SECRET is not set; allowing sign-up');
+    return json({});
+  }
   const payload = await req.text();
   if (!(await verifyWebhook(secret, req.headers, payload))) {
     return json({ error: 'invalid signature' }, 401);
@@ -38,9 +43,5 @@ export async function handler(req: Request, { secret, lookup }: Deps): Promise<R
 
 if (import.meta.main) {
   const secret = Deno.env.get('BEFORE_USER_CREATED_HOOK_SECRET');
-  Deno.serve((req) =>
-    secret
-      ? handler(req, { secret, lookup: dnsLookup })
-      : json({ error: 'BEFORE_USER_CREATED_HOOK_SECRET is not set' }, 500),
-  );
+  Deno.serve((req) => handler(req, { secret: secret ?? '', lookup: dnsLookup }));
 }

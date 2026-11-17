@@ -20,7 +20,7 @@ function constantTimeEqual(a: string, b: string): boolean {
 /**
  * True when `webhook-signature` holds a valid `v1,<base64 HMAC-SHA256>` of
  * `${id}.${timestamp}.${payload}` and the timestamp is within 5 minutes.
- * `secret` is in Supabase's form: "v1,whsec_<base64 key>".
+ * `secret` is in Supabase's form "v1,whsec_<base64 key>"; "whsec_<base64 key>" also works.
  */
 export async function verifyWebhook(
   secret: string,
@@ -36,7 +36,7 @@ export async function verifyWebhook(
 
   const key = await crypto.subtle.importKey(
     'raw',
-    base64ToBytes(secret.replace(/^v1,whsec_/, '')),
+    base64ToBytes(secret.replace(/^(v1,)?whsec_/, '')),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign'],

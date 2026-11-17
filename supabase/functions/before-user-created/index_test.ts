@@ -73,3 +73,24 @@ Deno.test('a correctly signed but stale request (over 5 minutes old) is rejected
   const res = await handler(req, { secret: SECRET, lookup });
   assertEquals(res.status, 401);
 });
+
+Deno.test('a secret without the v1, prefix still verifies', async () => {
+  const bare = SECRET.replace('v1,', ''); // "whsec_<base64>"
+  const res = await handler(signedRequest('maya@gmail.com'), { secret: bare, lookup });
+  assertEquals(res.status, 200);
+  assertEquals(await res.json(), {});
+});
+
+Deno.test('a missing secret allows the sign-up and logs an error (never blocks people)', async () => {
+  const errors: unknown[] = [];
+  const original = console.error;
+  console.error = (...args: unknown[]) => errors.push(args.join(' '));
+  try {
+    const res = await handler(signedRequest('x@mailinator.com'), { secret: '', lookup });
+    assertEquals(res.status, 200);
+    assertEquals(await res.json(), {});
+    assertEquals(errors.length, 1);
+  } finally {
+    console.error = original;
+  }
+});
