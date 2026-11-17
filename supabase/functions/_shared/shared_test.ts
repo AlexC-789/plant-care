@@ -2,6 +2,7 @@ import { assert, assertEquals, assertInstanceOf, assertRejects } from '@std/asse
 
 import { requireUser, type Deps } from './auth.ts';
 import { json, jsonError, readJsonBody } from './http.ts';
+import { healthNote, HEALTHY_NOTE, UNSURE_NOTE } from './health_notes.ts';
 import { countRecentPlantIdCalls, PLANT_ID_DAILY_LIMIT, searchAllowed } from './limits.ts';
 import { confidenceWord, PlantIdClient, ProviderError } from './plantid.ts';
 import { validatePhotoPaths } from './validate.ts';
@@ -140,6 +141,7 @@ Deno.test('health and nameSearch map the documented shapes', async () => {
   const h = await c.health(['a']);
   assertEquals(path, '/api/v3/health_assessment');
   assertEquals(h.isHealthyProbability, 0.14163023233413696);
+  assertEquals(h.isPlantProbability, 1);
   assertEquals(h.issues[0], { name: 'water excess or uneven watering', probability: 0.51401126 });
   const hits = await c.nameSearch('swiss & cheese');
   assertEquals(path, '/api/v3/kb/plants/name_search?q=swiss%20%26%20cheese&limit=10');
@@ -187,4 +189,35 @@ Deno.test('nameSearch makes exactly one request; entity_name is used, deduped an
   assertEquals(calls, 1);
   assertEquals(hits.length, 10);
   assertEquals(hits[0], { commonName: 'Swiss cheese plant', scientificName: 'Monstera deliciosa' });
+});
+
+Deno.test('health: issues sorted by probability desc, non-finite dropped; missing is_plant is 0', async () => {
+  const h = await client(() => Response.json({ result: { is_healthy: { probability: 0.2 }, disease: { suggestions: [
+    { name: 'fungi', probability: 0.3 },
+    { name: 'bad', probability: 'x' },
+    { name: 'nan', probability: null },
+    { name: 'water deficiency', probability: 0.6 },
+  ] } } })).health(['a']);
+  assertEquals(h.issues, [{ name: 'water deficiency', probability: 0.6 }, { name: 'fungi', probability: 0.3 }]);
+  assertEquals(h.isPlantProbability, 0);
+});
+
+Deno.test('healthNote: healthy >= 0.8, mapped top issue >= 0.5, otherwise unsure; never a raw name', () => {
+  const r = (isHealthyProbability: number, issues: { name: string; probability: number }[] = []) =>
+    ({ isPlantProbability: 1, isHealthyProbability, issues });
+  assertEquals(HEALTHY_NOTE, 'It looks healthy in this photo.');
+  assertEquals(UNSURE_NOTE, "Couldn't tell from this photo. Try one with the leaves in view.");
+  assertEquals(healthNote(r(0.8)), { healthy: true, note: HEALTHY_NOTE, advice: null });
+  assertEquals(healthNote(r(0.79, [{ name: 'water excess or uneven watering', probability: 0.5 }])), {
+    healthy: false,
+    note: 'Some leaves look yellow. Often too much water.',
+    advice: 'Let the top few centimetres of soil dry before watering again.',
+  });
+  // case-insensitive on the provider name
+  assertEquals(healthNote(r(0.1, [{ name: 'Water Deficiency', probability: 0.9 }])).healthy, false);
+  const unsure = { healthy: null, note: UNSURE_NOTE, advice: null };
+  assertEquals(healthNote(r(0.1, [{ name: 'fungi', probability: 0.49 }])), unsure);
+  assertEquals(healthNote(r(0.1, [{ name: 'Some Obscure Pathogen', probability: 0.9 }])), unsure);
+  assertEquals(healthNote(r(0.1, [{ name: 'constructor', probability: 0.9 }])), unsure);
+  assertEquals(healthNote(r(0.1)), unsure);
 });

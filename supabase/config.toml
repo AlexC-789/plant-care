@@ -412,6 +412,9 @@ verify_jwt = false
 [functions.identify-plant]
 verify_jwt = true
 
+[functions.check-health]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327

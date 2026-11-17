@@ -17,7 +17,9 @@ export interface IdentifyResult {
   suggestions: Suggestion[];
 }
 export interface HealthResult {
+  isPlantProbability: number;
   isHealthyProbability: number;
+  /** Sorted by probability, highest first. */
   issues: { name: string; probability: number }[];
 }
 export interface NameHit {
@@ -105,10 +107,12 @@ export class PlantIdClient {
     const result = (await this.post('/health_assessment', images))?.result;
     const issues: Json[] = result?.disease?.suggestions ?? [];
     return {
+      isPlantProbability: Number(result?.is_plant?.probability ?? 0),
       isHealthyProbability: Number(result?.is_healthy?.probability ?? 0),
       issues: issues
-        .filter((i) => typeof i?.name === 'string')
-        .map((i) => ({ name: i.name, probability: Number(i.probability) })),
+        .filter((i) => typeof i?.name === 'string' && typeof i.probability === 'number' && Number.isFinite(i.probability))
+        .sort((a, b) => b.probability - a.probability)
+        .map((i) => ({ name: i.name, probability: i.probability })),
     };
   }
 
