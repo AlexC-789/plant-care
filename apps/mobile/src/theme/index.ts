@@ -17,3 +17,4 @@ export function useTheme(): { scheme: ColorScheme; colors: Palette } {
 export function useIsAccessibilitySize(): boolean {
   return useWindowDimensions().fontScale > 1.4;
 }
+export { useReduceMotion } from './useReduceMotion';

@@ -5,3 +5,5 @@ export { PotDrawing } from './PotDrawing';
 export { Row } from './Row';
 export { Text } from './Text';
 export { TextLink } from './TextLink';
+export { ShimmerProvider } from './ShimmerProvider';
+export { LoadingGroup, Skeleton, SkeletonRow, SkeletonText, useDelayedVisible } from './Skeleton';
