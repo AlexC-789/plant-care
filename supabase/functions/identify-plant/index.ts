@@ -25,12 +25,12 @@ const WATERING: Record<Moisture, string> = {
   moist: 'Keep the soil evenly moist.',
 };
 export const wateringLine = (m: Moisture | null): string | null => (m ? WATERING[m] : null);
-// shortcut: keyword match on Plant.id's prose, first match wins ("bright indirect, tolerates shade" reads as low); refine against real responses.
+// Keyword match on Plant.id's prose, first match wins; the main condition is listed before lesser mentions like "tolerates shade".
 const LIGHT: [string[], string][] = [
   [['full sun', 'direct sun'], 'direct'],
-  [['shade', 'low light'], 'low'],
   [['indirect', 'bright'], 'bright_indirect'],
   [['partial', 'medium'], 'medium'],
+  [['shade', 'low light'], 'low'],
 ];
 export const lightFrom = (text?: string): string | null => {
   const t = text?.toLowerCase() ?? '';

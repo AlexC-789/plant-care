@@ -121,7 +121,7 @@ Deno.test('success: request carries all images, no health; species created; scan
   assert(post.body.every((r) => r.origin === 'plantid' && r.plantid_name === r.scientific_name));
   assertEquals(post.body[0].description, 'Monstera deliciosa is a species of flowering plant native to tropical forests of southern Mexico.');
   // watering {1,2} -> avg 1.5 -> moderate; light prose contains "shade" -> low (ruling: first keyword match in order)
-  assertEquals([post.body[0].moisture_category, post.body[0].watering, post.body[0].light], ['moderate', 'Water when the top few centimetres of soil are dry.', 'low']);
+  assertEquals([post.body[0].moisture_category, post.body[0].watering, post.body[0].light], ['moderate', 'Water when the top few centimetres of soil are dry.', 'bright_indirect']);
 
   assertEquals(w.scans.length, 1);
   const s = w.scans[0];
@@ -184,7 +184,7 @@ Deno.test('free details map to our enums', () => {
     'Let the soil dry out between waterings.', 'Water when the top few centimetres of soil are dry.', 'Keep the soil evenly moist.', null,
   ]);
   assertEquals(
-    ['Full sun', 'Needs direct sun', 'Low light or shade', 'Bright indirect light', 'Partial light', 'Medium', 'Sunny', undefined].map(lightFrom),
+    ['Full sun', 'Needs direct sun', 'Low light or shade', 'Bright indirect light. Tolerates some shade.', 'Partial light', 'Medium', 'Sunny', undefined].map(lightFrom),
     ['direct', 'direct', 'low', 'bright_indirect', 'medium', 'medium', null, null],
   );
 });
