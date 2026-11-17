@@ -1,6 +1,10 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StyleSheet } from 'react-native';
+
 import { resetLaunchForTests } from '@/launch/useLaunchGate';
+import { colors, resetAppearanceForTests } from '@/theme';
 import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { emitAuthEvent, fakeSession } from '@/test-utils/supabaseMock';
@@ -37,6 +41,17 @@ describe('routing', () => {
     expect(screen.getByLabelText('Plant Care')).toBeTruthy();
     expect(screen.queryAllByRole('progressbar')).toHaveLength(0);
     expect(screen.queryByTestId('auth-loading')).toBeNull();
+  });
+
+  test('the launch overlay waits for the saved appearance, so Dark users start dark', async () => {
+    resetLaunchForTests();
+    resetAppearanceForTests();
+    await AsyncStorage.setItem('plant-care.appearance', 'dark');
+    auth.getSession.mockReturnValue(new Promise(() => {}));
+    await renderRouter('src/app', { initialUrl: '/' });
+    await waitFor(() => expect(screen.getByTestId('launch')).toBeTruthy());
+    const bg = StyleSheet.flatten(screen.getByTestId('launch').props.style).backgroundColor;
+    expect(bg).toBe(colors.dark.background);
   });
 
   test('signed out users land on sign-in', async () => {

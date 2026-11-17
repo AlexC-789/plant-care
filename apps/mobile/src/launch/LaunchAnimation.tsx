@@ -5,7 +5,9 @@ import Svg, { Path, type PathProps } from 'react-native-svg';
 import { useReduceMotion, useTheme } from '@/theme';
 import { POT_PATHS } from '@/ui/PotDrawing';
 
-export const LAUNCH_DURATION_MS = 700;
+/** Drawing ≈ 700 ms, then a ~500 ms rest on the finished drawing before it may fade. */
+export const LAUNCH_DURATION_MS = 1200;
+const REST_MS = 500;
 const REDUCED_DURATION_MS = 300;
 const FADE_OUT_MS = 250;
 const REDUCED_FADE_OUT_MS = 150;
@@ -59,13 +61,16 @@ export function LaunchAnimation({ onDone, fadingOut = false, onExited, onReady }
           Animated.timing(opacity, { toValue: 1, duration: REDUCED_DURATION_MS, useNativeDriver: false }),
           ...[...body, ...leaves].map((v) => draw(v, 0)),
         ])
-      : Animated.parallel([
-          Animated.timing(opacity, { toValue: 1, duration: 120, useNativeDriver: false }),
-          Animated.stagger(40, body.map((v) => draw(v, 400))),
-          Animated.sequence([
-            Animated.delay(420),
-            Animated.stagger(60, leaves.map((v) => draw(v, 160))),
+      : Animated.sequence([
+          Animated.parallel([
+            Animated.timing(opacity, { toValue: 1, duration: 120, useNativeDriver: false }),
+            Animated.stagger(40, body.map((v) => draw(v, 400))),
+            Animated.sequence([
+              Animated.delay(420),
+              Animated.stagger(60, leaves.map((v) => draw(v, 160))),
+            ]),
           ]),
+          Animated.delay(REST_MS),
         ]);
 
     animation.start(({ finished }) => {

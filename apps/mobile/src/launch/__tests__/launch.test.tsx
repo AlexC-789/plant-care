@@ -48,10 +48,11 @@ describe('useLaunchGate', () => {
 });
 
 describe('LaunchAnimation', () => {
-  test('draws for about 700 ms, then reports done', async () => {
+  test('draws, rests on the finished drawing ~500 ms, then reports done (~1.2 s)', async () => {
+    expect(LAUNCH_DURATION_MS).toBe(1200);
     const onDone = jest.fn();
     await render(<LaunchAnimation onDone={onDone} />);
-    await act(async () => jest.advanceTimersByTime(LAUNCH_DURATION_MS - 100));
+    await act(async () => jest.advanceTimersByTime(1100));
     expect(onDone).not.toHaveBeenCalled();
     await act(async () => jest.advanceTimersByTime(200));
     expect(onDone).toHaveBeenCalledTimes(1);

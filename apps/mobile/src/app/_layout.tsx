@@ -8,7 +8,7 @@ import { AuthProvider, useSession } from '@/auth/AuthProvider';
 import { LaunchAnimation } from '@/launch/LaunchAnimation';
 import { useLaunchGate } from '@/launch/useLaunchGate';
 import { queryClient } from '@/lib/queryClient';
-import { useTheme } from '@/theme';
+import { loadStoredAppearance, useAppearanceLoaded, useTheme } from '@/theme';
 import { ShimmerProvider } from '@/ui';
 
 // Keep the native splash (plain paper) up until the launch animation's first frame is on
@@ -19,13 +19,22 @@ const hideSplash = () => void SplashScreen.hideAsync().catch(() => {});
 function RootNavigator() {
   const { isLoading } = useSession();
   const { colors } = useTheme();
+  const appearanceLoaded = useAppearanceLoaded();
   const { mounted, fadingOut, onAnimationDone, onExited } = useLaunchGate(isLoading);
+
+  // Read the saved Light/Dark choice before showing anything (a few ms; the native splash
+  // covers it), so Dark users never see a light first frame.
+  useEffect(() => {
+    if (!appearanceLoaded) void loadStoredAppearance();
+  }, [appearanceLoaded]);
 
   // Without a launch animation (e.g. the root remounted), hide the native splash now;
   // otherwise the overlay hides it once its first frame is on screen.
   useEffect(() => {
-    if (!mounted) hideSplash();
-  }, [mounted]);
+    if (appearanceLoaded && !mounted) hideSplash();
+  }, [appearanceLoaded, mounted]);
+
+  if (!appearanceLoaded) return null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

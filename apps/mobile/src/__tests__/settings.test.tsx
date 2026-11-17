@@ -53,6 +53,7 @@ function mockProfile(row: Profile) {
 async function openSettings() {
   auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
   const view = await renderRouter('src/app', { initialUrl: '/settings' });
+  await waitFor(() => expect(screen.queryByTestId('launch')).toBeNull(), { timeout: 3000 });
   await waitFor(() => expect(screen.getByText('a@example.com')).toBeTruthy());
   return view;
 }
