@@ -1,5 +1,6 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/profile/useProfile';
 import { fakeSession } from '@/test-utils/supabaseMock';
@@ -53,7 +54,10 @@ async function openSettings() {
   return view;
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  queryClient.clear();
+  jest.clearAllMocks();
+});
 
 test('shows email and free plan, and no name field', async () => {
   mockProfile(profile);

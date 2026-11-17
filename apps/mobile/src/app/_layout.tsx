@@ -1,8 +1,11 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
 import { ActivityIndicator, View } from 'react-native';
 
 import { AuthProvider, useSession } from '@/auth/AuthProvider';
+import { queryClient } from '@/lib/queryClient';
 import { useTheme } from '@/theme';
+import { ShimmerProvider } from '@/ui';
 
 function RootNavigator() {
   const { isLoading } = useSession();
@@ -43,10 +46,14 @@ export default function RootLayout() {
   };
 
   return (
-    <ThemeProvider value={navTheme}>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={navTheme}>
+        <ShimmerProvider>
+          <AuthProvider>
+            <RootNavigator />
+          </AuthProvider>
+        </ShimmerProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

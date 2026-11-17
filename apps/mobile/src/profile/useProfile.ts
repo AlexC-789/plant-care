@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 
 import { useSession } from '@/auth/AuthProvider';
 import type { Database } from '@/lib/database.types';
@@ -19,59 +20,63 @@ type ProfileState = {
   update: (patch: ProfileUpdate) => Promise<void>;
 };
 
-type Loaded = { forUser: string | null; profile: Profile | null; error: string | null };
+export const profileKey = (userId: string | null) => ['profile', userId] as const;
 
+/** The signed-in user's profile, served from the client cache and refreshed in the background. */
 export function useProfile(): ProfileState {
   const { session } = useSession();
   const userId = session?.user.id ?? null;
-  // State is tagged with the user it was loaded for, so a user switch shows
-  // "loading" immediately instead of the previous user's profile.
-  const [loaded, setLoaded] = useState<Loaded>({ forUser: null, profile: null, error: null });
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    if (!userId) return;
-    let active = true;
-    supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single()
-      .then(({ data, error }) => {
-        if (!active) return;
-        setLoaded({
-          forUser: userId,
-          profile: error ? null : data,
-          error: error ? "Couldn't load your profile." : null,
-        });
-      });
-    return () => {
-      active = false;
-    };
-  }, [userId]);
+  const query = useQuery({
+    queryKey: profileKey(userId),
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId!)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
 
-  const update = useCallback(
-    async (patch: ProfileUpdate) => {
-      if (!userId) return;
+  const mutation = useMutation({
+    mutationFn: async (patch: ProfileUpdate) => {
       const { data, error } = await supabase
         .from('profiles')
         .update(patch)
-        .eq('user_id', userId)
+        .eq('user_id', userId!)
         .select('*')
         .single();
-      setLoaded((prev) =>
-        error || !data
-          ? { ...prev, error: "Couldn't save your changes. Please try again." }
-          : { forUser: userId, profile: data, error: null },
-      );
+      if (error || !data) throw error ?? new Error('No profile returned');
+      return data;
     },
-    [userId],
+    onSuccess: (data) => queryClient.setQueryData(profileKey(userId), data),
+  });
+
+  const { mutateAsync } = mutation;
+  const update = useCallback(
+    async (patch: ProfileUpdate) => {
+      if (!userId) return;
+      try {
+        await mutateAsync(patch);
+      } catch {
+        // Reported through `error` below.
+      }
+    },
+    [userId, mutateAsync],
   );
 
-  const current = loaded.forUser === userId;
   return {
-    profile: current ? loaded.profile : null,
-    isLoading: !!userId && !current,
-    error: current ? loaded.error : null,
+    profile: userId ? (query.data ?? null) : null,
+    isLoading: !!userId && query.isPending,
+    error: mutation.isError
+      ? "Couldn't save your changes. Please try again."
+      : query.isError
+        ? "Couldn't load your profile."
+        : null,
     update,
   };
 }

@@ -1,6 +1,7 @@
 import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { clearConfirmationUrl, readConfirmationUrl } from '@/auth/confirmationUrl';
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { fakeSession } from '@/test-utils/supabaseMock';
 
@@ -22,6 +23,7 @@ async function open(session: unknown = null) {
 }
 
 beforeEach(() => {
+  queryClient.clear();
   jest.clearAllMocks();
   readUrl.mockReturnValue({ search: '', hash: '#access_token=x&type=signup' });
 });

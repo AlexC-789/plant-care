@@ -1,5 +1,6 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { emitAuthEvent, fakeSession } from '@/test-utils/supabaseMock';
 
@@ -10,6 +11,7 @@ const auth = supabase.auth as unknown as Record<string, jest.Mock>;
 const NETWORK = "Can't reach the server. Check your connection and try again.";
 
 beforeEach(() => {
+  queryClient.clear();
   jest.clearAllMocks();
   auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
 });
