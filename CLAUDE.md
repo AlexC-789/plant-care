@@ -38,6 +38,8 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
   writable by `authenticated` — use column-level grants.
 - Schema changes only via `supabase/migrations/`; then `npm run db:types`.
 - Gate paid features only through `useEntitlement()`.
+- Email confirmation is ON (sign-up → sign-in; resend has a 60 s cooldown matching
+  `max_frequency`). Local emails go to Mailpit: http://127.0.0.1:54324.
 - Route files only in `src/app/`; tests go in `src/**/__tests__/` (not under `src/app/`).
 - Press handlers stay synchronous (`void doAsync()`); RNTL awaits async handlers.
 - Watering safety limits (≤ 40 ml/dose, ≤ 150 ml/24 h, never pump when float switch is low,

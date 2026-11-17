@@ -25,6 +25,18 @@ npm run db:start          # starts local Supabase in Docker, applies migrations
 cp apps/mobile/.env.example apps/mobile/.env.local
 ```
 
+## Email confirmation (local)
+
+New accounts must confirm their email before signing in. Locally no real emails are
+sent: Supabase delivers them to **Mailpit**, a test inbox at http://127.0.0.1:54324.
+Open the message there and click the link; it lands on the app's `/email-confirmed`
+page (served by `npx expo start`, press `w` for web). Resends are limited to one per
+60 seconds.
+
+The link target comes from `EXPO_PUBLIC_EMAIL_CONFIRMED_URL` in `apps/mobile/.env.local`
+(default `http://127.0.0.1:8081/email-confirmed`) and must be listed in
+`additional_redirect_urls` in `supabase/config.toml`.
+
 ## Run the app
 
 ```bash
