@@ -15,3 +15,12 @@ export function signInNoticeText(notice: string | undefined, email: string): str
   if (notice === 'account-created') return 'Account created. Sign in to continue.';
   return undefined;
 }
+
+/** Supabase reports a failed link (expired, already used) with `error` / `error_code`. */
+export function confirmationResult(search: string, hash: string): 'confirmed' | 'expired' {
+  for (const part of [search, hash]) {
+    const params = new URLSearchParams(part.replace(/^[?#]/, ''));
+    if (params.has('error') || params.has('error_code')) return 'expired';
+  }
+  return 'confirmed';
+}
