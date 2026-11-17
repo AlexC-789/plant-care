@@ -1,7 +1,7 @@
 # Milestone 2: plant library and identification — design
 
 Date: 2026-11-17
-Status: Draft for approval (builder check done)
+Status: Approved 2026-11-17 (owner asked for explicit security measures: §8a)
 Builds on: [Software design](2026-11-16-plant-care-design.md) §5.3, §6, §7 · [App UI design](2026-11-17-app-ui-design.md) (canvas boards *Home*, *Plant detail*, *Add a pot* step 1/1b) · [Loading rules](2026-11-17-loading-rules-design.md)
 
 ## 1. Intent
@@ -218,6 +218,33 @@ allow a user to read/write/delete only under their own `user_id/` prefix (tested
   `expo-image` with signed URLs (1 h), `cacheKey` = storage path so a new signed URL doesn't
   re-download; list requests sign the page's paths in one call.
 - New deps: `expo-image-picker`, `expo-image-manipulator`, `expo-image` (via `npx expo install`).
+
+## 8a. Security (owner, 2026-11-17)
+Each item is a requirement with a test.
+1. **Data isolation:** RLS on `plants` and `scans` (owner-only); `species` read-only to users;
+   `scans` insert only by service role; owner may set `scans.plant_id` once, only to an own plant.
+   pgTAP cross-user tests for every table and every operation.
+2. **Photo storage:** private bucket; policies limit read/write/delete to `{auth.uid()}/…`;
+   bucket `file_size_limit` 3 MB and `allowed_mime_types` `image/jpeg`; object names are server-
+   checked UUIDs (`^[0-9a-f-]{36}\.jpg$`), so no path tricks (`..`, other users' folders).
+3. **Location privacy:** photos are re-encoded on the phone before upload, which drops EXIF
+   metadata (GPS location, device). A test checks the uploaded JPEG carries no EXIF GPS block.
+4. **Server functions:** require a valid user JWT (`verify_jwt` on); validate every input
+   (types, counts 1–3 / 1–2, path format and owner prefix, `plantId` owned by caller, query
+   length 2–60); reject unknown fields; uniform error bodies with no stack traces, keys or
+   provider messages; request body ≤ 10 KB (photos travel via storage, not the body).
+5. **Abuse and cost:** per-user limit (20 Plant.id calls / rolling 24 h) for identify and health;
+   search limited to 120 requests / user / hour; Plant.id calls time out at 20 s.
+6. **Secrets:** `PLANT_ID_API_KEY` only in function secrets (`supabase/functions/.env` locally,
+   git-ignored; Supabase secrets hosted). The app never holds it; no secret appears in logs.
+7. **Signed URLs:** photos shown via signed URLs valid 1 h, generated per request for the caller's
+   own paths only (under RLS-protected rows).
+8. **Deletion:** deleting a plant deletes its row, its scans and every stored photo (plant photo and
+   scan photos); a test checks no objects remain.
+9. **Logging:** functions log request id, user id and outcome only — never photos, keys, or
+   provider payloads.
+10. **Review:** a dedicated security review of the branch before the pull request, findings fixed
+    with tests.
 
 ## 9. Testing
 - pgTAP: plants/scans RLS incl. cross-user; species read-only for users; storage policies (own
