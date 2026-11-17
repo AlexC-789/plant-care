@@ -1,5 +1,5 @@
-import { Link, Redirect, Stack } from 'expo-router';
-import { Platform, Pressable } from 'react-native';
+import { Link, Redirect, Stack, useRouter, type Href } from 'expo-router';
+import { Platform, Pressable, View } from 'react-native';
 
 import { useSession } from '@/auth/AuthProvider';
 import { CloseButton } from '@/navigation/CloseButton';
@@ -27,6 +27,24 @@ function SettingsButton() {
   );
 }
 
+function AddButton() {
+  const router = useRouter();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Add a pot"
+      onPress={() => router.push('/add/plant' as Href)}
+      style={{
+        width: space.touch,
+        height: space.touch,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}>
+      <Icon name="plus" size={24} color="tint" />
+    </Pressable>
+  );
+}
+
 export default function AppLayout() {
   const { session } = useSession();
   const { colors } = useTheme();
@@ -47,13 +65,21 @@ export default function AppLayout() {
           title: 'Plants',
           headerLargeTitle: true,
           headerLargeTitleShadowVisible: false,
-          headerLargeTitleStyle: { fontFamily: serifFamily, color: colors.label },
+          headerLargeTitleStyle: {
+            fontFamily: serifFamily,
+            color: colors.label,
+          },
           // Large titles are iOS-only; elsewhere the serif title sits in the bar.
           headerTitleStyle:
             Platform.OS === 'ios'
               ? { color: colors.label }
               : { fontFamily: serifFamily, fontSize: 28, color: colors.label },
-          headerRight: SettingsButton,
+          headerRight: () => (
+            <View style={{ flexDirection: 'row' }}>
+              <AddButton />
+              <SettingsButton />
+            </View>
+          ),
         }}
       />
       <Stack.Screen

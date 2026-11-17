@@ -12,6 +12,11 @@ import { emitAuthEvent, fakeSession } from '@/test-utils/supabaseMock';
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories must be self-contained
 jest.mock('@/lib/supabase', () => require('@/test-utils/supabaseMock'));
 
+// The library's own behaviour is tested in plants/__tests__/PlantsHome.test.tsx; here it is just empty.
+jest.mock('@/plants/queries', () => ({
+  usePlants: () => ({ data: { pages: [{ plants: [], photoUrls: {} }] }, isRefetching: false }),
+}));
+
 const auth = supabase.auth as unknown as Record<string, jest.Mock>;
 const NETWORK = "Can't reach the server. Check your connection and try again.";
 
@@ -65,7 +70,7 @@ describe('routing', () => {
     const view = await openApp('/');
     expect(view.getPathname()).toBe('/');
     expect(screen.getByText('No plants yet')).toBeTruthy();
-    expect(screen.getByText('Adding pots arrives in the next build.')).toBeTruthy();
+    expect(screen.getByText('Add a pot')).toBeTruthy();
     expect(
       screen.getByLabelText(
         'Drawing of a pot standing on the watering saucer, with the sensor stake in the soil',

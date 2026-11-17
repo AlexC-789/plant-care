@@ -8,6 +8,8 @@ const SYMBOLS = {
   account: { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
   checkmark: { ios: 'checkmark', android: 'check', web: 'check' },
   chevronRight: { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
+  plus: { ios: 'plus', android: 'add', web: 'add' },
+  quiet: { ios: 'circle.fill', android: 'circle', web: 'circle' },
   error: { ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' },
 } as const;
 
