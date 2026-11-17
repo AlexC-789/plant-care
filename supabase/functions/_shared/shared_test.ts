@@ -113,7 +113,7 @@ Deno.test('identify: request shape and mapping (drop <0.05, max 3, free details)
   const r = await client((url, init) => { seen = { url, init }; return new Response(fixture('identification')); }).identify(['a', 'b']);
   assertEquals(seen!.url.pathname, '/api/v3/identification');
   assertEquals(seen!.url.searchParams.get('details'), 'common_names,description,watering,best_light_condition');
-  assertEquals(JSON.parse(String(seen!.init?.body)), { images: ['a', 'b'], similar_images: false });
+  assertEquals(JSON.parse(String(seen!.init?.body)), { images: ['a', 'b'] });
   assertEquals((seen!.init?.headers as Record<string, string>)['Api-Key'], KEY);
   assertEquals(r.isPlant, true);
   assertEquals(r.suggestions.map((s) => [s.scientificName, s.confidence]), [
@@ -134,12 +134,15 @@ Deno.test('identify: is_plant < 0.5 gives no suggestions', async () => {
 
 Deno.test('health and nameSearch map the documented shapes', async () => {
   let path = '';
-  const c = client((url) => {
+  let body = '';
+  const c = client((url, init) => {
     path = url.pathname + url.search;
+    body = String(init?.body);
     return new Response(fixture(url.pathname.includes('health') ? 'health_assessment' : 'name_search'));
   });
   const h = await c.health(['a']);
   assertEquals(path, '/api/v3/health_assessment');
+  assertEquals(JSON.parse(body), { images: ['a'] });
   assertEquals(h.isHealthyProbability, 0.14163023233413696);
   assertEquals(h.isPlantProbability, 1);
   assertEquals(h.issues[0], { name: 'water excess or uneven watering', probability: 0.51401126 });

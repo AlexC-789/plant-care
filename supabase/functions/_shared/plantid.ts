@@ -73,8 +73,9 @@ export class PlantIdClient {
     }
   }
 
+  // Plant.id rejects similar_images=false; omitting it leaves similar images off.
   private post(path: string, images: string[]) {
-    return this.call(path, { method: 'POST', body: JSON.stringify({ images, similar_images: false }) });
+    return this.call(path, { method: 'POST', body: JSON.stringify({ images }) });
   }
 
   async identify(images: string[]): Promise<IdentifyResult> {
