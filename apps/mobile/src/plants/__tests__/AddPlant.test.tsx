@@ -14,6 +14,7 @@ jest.mock('@/plants/api', () => ({
   ...jest.requireActual('@/plants/api'),
   identifyPlant: jest.fn(),
   createPlant: jest.fn(),
+  checkHealth: jest.fn().mockResolvedValue({ healthy: true, note: 'ok', advice: null }),
   searchLocalSpecies: jest.fn(),
   searchPlantNames: jest.fn(),
   pickSpecies: jest.fn(),
@@ -221,13 +222,35 @@ test('Continue needs a name, then saves without a type or photo and opens the pl
   await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/plant/new-plant'));
 });
 
-test('Continue deletes leaf and flower photos that were never identified', async () => {
+test('Continue deletes a leaf photo that was never identified', async () => {
+  await open();
+  await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
+  await addPhotos([0, 1]);
+  await press('Continue');
+  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg']));
+  expect(mocked(api.createPlant).mock.calls[0][0]).toMatchObject({ photoPath: 'u/1.jpg' });
+  expect(api.checkHealth).not.toHaveBeenCalled();
+});
+
+test('a problem-spot photo starts a health check on Continue and is kept; navigation does not wait for it', async () => {
+  mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
   await open();
   await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
   await addPhotos([0, 1, 2]);
   await press('Continue');
-  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg', 'u/3.jpg']));
-  expect(mocked(api.createPlant).mock.calls[0][0]).toMatchObject({ photoPath: 'u/1.jpg' });
+  await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/plant/new-plant'));
+  expect(api.checkHealth).toHaveBeenCalledWith('new-plant', ['u/1.jpg', 'u/3.jpg']);
+  expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg']);
+  expect(photos.deletePhotos).not.toHaveBeenCalledWith(expect.arrayContaining(['u/3.jpg']));
+});
+
+test('a problem-spot photo without a whole-plant photo runs no check and is deleted', async () => {
+  await open();
+  await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
+  await addPhotos([2]);
+  await press('Continue');
+  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']));
+  expect(api.checkHealth).not.toHaveBeenCalled();
 });
 
 test('Cancel deletes every uploaded photo and saves nothing', async () => {

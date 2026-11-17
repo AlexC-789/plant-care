@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View
 
 import { useAddDraft } from '@/plants/addDraft';
 import { deletePhotos } from '@/plants/photos';
-import { useCreatePlant, useIdentify } from '@/plants/queries';
+import { useCheckHealth, useCreatePlant, useIdentify } from '@/plants/queries';
 import { Suggestions } from '@/plants/Suggestions';
 import { radius, space, typography, useTheme } from '@/theme';
 import { Button, InsetGroup, Row, Text } from '@/ui';
@@ -20,6 +20,7 @@ export default function PlantStep() {
   const { draft, set } = useAddDraft();
   const identify = useIdentify();
   const create = useCreatePlant();
+  const check = useCheckHealth();
   const [message, setMessage] = useState<string | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
 
@@ -53,9 +54,13 @@ export default function PlantStep() {
         photoPath: whole?.path,
         scanId: draft.scanId,
       });
-      // Leaf and flower photos only live on as part of an identify scan.
+      // A problem-spot photo starts a health check (not awaited; the detail shows its progress) and lives on as that scan.
+      const spot = draft.photos.find((p) => p.kind === 'flower');
+      const checking = !!(whole && spot);
+      if (checking) check.mutate({ plantId: plant.id, photoPaths: [whole.path, spot.path] });
+      // Other extra photos only live on as part of an identify scan.
       if (!draft.scanId) {
-        const extra = draft.photos.filter((p) => p.kind !== 'whole').map((p) => p.path);
+        const extra = draft.photos.filter((p) => p.kind === 'leaf' || (p.kind === 'flower' && !checking)).map((p) => p.path);
         void deletePhotos(extra).catch(() => {});
       }
       router.back();

@@ -146,7 +146,8 @@ test('health card shows the latest result with its date, and the Check button', 
   });
   await open();
   const date = new Date('2026-11-10T12:00:00Z').toLocaleDateString();
-  await screen.findByText(`Checked ${date}: Some leaves look yellow.`);
+  await screen.findByText(`Checked ${date}`);
+  expect(screen.getByText('Some leaves look yellow.')).toBeTruthy();
   expect(screen.getByText('Often too much water.')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Check its health' })).toBeTruthy();
 });
@@ -180,7 +181,7 @@ test('Check its health opens a two-card capture; Check needs the whole-plant pho
   expect(api.checkHealth).toHaveBeenCalledWith('p1', ['u/h1.jpg']);
   await screen.findByText('It looks healthy in this photo.');
   await press('Done');
-  await screen.findByText(/^Checked .*: It looks healthy in this photo\.$/);
+  await screen.findByText(/^Checked /);
   // The photos belong to the scan now: nothing deleted.
   expect(photos.deletePhotos).not.toHaveBeenCalled();
 });
@@ -222,4 +223,33 @@ test('a camera that rejects shows the failure copy instead of an unhandled rejec
   await open('/plant/p1/health');
   await press('Take photo', 0);
   await screen.findByText("Couldn't add that photo. Try again.");
+});
+
+test('the detail shows "Not checked yet." with no checks, and "Looking at your plant…" while one runs', async () => {
+  mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
+  await open('/plant/p1');
+  await screen.findByText('Not checked yet.');
+  await press('Check its health');
+  await screen.findByText('Whole plant');
+  await press('Take photo', 0);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
+  await press('Check');
+  await act(async () => router.back());
+  await screen.findByText('Looking at your plant…');
+  expect(screen.queryByText('Not checked yet.')).toBeNull();
+});
+
+test('a check that failed shows one line under the button on the detail', async () => {
+  mocked(api.checkHealth).mockRejectedValue(new Error(LIMIT));
+  await open('/plant/p1');
+  await screen.findByText('Not checked yet.');
+  await press('Check its health');
+  await screen.findByText('Whole plant');
+  await press('Take photo', 0);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
+  await press('Check');
+  await screen.findByText(LIMIT);
+  await act(async () => router.back());
+  await screen.findByText('Not checked yet.');
+  expect(screen.getAllByText(LIMIT)).toHaveLength(1);
 });

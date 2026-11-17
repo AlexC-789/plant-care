@@ -20,6 +20,7 @@ with the device milestones and must slot in without rework.
   a daily per-user scan limit, and Plant.id's own "is this a plant" result.
 - **Identification and health are separate.** A scan only identifies (cheapest call). Plant detail
   has a **"Check its health"** button that runs Plant.id's health assessment on demand.
+  Owner change 2026-11-17: a photo on the third card (Flower or problem spot) triggers an automatic health check on Continue (1 credit, shared limit). Later checks are on demand.
 - **Our own houseplant database** for facts and search, not paid lookups: about 150 common
   houseplants, written fresh and checked against botanical/horticultural references, reviewed by
   the owner once. Plant.id's paid detail lookups are not used.
@@ -92,6 +93,8 @@ Full-screen cover, title "Plant · 1 of 6", Cancel top-right.
 4. Choosing a suggestion fills Plant type; Name is prefilled with the common name only if empty.
 5. **Continue** saves the plant immediately (with or without photo/type; Name required) and, since
    steps 2–6 don't exist yet, closes the cover and opens the new plant's detail.
+   Owner change 2026-11-17: a photo on the third card (Flower or problem spot) triggers an automatic health check on Continue (1 credit, shared limit). Later checks are on demand. The check runs in the
+   background (whole + problem photo); the detail shows "Looking at your plant…" until it finishes.
 - Failure or "not a plant": "Couldn't tell from this photo. Try one with a whole leaf in view, or
   search." Search is always available. The photos stay attached to the plant either way.
 - Limit reached: "You've reached the identification limit for now. Search for the plant type, or
@@ -135,6 +138,7 @@ plant…" → one-line result: healthy ("It looks healthy in this photo.") or th
 words ("Some leaves look yellow. Often too much water.") with one line of what to do; unsure →
 "Couldn't tell from this photo. Try one with the leaves in view." Results are stored as a scan of
 kind `health` linked to the plant. Shares the identification limit.
+Owner change 2026-11-17: a photo on the third card (Flower or problem spot) triggers an automatic health check on Continue (1 credit, shared limit). Later checks are on demand.
 
 ### 5.6 Edit plant
 Sheet with Done: photo (replace via guided capture without identifying, or remove), Name, Plant

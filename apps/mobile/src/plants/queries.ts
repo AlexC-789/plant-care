@@ -1,6 +1,7 @@
 import {
   useInfiniteQuery,
   useMutation,
+  useMutationState,
   useQuery,
   useQueryClient,
   type InfiniteData,
@@ -95,8 +96,16 @@ export const useIdentify = () => useMutation({ mutationFn: (photoPaths: string[]
 export function useCheckHealth() {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: ['check-health'],
     mutationFn: ({ plantId, photoPaths }: { plantId: string; photoPaths: string[] }) =>
       api.checkHealth(plantId, photoPaths),
     onSuccess: (_result, { plantId }) => queryClient.invalidateQueries({ queryKey: ['health', plantId] }),
   });
 }
+
+/** Status of the newest health check for this plant, wherever it was started (e.g. the add flow). */
+export const useHealthCheckStatus = (plantId: string) =>
+  useMutationState({
+    filters: { mutationKey: ['check-health'], predicate: (m) => (m.state.variables as { plantId: string }).plantId === plantId },
+    select: (m) => m.state,
+  }).at(-1);
