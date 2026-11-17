@@ -69,7 +69,7 @@ export class PlantIdClient {
   }
 
   private post(path: string, images: string[]) {
-    return this.call(path, { method: 'POST', body: JSON.stringify({ images }) });
+    return this.call(path, { method: 'POST', body: JSON.stringify({ images, similar_images: false }) });
   }
 
   async identify(images: string[]): Promise<IdentifyResult> {
@@ -84,13 +84,15 @@ export class PlantIdClient {
       .map((s): Suggestion => {
         const d = s.details ?? {};
         const w = d.watering;
+        // the client documents description as a string; accept the older { value } shape too
+        const description = typeof d.description === 'string' ? d.description : d.description?.value;
         return {
           scientificName: s.name,
           commonNames: Array.isArray(d.common_names) ? d.common_names.filter((n: Json) => typeof n === 'string') : [],
           probability: s.probability,
           confidence: confidenceWord(s.probability),
           details: {
-            ...(typeof d.description?.value === 'string' && { description: d.description.value }),
+            ...(typeof description === 'string' && { description }),
             ...(typeof w?.min === 'number' && typeof w?.max === 'number' && { watering: { min: w.min, max: w.max } }),
             ...(typeof d.best_light_condition === 'string' && { bestLight: d.best_light_condition }),
           },
@@ -110,15 +112,20 @@ export class PlantIdClient {
     };
   }
 
+  /** name_search only returns matches (no scientific name for common-name hits), so those are resolved via the KB entity. */
   async nameSearch(q: string): Promise<NameHit[]> {
-    const body = await this.call(`/kb/plants/name_search?q=${encodeURIComponent(q)}`);
-    const entities: Json[] = body?.entities ?? [];
-    return entities
-      .filter((e) => typeof e?.entity_name === 'string')
-      .map((e) => ({
-        // matched_in is the text that matched: a common name, or the scientific name itself
-        commonName: e.matched_in_type === 'common_name' && typeof e.matched_in === 'string' ? e.matched_in : '',
-        scientificName: e.entity_name,
-      }));
+    const body = await this.call(`/kb/plants/name_search?q=${encodeURIComponent(q)}&limit=10`);
+    const entities: Json[] = (body?.entities ?? []).filter((e: Json) => typeof e?.matched_in === 'string');
+    const hits = await Promise.all(entities.slice(0, 10).map(async (e): Promise<NameHit | null> => {
+      if (e.matched_in_type === 'entity_name') return { commonName: '', scientificName: e.matched_in };
+      if (typeof e.access_token !== 'string') return null;
+      try {
+        const name = (await this.call(`/kb/plants/${encodeURIComponent(e.access_token)}`))?.name;
+        return typeof name === 'string' ? { commonName: e.matched_in, scientificName: name } : null;
+      } catch {
+        return null; // one unresolvable hit should not fail the whole search
+      }
+    }));
+    return hits.filter((h): h is NameHit => h !== null);
   }
 }

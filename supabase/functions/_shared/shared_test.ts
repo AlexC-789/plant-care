@@ -104,13 +104,14 @@ Deno.test('identify: request shape and mapping (drop <0.05, max 3, free details)
   const r = await client((url, init) => { seen = { url, init }; return new Response(fixture('identification')); }).identify(['a', 'b']);
   assertEquals(seen!.url.pathname, '/api/v3/identification');
   assertEquals(seen!.url.searchParams.get('details'), 'common_names,description,watering,best_light_condition');
-  assertEquals(JSON.parse(String(seen!.init?.body)), { images: ['a', 'b'] });
+  assertEquals(JSON.parse(String(seen!.init?.body)), { images: ['a', 'b'], similar_images: false });
   assertEquals((seen!.init?.headers as Record<string, string>)['Api-Key'], KEY);
   assertEquals(r.isPlant, true);
   assertEquals(r.suggestions.map((s) => [s.scientificName, s.confidence]), [
     ['Monstera deliciosa', 'very_likely'], ['Monstera adansonii', 'likely'], ['Philodendron bipinnatifidum', 'possibly'],
   ]);
   assertEquals(r.suggestions[0].commonNames, ['Swiss cheese plant', 'Split-leaf philodendron']);
+  assertEquals(r.suggestions[0].details.description?.startsWith('Monstera deliciosa is'), true);
   assertEquals(r.suggestions[0].details.watering, { min: 1, max: 2 });
   assertEquals(r.suggestions[0].details.bestLight, 'Bright indirect light. Tolerates some shade.');
   assertEquals(r.suggestions[1].details, {});
@@ -124,15 +125,23 @@ Deno.test('identify: is_plant < 0.5 gives no suggestions', async () => {
 
 Deno.test('health and nameSearch map the documented shapes', async () => {
   let path = '';
-  const c = client((url) => { path = url.pathname + url.search; return new Response(fixture(url.pathname.includes('health') ? 'health_assessment' : 'name_search')); });
+  const c = client((url) => {
+    if (url.pathname.startsWith('/api/v3/kb/plants/tok-')) {
+      if (url.pathname.endsWith('adansonii')) return new Response('boom', { status: 500 });
+      return new Response(JSON.stringify({ name: 'Monstera deliciosa', language: 'en' }));
+    }
+    path = url.pathname + url.search;
+    return new Response(fixture(url.pathname.includes('health') ? 'health_assessment' : 'name_search'));
+  });
   const h = await c.health(['a']);
   assertEquals(path, '/api/v3/health_assessment');
-  assertEquals(h.isHealthyProbability, 0.18);
-  assertEquals(h.issues[0], { name: 'water excess or uneven watering', probability: 0.62 });
+  assertEquals(h.isHealthyProbability, 0.14163023233413696);
+  assertEquals(h.issues[0], { name: 'water excess or uneven watering', probability: 0.51401126 });
   const hits = await c.nameSearch('swiss & cheese');
-  assertEquals(path, '/api/v3/kb/plants/name_search?q=swiss%20%26%20cheese');
+  assertEquals(path, '/api/v3/kb/plants/name_search?q=swiss%20%26%20cheese&limit=10');
   assertEquals(hits[0], { commonName: 'Swiss cheese plant', scientificName: 'Monstera deliciosa' });
-  assertEquals(hits[2], { commonName: '', scientificName: 'Swissia exemplum' });
+  // the 500 on the second KB lookup drops only that hit
+  assertEquals(hits, [hits[0], { commonName: '', scientificName: 'Swissia exemplum' }]);
 });
 
 Deno.test('provider failures become ProviderError without key or provider body', async () => {
