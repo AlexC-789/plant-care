@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { useAddDraft } from '@/plants/addDraft';
@@ -18,6 +18,11 @@ export default function PlantStep() {
   const router = useRouter();
   const { colors } = useTheme();
   const { draft, set } = useAddDraft();
+  // apply runs after an async identify, so it must read the latest draft, not the one from the tap.
+  const draftRef = useRef(draft);
+  useEffect(() => {
+    draftRef.current = draft;
+  });
   const identify = useIdentify();
   const create = useCreatePlant();
   const check = useCheckHealth();
@@ -30,10 +35,11 @@ export default function PlantStep() {
 
   // Applies a suggestion: sets the type; Name follows only while it is empty or still the previous suggestion's name.
   const apply = (s: { speciesId: string; commonName: string }) => {
-    const prev = draft.species && 'id' in draft.species ? draft.species.name : '';
+    const d = draftRef.current;
+    const prev = d.species && 'id' in d.species ? d.species.name : '';
     set({
       species: { id: s.speciesId, name: s.commonName },
-      name: !draft.name.trim() || draft.name === prev ? s.commonName : draft.name,
+      name: !d.name.trim() || d.name === prev ? s.commonName : d.name,
     });
   };
 
@@ -45,11 +51,9 @@ export default function PlantStep() {
       {
         onSuccess: (r) => {
           if (r.isPlant && r.suggestions.length) {
-            const [top] = r.suggestions;
             set({ scanId: r.scanId, suggestions: r.suggestions.slice(0, 3) });
-            if (top.confidence === 'very_likely') apply(top);
-          }
-          else setMessage(COULDNT);
+            if (r.suggestions[0].confidence === 'very_likely') apply(r.suggestions[0]);
+          } else setMessage(COULDNT);
         },
         onError: (e) => setMessage(e.message === LIMIT ? LIMIT : COULDNT),
       },

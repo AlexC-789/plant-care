@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 import { Linking } from 'react-native';
 
 import { queryClient } from '@/lib/queryClient';
@@ -207,6 +207,18 @@ test('tapping another suggestion switches the type and the prefilled Name, not a
   expect(screen.getByDisplayValue('Fernando')).toBeTruthy();
   await press('Continue');
   await waitFor(() => expect(api.createPlant).toHaveBeenCalledWith(expect.objectContaining({ name: 'Fernando', speciesId: 's1' })));
+});
+
+test('a Name typed while identifying survives a very likely result', async () => {
+  let resolve!: (v: Awaited<ReturnType<typeof api.identifyPlant>>) => void;
+  mocked(api.identifyPlant).mockReturnValue(new Promise((r) => (resolve = r)));
+  await open();
+  await addPhotos([0]);
+  await press('Identify');
+  await fireEvent.changeText(screen.getByLabelText('Name'), 'Fernando');
+  await act(async () => resolve({ scanId: 'scan1', isPlant: true, suggestions: [{ ...monstera, confidence: 'very_likely' }] }));
+  await waitFor(() => expect(screen.getAllByText('Monstera')).toHaveLength(2));
+  expect(screen.getByDisplayValue('Fernando')).toBeTruthy();
 });
 
 test.each([
