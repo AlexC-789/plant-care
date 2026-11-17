@@ -51,19 +51,19 @@ export function CaptureCards({
 
   async function pick(kind: string, source: keyof typeof DENIED) {
     const camera = source === 'camera';
-    const perm = await (camera
-      ? ImagePicker.requestCameraPermissionsAsync()
-      : ImagePicker.requestMediaLibraryPermissionsAsync());
-    if (!perm.granted) return setDenied(source);
-    setDenied(null);
-    const options = { mediaTypes: ['images' as const] };
-    const res = await (camera
-      ? ImagePicker.launchCameraAsync(options)
-      : ImagePicker.launchImageLibraryAsync(options));
-    if (res.canceled || !userId) return;
-    setBusy(kind);
     setFailed(false);
     try {
+      const perm = await (camera
+        ? ImagePicker.requestCameraPermissionsAsync()
+        : ImagePicker.requestMediaLibraryPermissionsAsync());
+      if (!perm.granted) return setDenied(source);
+      setDenied(null);
+      const options = { mediaTypes: ['images' as const] };
+      const res = await (camera
+        ? ImagePicker.launchCameraAsync(options)
+        : ImagePicker.launchImageLibraryAsync(options));
+      if (res.canceled || !userId) return;
+      setBusy(kind);
       const prepared = await preparePhoto(res.assets[0].uri);
       const path = await uploadPhoto(userId, prepared);
       onChange([...remove(kind), { kind, localUri: prepared.uri, path }]);

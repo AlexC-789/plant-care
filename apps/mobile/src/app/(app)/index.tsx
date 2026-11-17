@@ -1,4 +1,4 @@
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { FlatList, StyleSheet, View } from 'react-native';
 
 import { PlantRow } from '@/plants/PlantRow';
@@ -20,7 +20,6 @@ export default function Plants() {
   } = usePlants();
   const plants = data?.pages.flatMap((p) => p.plants) ?? [];
   const photoUrls = Object.assign({}, ...(data?.pages.map((p) => p.photoUrls) ?? []));
-  // shortcut: `as Href` on the plant route until Task 11 adds it (typed routes), then drop the cast.
   const add = () => router.push('/add/plant');
 
   // Shown in place of rows: skeleton while loading, the error with no cache, or the empty state.
@@ -59,7 +58,7 @@ export default function Plants() {
           <PlantRow
             plant={item}
             photoUrl={photoUrls[item.photo_path ?? '']}
-            onPress={() => router.push(`/plant/${item.id}` as Href)}
+            onPress={() => router.push(`/plant/${item.id}`)}
           />
         </FadeIn>
       )}

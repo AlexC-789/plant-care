@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack, useRouter, type Href } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -59,8 +59,7 @@ export default function PlantStep() {
         void deletePhotos(extra).catch(() => {});
       }
       router.back();
-      // shortcut: `as Href` until Task 11 adds the plant route (typed routes), then drop the cast.
-      router.push(`/plant/${plant.id}` as Href);
+      router.push(`/plant/${plant.id}`);
     } catch {
       setSaveFailed(true);
     }
