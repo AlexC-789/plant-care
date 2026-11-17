@@ -109,6 +109,7 @@ test('About shows description, light and watering; More expands', async () => {
   await press('More');
   expect(screen.getByText(LONG.trim()).props.numberOfLines).toBeUndefined();
   expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Less' })).toBeTruthy();
 });
 
 test('About is hidden for a custom type and for a species without facts', async () => {
@@ -252,4 +253,29 @@ test('a check that failed shows one line under the button on the detail', async 
   await act(async () => router.back());
   await screen.findByText('Not checked yet.');
   expect(screen.getAllByText(LIMIT)).toHaveLength(1);
+});
+
+test('the hero is full-bleed: 1.25 x width, capped at 460, photo covers it', async () => {
+  await open();
+  const hero = await screen.findByLabelText('Fernando photo');
+  expect(hero.props.contentFit).toBe('cover');
+  expect(StyleSheet.flatten(screen.getByTestId('plant-hero').props.style).height).toBe(460);
+});
+
+test('a plant named like its type shows the scientific name in italics, then the room', async () => {
+  mocked(api.fetchPlant).mockResolvedValue({ ...fern, name: 'monstera' });
+  await open();
+  const sub = await screen.findByText('Monstera deliciosa');
+  expect(StyleSheet.flatten(sub.props.style).fontStyle).toBe('italic');
+  expect(screen.getByText(/Kitchen/)).toBeTruthy();
+});
+
+test('About leads with Light and Watering facts; the description has an inline More / Less', async () => {
+  await open();
+  await screen.findByText('About this plant');
+  expect(screen.getByText('Light')).toBeTruthy();
+  expect(screen.getByText('Watering')).toBeTruthy();
+  await press('More');
+  await press('Less');
+  expect(screen.getByText(LONG.trim()).props.numberOfLines).toBe(3);
 });

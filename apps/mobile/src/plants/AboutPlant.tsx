@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { Species } from '@/plants/api';
 import { radius, space, useTheme } from '@/theme';
-import { Button, Text } from '@/ui';
+import { Icon, Text, TextLink, type IconName } from '@/ui';
 
 const LIGHT: Record<string, string> = {
   bright_indirect: 'Bright, indirect light',
@@ -14,6 +14,20 @@ const LIGHT: Record<string, string> = {
 
 // shortcut: "More" is offered by length, not by measuring the text, so a short wrapped line may show it; fine until a design review says otherwise.
 const LONG = 120;
+
+function Fact({ icon, label, value }: { icon: IconName; label: string; value: string }) {
+  return (
+    <View style={styles.fact}>
+      <Icon name={icon} size={22} color="tint" />
+      <View style={styles.factText}>
+        <Text variant="footnote" color="secondaryLabel">
+          {label}
+        </Text>
+        <Text variant="subheadline">{value}</Text>
+      </View>
+    </View>
+  );
+}
 
 /** Species facts. Renders nothing when the species has none (custom types never reach here). */
 export function AboutPlant({ species }: { species: Species }) {
@@ -26,18 +40,24 @@ export function AboutPlant({ species }: { species: Species }) {
       <Text variant="headline" accessibilityRole="header">
         About this plant
       </Text>
+      {light ? <Fact icon="light" label="Light" value={LIGHT[light] ?? light} /> : null}
+      {watering ? <Fact icon="water" label="Watering" value={watering} /> : null}
       {description ? (
         <>
           <Text variant="subheadline" numberOfLines={open ? undefined : 3}>
             {description}
           </Text>
-          {!open && description.length > LONG ? <Button label="More" variant="plain" onPress={() => setOpen(true)} /> : null}
+          {description.length > LONG ? (
+            <TextLink label={open ? 'Less' : 'More'} onPress={() => setOpen((o) => !o)} />
+          ) : null}
         </>
       ) : null}
-      {light ? <Text variant="subheadline">{LIGHT[light] ?? light}</Text> : null}
-      {watering ? <Text variant="subheadline">{watering}</Text> : null}
     </View>
   );
 }
 
-const styles = StyleSheet.create({ card: { borderRadius: radius.group, padding: space.l, gap: space.s } });
+const styles = StyleSheet.create({
+  card: { borderRadius: radius.group, padding: space.l, gap: space.m },
+  fact: { flexDirection: 'row', alignItems: 'center', gap: space.m },
+  factText: { flex: 1 },
+});
