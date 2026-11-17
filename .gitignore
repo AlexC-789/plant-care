@@ -1,0 +1,10 @@
+node_modules/
+.expo/
+dist/
+web-build/
+.env*.local
+supabase/.temp/
+supabase/.branches/
+.superpowers/
+*.log
+.DS_Store
