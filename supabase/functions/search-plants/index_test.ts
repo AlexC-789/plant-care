@@ -110,14 +110,15 @@ Deno.test('Plant.id failure is a uniform 502 with no provider text or key', asyn
   assert(!text.includes(KEY));
 });
 
-Deno.test('pick stores a names-only plantid species, is idempotent, never calls Plant.id or counts as a search', async () => {
-  const w = world({ recent: 500 });
+const picked = (name: string) => ({ entities: [{ matched_in: 'x', matched_in_type: 'common_name', entity_name: name }] });
+
+Deno.test('pick stores a verified names-only plantid species, is idempotent, and counts as a search', async () => {
+  const w = world({ plantId: () => Response.json(picked('Ficus lyrata')) });
   const a = await (await handler(req({ pick: ' Ficus lyrata ' }), w.deps)).json();
   const b = await (await handler(req({ pick: 'Ficus lyrata' }), w.deps)).json();
   assertEquals(a, { speciesId: 'sp-0' });
   assertEquals(b, a);
-  assertEquals(plantIdCalls(w), 0);
-  assertEquals(w.calls.some((c) => c.url.pathname === '/rest/v1/search_log'), false);
+  assertEquals(plantIdCalls(w), 2);
   const post = w.speciesPosts[0];
   assertEquals(post.body, { scientific_name: 'Ficus lyrata', common_names: [], origin: 'plantid', plantid_name: 'Ficus lyrata' });
   assert(post.url.search.includes('on_conflict=scientific_name'));
@@ -125,8 +126,25 @@ Deno.test('pick stores a names-only plantid species, is idempotent, never calls 
   assert(String((init.headers as Record<string, string>).prefer).includes('resolution=ignore-duplicates'));
 });
 
-Deno.test('pick with quotes or odd characters is stored as a literal name and looked up by exact match', async () => {
+Deno.test('pick of a name Plant.id does not return is 400 and stores nothing', async () => {
   const w = world();
+  const res = await handler(req({ pick: 'Junk name' }), w.deps);
+  assertEquals(res.status, 400);
+  assertEquals(await res.json(), { error: "Couldn't find that plant. Try another name." });
+  assertEquals(w.speciesPosts.length, 0);
+});
+
+Deno.test('pick is rate limited like query and a Plant.id failure is 502', async () => {
+  const limited = world({ recent: 120, plantId: () => Response.json(picked('Ficus lyrata')) });
+  assertEquals((await handler(req({ pick: 'Ficus lyrata' }), limited.deps)).status, 429);
+  assertEquals(plantIdCalls(limited), 0);
+  const down = world({ plantId: () => new Response('boom', { status: 500 }) });
+  assertEquals((await handler(req({ pick: 'Ficus lyrata' }), down.deps)).status, 502);
+  assertEquals(down.speciesPosts.length, 0);
+});
+
+Deno.test('pick with quotes or odd characters is stored as a literal name and looked up by exact match', async () => {
+  const w = world({ plantId: () => Response.json(picked('Ficus "x" & y=z')) });
   const res = await handler(req({ pick: 'Ficus "x" & y=z' }), w.deps);
   assertEquals(res.status, 200);
   assertEquals(w.speciesPosts[0].body.scientific_name, 'Ficus "x" & y=z');

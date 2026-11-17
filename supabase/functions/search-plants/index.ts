@@ -1,4 +1,4 @@
-// search-plants: Plant.id's free name search as a fallback for type search, and "pick" to store a names-only species (spec §7).
+// search-plants: Plant.id's free name search as a fallback for type search, and "pick" to store a Plant.id-verified names-only species (spec §7).
 // Body is exactly one of { query } or { pick }.
 import { type Deps, envDeps, requireUser } from '../_shared/auth.ts';
 import { rest } from '../_shared/db.ts';
@@ -36,28 +36,30 @@ export async function handler(req: Request, deps: SearchDeps): Promise<Response>
     const value = kind === 'query' ? text(body.query, 2, 60) : kind === 'pick' ? text(body.pick, 2, 120) : null;
     if (!value) return respond(jsonError(400, 'Invalid request.'), 'bad_request');
 
-    if (kind === 'pick') {
-      // shortcut: any scientific name string is accepted, so a user can create junk names-only rows; add a Plant.id-backed check if abused.
-      await rest(deps, 'species?on_conflict=scientific_name', {
-        method: 'POST',
-        headers: { prefer: 'resolution=ignore-duplicates,return=minimal' },
-        body: JSON.stringify({ scientific_name: value, common_names: [], origin: 'plantid', plantid_name: value }),
-      });
-      const rows: { id: string }[] =
-        await (await rest(deps, `species?select=id&scientific_name=eq.${encodeURIComponent(value)}`)).json();
-      return respond(json({ speciesId: rows[0].id }), 'pick');
-    }
-
     if (!(await searchAllowed(deps, userId))) {
       return respond(jsonError(429, 'Too many searches. Try again in a few minutes.'), 'limited');
     }
+    let hits;
     try {
-      const hits = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch }).nameSearch(value);
-      return respond(json({ hits: hits.slice(0, 10) }), 'ok');
+      hits = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch }).nameSearch(value);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
       return respond(jsonError(502, "Couldn't search right now. Try again."), 'provider_error');
     }
+    if (kind === 'query') return respond(json({ hits: hits.slice(0, 10) }), 'ok');
+
+    // Only a name Plant.id itself returns may enter the shared species table.
+    if (!hits.some((h) => h.scientificName === value)) {
+      return respond(jsonError(400, "Couldn't find that plant. Try another name."), 'unknown_name');
+    }
+    await rest(deps, 'species?on_conflict=scientific_name', {
+      method: 'POST',
+      headers: { prefer: 'resolution=ignore-duplicates,return=minimal' },
+      body: JSON.stringify({ scientific_name: value, common_names: [], origin: 'plantid', plantid_name: value }),
+    });
+    const rows: { id: string }[] =
+      await (await rest(deps, `species?select=id&scientific_name=eq.${encodeURIComponent(value)}`)).json();
+    return respond(json({ speciesId: rows[0].id }), 'pick');
   } catch {
     return respond(jsonError(500, 'Something went wrong.'), 'error');
   } finally {
