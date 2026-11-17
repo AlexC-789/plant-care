@@ -196,7 +196,7 @@ The owner's own photo is the main visual moment, so mockups should use real-look
 - Home rows (60 pt square): crop to the leaves, not the pot.
 - Dark mode uses the same photos, unchanged.
 
-Until real photos exist, the canvas keeps the drawn stand-ins.
+The canvas now uses the six photos generated from these prompts (2026-11-17).
 
 ## 8. Decisions and open questions
 
