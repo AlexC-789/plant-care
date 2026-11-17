@@ -88,9 +88,10 @@ Full-screen cover, title "Plant · 1 of 6", Cancel top-right.
    an **Identify** button (the explicit tap that spends a credit).
 3. Identify → "Looking at your photo…" over the first photo (usually 2–5 s) → **1b "Is it one of
    these?"**: up to 3 suggestions (common name, scientific name, confidence word), top one
-   preselected only if "Very likely", "None of these, search instead", primary button
-   "Use {common name}". (No health line here: health is checked separately, 5.7.)
-4. Choosing a suggestion fills Plant type; Name is prefilled with the common name only if empty.
+   preselected only if "Very likely", "None of these, search instead". (No health line here:
+   health is checked separately, 5.7.)
+4. Tapping a suggestion applies it: fills Plant type; Name is prefilled with the common name only if empty.
+   Owner change 2026-11-18: no "Use {common name}" button; Continue is the single primary action. A "Very likely" top pick is applied on arrival; tapping another row switches the type (Name follows only if empty or still the previous common name).
 5. **Continue** saves the plant immediately (with or without photo/type; Name required) and, since
    steps 2–6 don't exist yet, closes the cover and opens the new plant's detail.
    Owner change 2026-11-17: a Problem spot photo triggers an automatic health check on Continue (1 credit, shared limit). Later checks are on demand. The check runs in the
@@ -205,8 +206,9 @@ allow a user to read/write/delete only under their own `user_id/` prefix (tested
 - **`check-health`** (user JWT): `{ plantId, photoPaths (1–2) }` → same ownership and limit rules →
   Plant.id health assessment → stores a `kind = health` scan → `{ healthy: boolean | null,
   note: string, advice: string | null }`. Healthy probability ≥ 0.8 → healthy; else top issue
-  ≥ 0.5 → plain-words note from a small mapping table (builder writes it, ~15 common issues);
+  ≥ 0.3 and mapped → plain-words note from a small mapping table (builder writes it, ~15 common issues);
   otherwise "Couldn't tell from this photo…".
+  Owner change 2026-11-18: threshold lowered from 0.5 (a live yellow-leaf orchid scored its top issue 0.4999). The scan's `health` jsonb also stores `top_issue { name, probability }` for tuning; never returned to the app and never logged.
 - **`search-plants`** (user JWT): `{ query }` (≥ 2 chars) → Plant.id name search (free) → up to 10
   `{ commonName, scientificName }`. Only called when local search has < 3 matches. Picking one
   inserts a names-only `plantid` species via the same function (`{ pick: scientificName }`).

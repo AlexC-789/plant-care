@@ -28,6 +28,15 @@ export default function PlantStep() {
   const typeName = !draft.species ? '' : 'custom' in draft.species ? draft.species.custom : draft.species.name;
   const name = draft.name.trim();
 
+  // Applies a suggestion: sets the type; Name follows only while it is empty or still the previous suggestion's name.
+  const apply = (s: { speciesId: string; commonName: string }) => {
+    const prev = draft.species && 'id' in draft.species ? draft.species.name : '';
+    set({
+      species: { id: s.speciesId, name: s.commonName },
+      name: !draft.name.trim() || draft.name === prev ? s.commonName : draft.name,
+    });
+  };
+
   const runIdentify = () => {
     setMessage(null);
     identify.mutate(
@@ -35,7 +44,11 @@ export default function PlantStep() {
       draft.photos.filter((p) => p.kind !== 'problem').map((p) => p.path),
       {
         onSuccess: (r) => {
-          if (r.isPlant && r.suggestions.length) set({ scanId: r.scanId, suggestions: r.suggestions.slice(0, 3) });
+          if (r.isPlant && r.suggestions.length) {
+            const [top] = r.suggestions;
+            set({ scanId: r.scanId, suggestions: r.suggestions.slice(0, 3) });
+            if (top.confidence === 'very_likely') apply(top);
+          }
           else setMessage(COULDNT);
         },
         onError: (e) => setMessage(e.message === LIMIT ? LIMIT : COULDNT),
@@ -138,13 +151,7 @@ export default function PlantStep() {
           <Suggestions
             suggestions={draft.suggestions}
             onSearch={() => router.push('/add/search')}
-            onUse={(s) =>
-              set({
-                species: { id: s.speciesId, name: s.commonName },
-                name: draft.name.trim() ? draft.name : s.commonName,
-                suggestions: undefined,
-              })
-            }
+            onPick={apply}
           />
         ) : whole && !draft.scanId ? (
           <Button label="Identify" variant="bordered" busy={identify.isPending} disabled={identify.isPending} onPress={runIdentify} />

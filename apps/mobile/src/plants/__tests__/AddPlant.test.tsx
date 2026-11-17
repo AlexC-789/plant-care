@@ -150,11 +150,11 @@ test('Identify is only called after tapping it, and shows words not percentages'
   for (const w of ['Very likely', 'Likely', 'Possibly']) expect(screen.getByText(new RegExp(w))).toBeTruthy();
   expect(screen.getByText(/Monstera deliciosa/)).toBeTruthy();
   expect(screen.queryByText(/%/)).toBeNull();
-  expect(screen.getByRole('button', { name: 'Use Monstera' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: /^Use / })).toBeNull();
   expect(screen.getByRole('button', { name: 'None of these, search instead' })).toBeTruthy();
 });
 
-test('top suggestion is not preselected unless very likely', async () => {
+test('top suggestion is not applied unless very likely; tapping a row applies it', async () => {
   mocked(api.identifyPlant).mockResolvedValue({
     scanId: 'scan1',
     isPlant: true,
@@ -164,13 +164,12 @@ test('top suggestion is not preselected unless very likely', async () => {
   await addPhotos([0]);
   await press('Identify');
   await waitFor(() => expect(screen.getByText('Is it one of these?')).toBeTruthy());
-  expect(screen.queryByRole('button', { name: /^Use / })).toBeNull();
+  expect(screen.queryByDisplayValue('Monstera')).toBeNull();
   await press(/^Monstera/);
-  await press('Use Monstera');
   await waitFor(() => expect(screen.getByDisplayValue('Monstera')).toBeTruthy());
 });
 
-test('using a suggestion fills the type; Name is prefilled only when empty', async () => {
+test('a very likely top suggestion is applied at once; Name is kept when already filled', async () => {
   mocked(api.identifyPlant).mockResolvedValue({
     scanId: 'scan1',
     isPlant: true,
@@ -180,8 +179,7 @@ test('using a suggestion fills the type; Name is prefilled only when empty', asy
   await fireEvent.changeText(screen.getByLabelText('Name'), 'Fernando');
   await addPhotos([0]);
   await press('Identify');
-  await press('Use Monstera');
-  await waitFor(() => expect(screen.getByText('Monstera')).toBeTruthy()); // Plant type value
+  await waitFor(() => expect(screen.getAllByText('Monstera')).toHaveLength(2)); // suggestion row + Plant type value
   expect(screen.getByDisplayValue('Fernando')).toBeTruthy();
   await press('Continue');
   await waitFor(() =>
@@ -189,6 +187,26 @@ test('using a suggestion fills the type; Name is prefilled only when empty', asy
       expect.objectContaining({ name: 'Fernando', speciesId: 's1', scanId: 'scan1', photoPath: 'u/1.jpg' }),
     ),
   );
+});
+
+test('tapping another suggestion switches the type and the prefilled Name, not a typed one', async () => {
+  const pothos = { speciesId: 's3', commonName: 'Pothos', scientificName: 'Epipremnum aureum', confidence: 'likely' as const };
+  mocked(api.identifyPlant).mockResolvedValue({
+    scanId: 'scan1',
+    isPlant: true,
+    suggestions: [{ ...monstera, confidence: 'very_likely' }, pothos],
+  });
+  await open();
+  await addPhotos([0]);
+  await press('Identify');
+  await waitFor(() => expect(screen.getByDisplayValue('Monstera')).toBeTruthy());
+  await press(/^Pothos/);
+  await waitFor(() => expect(screen.getByDisplayValue('Pothos')).toBeTruthy());
+  await fireEvent.changeText(screen.getByLabelText('Name'), 'Fernando');
+  await press(/^Monstera/);
+  expect(screen.getByDisplayValue('Fernando')).toBeTruthy();
+  await press('Continue');
+  await waitFor(() => expect(api.createPlant).toHaveBeenCalledWith(expect.objectContaining({ name: 'Fernando', speciesId: 's1' })));
 });
 
 test.each([
