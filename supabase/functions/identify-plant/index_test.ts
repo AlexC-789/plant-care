@@ -1,6 +1,6 @@
 import { assert, assertEquals, assertFalse } from '@std/assert';
 
-import { handler, type IdentifyDeps } from './index.ts';
+import { handler, lightFrom, moistureFrom, wateringLine, type IdentifyDeps } from './index.ts';
 
 const fixture = (name: string) => Deno.readTextFileSync(new URL(`../_shared/fixtures/${name}.json`, import.meta.url));
 const U = '11111111-1111-1111-1111-111111111111';
@@ -120,7 +120,8 @@ Deno.test('success: request carries all images, no health; species created; scan
   assert((post.init?.headers as Record<string, string>).prefer.includes('resolution=ignore-duplicates'));
   assert(post.body.every((r) => r.origin === 'plantid' && r.plantid_name === r.scientific_name));
   assertEquals(post.body[0].description, 'Monstera deliciosa is a species of flowering plant native to tropical forests of southern Mexico.');
-  assertEquals(post.body[0].light, undefined);
+  // watering {1,2} -> avg 1.5 -> moderate; light prose contains "shade" -> low (ruling: first keyword match in order)
+  assertEquals([post.body[0].moisture_category, post.body[0].watering, post.body[0].light], ['moderate', 'Water when the top few centimetres of soil are dry.', 'low']);
 
   assertEquals(w.scans.length, 1);
   const s = w.scans[0];
@@ -175,4 +176,26 @@ Deno.test('unexpected failure: 500 uniform body, no stack', async () => {
   const res = await handler(req({ photoPaths: [P1] }), w.deps);
   assertEquals(res.status, 500);
   assertEquals(await res.json(), { error: 'Something went wrong.' });
+});
+
+Deno.test('free details map to our enums', () => {
+  assertEquals([{ min: 1, max: 1 }, { min: 1, max: 2 }, { min: 2, max: 3 }, { min: 3, max: 3 }, undefined].map(moistureFrom), ['dry', 'moderate', 'moderate', 'moist', null]);
+  assertEquals((['dry', 'moderate', 'moist', null] as const).map((m) => wateringLine(m)), [
+    'Let the soil dry out between waterings.', 'Water when the top few centimetres of soil are dry.', 'Keep the soil evenly moist.', null,
+  ]);
+  assertEquals(
+    ['Full sun', 'Needs direct sun', 'Low light or shade', 'Bright indirect light', 'Partial light', 'Medium', 'Sunny', undefined].map(lightFrom),
+    ['direct', 'direct', 'low', 'bright_indirect', 'medium', 'medium', null, null],
+  );
+});
+
+Deno.test('new species stores watering details; an unmappable one stores nulls', async () => {
+  const w = world({ plantId: () => Response.json({ result: { is_plant: { probability: 0.9 }, classification: { suggestions: [
+    { name: 'Ficus lyrata', probability: 0.8, details: { common_names: ['Fiddle-leaf fig'], watering: { min: 3, max: 3 }, best_light_condition: 'Bright light' } },
+    { name: 'Bare thing', probability: 0.5, details: {} },
+  ] } } }) });
+  await handler(req({ photoPaths: [P1] }), w.deps);
+  const [a, b] = w.speciesPosts[0].body;
+  assertEquals([a.moisture_category, a.watering, a.light], ['moist', 'Keep the soil evenly moist.', 'bright_indirect']);
+  assertEquals([b.moisture_category, b.watering, b.light], [null, null, null]);
 });

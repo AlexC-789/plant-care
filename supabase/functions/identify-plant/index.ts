@@ -12,6 +12,31 @@ export interface IdentifyDeps extends Deps {
 
 const LIMIT_MESSAGE = "You've reached the identification limit for now. Search for the plant type, or try again later.";
 
+type Moisture = 'dry' | 'moderate' | 'moist';
+// Plant.id watering is 1 (dry) .. 3 (wet)
+export const moistureFrom = (w?: { min: number; max: number }): Moisture | null => {
+  if (!w) return null;
+  const avg = (w.min + w.max) / 2;
+  return avg < 1.5 ? 'dry' : avg <= 2.5 ? 'moderate' : 'moist';
+};
+const WATERING: Record<Moisture, string> = {
+  dry: 'Let the soil dry out between waterings.',
+  moderate: 'Water when the top few centimetres of soil are dry.',
+  moist: 'Keep the soil evenly moist.',
+};
+export const wateringLine = (m: Moisture | null): string | null => (m ? WATERING[m] : null);
+// shortcut: keyword match on Plant.id's prose, first match wins ("bright indirect, tolerates shade" reads as low); refine against real responses.
+const LIGHT: [string[], string][] = [
+  [['full sun', 'direct sun'], 'direct'],
+  [['shade', 'low light'], 'low'],
+  [['indirect', 'bright'], 'bright_indirect'],
+  [['partial', 'medium'], 'medium'],
+];
+export const lightFrom = (text?: string): string | null => {
+  const t = text?.toLowerCase() ?? '';
+  return LIGHT.find(([words]) => words.some((w) => t.includes(w)))?.[1] ?? null;
+};
+
 const bearer = (d: Deps) => ({ apikey: d.serviceRoleKey, authorization: `Bearer ${d.serviceRoleKey}` });
 
 async function downloadBase64(d: Deps, path: string): Promise<string> {
@@ -90,8 +115,10 @@ export async function handler(req: Request, deps: IdentifyDeps): Promise<Respons
         plantid_name: s.scientificName,
         common_names: s.commonNames,
         origin: 'plantid',
-        // watering/light stay null: Plant.id's scales and prose don't map cleanly to ours
         description: s.details.description ?? null,
+        moisture_category: moistureFrom(s.details.watering),
+        watering: wateringLine(moistureFrom(s.details.watering)),
+        light: lightFrom(s.details.bestLight),
       })))
       : new Map<string, string>();
     const suggestions = result.suggestions.map((s) => ({
