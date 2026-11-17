@@ -21,7 +21,7 @@ export interface HealthResult {
   issues: { name: string; probability: number }[];
 }
 export interface NameHit {
-  commonName: string;
+  commonName: string; // '' when unknown
   scientificName: string;
 }
 
@@ -112,20 +112,21 @@ export class PlantIdClient {
     };
   }
 
-  /** name_search only returns matches (no scientific name for common-name hits), so those are resolved via the KB entity. */
+  // shortcut: name_search doesn't return scientific names for common-name matches without a paid detail call;
+  // common-name-only hits are dropped unless entity_name is present — revisit with a real API response
   async nameSearch(q: string): Promise<NameHit[]> {
     const body = await this.call(`/kb/plants/name_search?q=${encodeURIComponent(q)}&limit=10`);
-    const entities: Json[] = (body?.entities ?? []).filter((e: Json) => typeof e?.matched_in === 'string');
-    const hits = await Promise.all(entities.slice(0, 10).map(async (e): Promise<NameHit | null> => {
-      if (e.matched_in_type === 'entity_name') return { commonName: '', scientificName: e.matched_in };
-      if (typeof e.access_token !== 'string') return null;
-      try {
-        const name = (await this.call(`/kb/plants/${encodeURIComponent(e.access_token)}`))?.name;
-        return typeof name === 'string' ? { commonName: e.matched_in, scientificName: name } : null;
-      } catch {
-        return null; // one unresolvable hit should not fail the whole search
-      }
-    }));
-    return hits.filter((h): h is NameHit => h !== null);
+    const entities: Json[] = body?.entities ?? [];
+    const hits = new Map<string, NameHit>();
+    for (const e of entities) {
+      if (typeof e?.matched_in !== 'string') continue;
+      const hit: NameHit | null = typeof e.entity_name === 'string'
+        ? { scientificName: e.entity_name, commonName: e.matched_in_type === 'common_name' ? e.matched_in : '' }
+        : e.matched_in_type === 'entity_name'
+        ? { scientificName: e.matched_in, commonName: '' }
+        : null;
+      if (hit && !hits.has(hit.scientificName)) hits.set(hit.scientificName, hit);
+    }
+    return [...hits.values()].slice(0, 10);
   }
 }

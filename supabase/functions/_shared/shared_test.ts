@@ -126,10 +126,6 @@ Deno.test('identify: is_plant < 0.5 gives no suggestions', async () => {
 Deno.test('health and nameSearch map the documented shapes', async () => {
   let path = '';
   const c = client((url) => {
-    if (url.pathname.startsWith('/api/v3/kb/plants/tok-')) {
-      if (url.pathname.endsWith('adansonii')) return new Response('boom', { status: 500 });
-      return new Response(JSON.stringify({ name: 'Monstera deliciosa', language: 'en' }));
-    }
     path = url.pathname + url.search;
     return new Response(fixture(url.pathname.includes('health') ? 'health_assessment' : 'name_search'));
   });
@@ -139,9 +135,8 @@ Deno.test('health and nameSearch map the documented shapes', async () => {
   assertEquals(h.issues[0], { name: 'water excess or uneven watering', probability: 0.51401126 });
   const hits = await c.nameSearch('swiss & cheese');
   assertEquals(path, '/api/v3/kb/plants/name_search?q=swiss%20%26%20cheese&limit=10');
-  assertEquals(hits[0], { commonName: 'Swiss cheese plant', scientificName: 'Monstera deliciosa' });
-  // the 500 on the second KB lookup drops only that hit
-  assertEquals(hits, [hits[0], { commonName: '', scientificName: 'Swissia exemplum' }]);
+  // fixture has no entity_name: common-name-only hits are dropped, the entity_name match stays
+  assertEquals(hits, [{ commonName: '', scientificName: 'Swissia exemplum' }]);
 });
 
 Deno.test('provider failures become ProviderError without key or provider body', async () => {
@@ -171,4 +166,17 @@ Deno.test('a failing call logs nothing containing the key', async () => {
     [console.log, console.error, console.warn] = orig;
   }
   assertEquals(lines.filter((l) => l.includes(KEY)), []);
+});
+
+Deno.test('nameSearch makes exactly one request; entity_name is used, deduped and clamped to 10', async () => {
+  let calls = 0;
+  const entities = [
+    { matched_in: 'Swiss cheese plant', matched_in_type: 'common_name', entity_name: 'Monstera deliciosa' },
+    { matched_in: 'Monstera deliciosa', matched_in_type: 'entity_name', entity_name: 'Monstera deliciosa' },
+    ...Array.from({ length: 12 }, (_, i) => ({ matched_in: `Genus ${i}`, matched_in_type: 'entity_name' })),
+  ];
+  const hits = await client(() => { calls++; return new Response(JSON.stringify({ entities })); }).nameSearch('m');
+  assertEquals(calls, 1);
+  assertEquals(hits.length, 10);
+  assertEquals(hits[0], { commonName: 'Swiss cheese plant', scientificName: 'Monstera deliciosa' });
 });
