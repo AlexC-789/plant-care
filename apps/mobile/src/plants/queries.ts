@@ -42,7 +42,7 @@ export function useSpeciesSearch(q: string) {
       const local = await api.searchLocalSpecies(term);
       if (local.length >= 3 || term.length < 2) return { local, more: [] as api.SpeciesHit[] };
       const known = new Set(local.map((s) => s.scientific_name));
-      const hits = await api.searchPlantNames(term);
+      const hits = await api.searchPlantNames(term).catch(() => [] as api.SpeciesHit[]);
       return { local, more: hits.filter((h) => !known.has(h.scientificName)) };
     },
   });

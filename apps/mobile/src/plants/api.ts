@@ -107,7 +107,10 @@ export async function createPlant(p: NewPlant): Promise<Plant> {
   if (error) throw error;
   if (p.scanId) {
     const { error: linkError } = await supabase.from('scans').update({ plant_id: data.id }).eq('id', p.scanId);
-    if (linkError) throw linkError;
+    if (linkError) {
+      await supabase.from('plants').delete().eq('id', data.id); // a retry must not leave a second plant sharing the photo
+      throw linkError;
+    }
   }
   return data;
 }

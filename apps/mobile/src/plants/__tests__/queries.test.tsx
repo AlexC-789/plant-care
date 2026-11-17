@@ -89,6 +89,21 @@ describe('useCreatePlant', () => {
     expect(calls).toContainEqual({ table: 'scans', method: 'eq', args: ['id', 'scan1'] });
   });
 
+  it('deletes the just-inserted plant and rethrows when the scan link fails', async () => {
+    const calls = mockTables({
+      plants: [{ data: { id: 'p1' }, error: null }, { error: { message: 'delete failed' } }],
+      scans: { error: { message: 'link failed' } },
+    });
+    const { result } = await renderHook(() => useCreatePlant(), { wrapper });
+    await act(async () => {
+      await expect(result.current.mutateAsync({ name: 'Fern', scanId: 'scan1' })).rejects.toEqual({
+        message: 'link failed',
+      });
+    });
+    expect(calls).toContainEqual({ table: 'plants', method: 'delete', args: [] });
+    expect(calls).toContainEqual({ table: 'plants', method: 'eq', args: ['id', 'p1'] });
+  });
+
   it('does not touch scans without a scanId', async () => {
     const calls = mockTables({ plants: { data: { id: 'p1' }, error: null } });
     const { result } = await renderHook(() => useCreatePlant(), { wrapper });
@@ -170,6 +185,14 @@ describe('useSpeciesSearch', () => {
     await waitFor(() => expect(result.current.data).toBeDefined());
     expect(supabase.functions.invoke).toHaveBeenCalledWith('search-plants', { body: { query: 'mon' } });
     expect(result.current.data?.more).toEqual([{ commonName: 'New', scientificName: 'Novus plantus' }]);
+  });
+
+  it('keeps local results when the Plant.id search fails', async () => {
+    mockTables({ species: { data: local(1), error: null } });
+    (supabase.functions.invoke as jest.Mock).mockResolvedValue({ data: null, error: { message: 'down' } });
+    const { result } = await renderHook(() => useSpeciesSearch('mon'), { wrapper });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data).toEqual({ local: local(1), more: [] });
   });
 
   it('does not call search-plants for a 1-character query', async () => {
