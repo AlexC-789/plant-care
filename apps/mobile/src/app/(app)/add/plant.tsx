@@ -8,7 +8,7 @@ import { deletePhotos } from '@/plants/photos';
 import { useCheckHealth, useCreatePlant, useIdentify } from '@/plants/queries';
 import { Suggestions } from '@/plants/Suggestions';
 import { radius, space, typography, useTheme } from '@/theme';
-import { Button, InsetGroup, Row, Text } from '@/ui';
+import { BottomBar, Button, InsetGroup, Row, Text } from '@/ui';
 
 const COULDNT = "Couldn't tell from this photo. Try one with a whole leaf in view, or search.";
 // The server's own message for a 429; any other failure reads as "couldn't tell".
@@ -174,15 +174,17 @@ export default function PlantStep() {
             {"Couldn't save your plant. Try again."}
           </Text>
         ) : null}
-        <Button label="Continue" busy={create.isPending} disabled={!name || create.isPending} onPress={() => void save()} />
       </ScrollView>
+      <BottomBar>
+        <Button label="Continue" busy={create.isPending} disabled={!name || create.isPending} onPress={() => void save()} />
+      </BottomBar>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: space.l, gap: space.l, paddingBottom: space.xxxl },
+  content: { padding: space.l, gap: space.l },
   input: { flex: 1, textAlign: 'right', minHeight: space.touch },
   photos: { flexDirection: 'row', gap: space.s },
   photoBox: { borderRadius: radius.thumb, overflow: 'hidden' },

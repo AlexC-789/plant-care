@@ -58,6 +58,7 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
   Screens use `src/ui` + theme tokens only; raw colours outside `src/theme/` fail lint. Never cap
   font scaling (`maxFontSizeMultiplier`/`allowFontScaling={false}`). Icons: `Icon` (SF Symbols on
   iOS, Material Symbols elsewhere). No emoji.
+- Screens with a primary action put it in `BottomBar` (pinned above the safe area); sheets keep Done in the header.
 - **Loading rules (owner, 2026-11-17), every screen** — `docs/superpowers/specs/2026-11-17-loading-rules-design.md`:
   1. Lazy loading: fetch per screen, on demand, paged; images via `expo-image` (load when shown,
      cached); long lists virtualised (`FlatList`/`FlashList`, never `ScrollView` + `map`); heavy

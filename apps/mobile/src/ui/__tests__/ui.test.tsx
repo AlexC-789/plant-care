@@ -2,8 +2,10 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import * as RN from 'react-native';
 import { StyleSheet } from 'react-native';
 
-import { colors, resetAppearanceForTests, typography } from '@/theme';
-import { Button, Icon, InsetGroup, PotDrawing, Row, Text } from '@/ui';
+import { colors, resetAppearanceForTests, space, typography } from '@/theme';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+import { BottomBar, Button, Icon, InsetGroup, PotDrawing, Row, Text } from '@/ui';
 
 jest.mock('expo-symbols', () => ({
   SymbolView: jest.fn(() => null),
@@ -127,5 +129,22 @@ describe('PotDrawing', () => {
         'Drawing of a pot standing on the watering saucer, with the sensor stake in the soil',
       ),
     ).toBeTruthy();
+  });
+});
+
+describe('BottomBar', () => {
+  test('holds its buttons on the theme background, padded above the bottom safe area', async () => {
+    const metrics = { frame: { x: 0, y: 0, width: 390, height: 844 }, insets: { top: 47, left: 0, right: 0, bottom: 34 } };
+    await render(
+      <SafeAreaProvider initialMetrics={metrics}>
+        <BottomBar>
+          <Button label="Continue" onPress={() => {}} />
+        </BottomBar>
+      </SafeAreaProvider>,
+    );
+    const bar = screen.getByTestId('bottom-bar');
+    expect(flat(bar).paddingBottom).toBe(space.m + 34);
+    expect(flat(bar).backgroundColor).toBe(colors.light.background);
+    expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy();
   });
 });

@@ -1,16 +1,25 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { CaptureCards, type CaptureCard, type Photo } from '@/plants/CaptureCards';
 import { deletePhotos } from '@/plants/photos';
 import { useCheckHealth } from '@/plants/queries';
 import { space } from '@/theme';
-import { Button, Text } from '@/ui';
+import { BottomBar, Button, Text } from '@/ui';
 
 const CARDS: CaptureCard[] = [
-  { kind: 'whole', title: 'Whole plant', hint: 'Step back so the whole plant and pot fit' },
-  { kind: 'problem', title: 'Problem spot', hint: 'If something looks wrong', optional: true },
+  {
+    kind: 'whole',
+    title: 'Whole plant',
+    hint: 'Step back so the whole plant and pot fit',
+  },
+  {
+    kind: 'problem',
+    title: 'Problem spot',
+    hint: 'If something looks wrong',
+    optional: true,
+  },
 ];
 // The server's own message for a 429; any other failure reads as "couldn't check".
 const LIMIT = "You've reached the health check limit for now. Try again later.";
@@ -49,39 +58,49 @@ export default function Health() {
 
   const result = check.data;
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+    <View style={styles.flex}>
       <Stack.Screen options={{ title: 'Check its health' }} />
-      {result ? (
-        <>
-          <Text variant="title3" accessibilityRole="header">
-            {result.note}
-          </Text>
-          {result.advice ? <Text variant="body">{result.advice}</Text> : null}
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
+        {result ? (
+          <>
+            <Text variant="title3" accessibilityRole="header">
+              {result.note}
+            </Text>
+            {result.advice ? <Text variant="body">{result.advice}</Text> : null}
+          </>
+        ) : (
+          <>
+            <CaptureCards cards={CARDS} photos={photos} onChange={change} />
+            {check.isPending ? (
+              <Text variant="footnote" accessibilityLiveRegion="polite">
+                Looking at your plant…
+              </Text>
+            ) : null}
+            {error ? (
+              <Text variant="footnote" color="statusNow" accessibilityRole="alert">
+                {error}
+              </Text>
+            ) : null}
+          </>
+        )}
+      </ScrollView>
+      <BottomBar>
+        {result ? (
           <Button label="Done" onPress={() => router.back()} />
-        </>
-      ) : (
-        <>
-          <CaptureCards cards={CARDS} photos={photos} onChange={change} />
-          {check.isPending ? (
-            <Text variant="footnote" accessibilityLiveRegion="polite">
-              Looking at your plant…
-            </Text>
-          ) : null}
-          {error ? (
-            <Text variant="footnote" color="statusNow" accessibilityRole="alert">
-              {error}
-            </Text>
-          ) : null}
+        ) : (
           <Button
             label="Check"
             busy={check.isPending}
             disabled={!photos.some((p) => p.kind === 'whole') || check.isPending}
             onPress={run}
           />
-        </>
-      )}
-    </ScrollView>
+        )}
+      </BottomBar>
+    </View>
   );
 }
 
-const styles = StyleSheet.create({ content: { padding: space.l, gap: space.l, paddingBottom: space.xxxl } });
+const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  content: { padding: space.l, gap: space.l },
+});

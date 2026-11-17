@@ -1,3 +1,4 @@
+export { BottomBar } from './BottomBar';
 export { Button } from './Button';
 export { Icon, type IconName } from './Icon';
 export { InsetGroup } from './InsetGroup';
