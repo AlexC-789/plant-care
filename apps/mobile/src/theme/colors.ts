@@ -18,7 +18,9 @@ export type ColorToken =
   | 'waterFill'
   | 'band'
   | 'nowFill'
-  | 'soonFill';
+  | 'soonFill'
+  | 'skeleton'
+  | 'skeletonHighlight';
 
 export type ColorScheme = 'light' | 'dark';
 export type Palette = Record<ColorToken, string>;
@@ -41,6 +43,8 @@ export const colors: Record<ColorScheme, Palette> = {
     band: '#668C60',
     nowFill: '#F7E4DF',
     soonFill: '#F6ECD6',
+    skeleton: '#ECE7DE',
+    skeletonHighlight: '#F6F3ED',
   },
   dark: {
     background: '#161412',
@@ -59,5 +63,7 @@ export const colors: Record<ColorScheme, Palette> = {
     band: '#6F9A69',
     nowFill: '#3A221D',
     soonFill: '#352A16',
+    skeleton: '#2A2622',
+    skeletonHighlight: '#35302A',
   },
 };

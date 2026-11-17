@@ -86,3 +86,14 @@ test('follows sign-out events and unsubscribes on unmount', async () => {
   await view.unmount();
   expect(unsubscribe).toHaveBeenCalled();
 });
+
+test('signing out clears all cached server data', async () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- the app's shared cache
+  const { queryClient } = require('@/lib/queryClient');
+  queryClient.setQueryData(['profile', 'u1'], { user_id: 'u1' });
+  auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
+  await renderProvider();
+  await waitFor(() => expect(screen.getByTestId('probe')).toHaveTextContent('signed-in:u1'));
+  await act(async () => authListener('SIGNED_OUT', null));
+  expect(queryClient.getQueryData(['profile', 'u1'])).toBeUndefined();
+});

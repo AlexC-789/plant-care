@@ -1,5 +1,11 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { StyleSheet } from 'react-native';
+
+import { resetLaunchForTests } from '@/launch/useLaunchGate';
+import { colors, resetAppearanceForTests } from '@/theme';
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { emitAuthEvent, fakeSession } from '@/test-utils/supabaseMock';
 
@@ -10,13 +16,14 @@ const auth = supabase.auth as unknown as Record<string, jest.Mock>;
 const NETWORK = "Can't reach the server. Check your connection and try again.";
 
 beforeEach(() => {
+  queryClient.clear();
   jest.clearAllMocks();
   auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
 });
 
 async function openApp(url = '/') {
   const view = await renderRouter('src/app', { initialUrl: url });
-  await waitFor(() => expect(screen.queryByTestId('auth-loading')).toBeNull());
+  await waitFor(() => expect(screen.queryByTestId('launch')).toBeNull(), { timeout: 3000 });
   return view;
 }
 
@@ -26,10 +33,25 @@ async function fill(email: string, password: string) {
 }
 
 describe('routing', () => {
-  test('shows a loading indicator while the session is read', async () => {
+  test('while the session is read: the launch animation, never a spinner', async () => {
+    resetLaunchForTests();
     auth.getSession.mockReturnValue(new Promise(() => {}));
     await renderRouter('src/app', { initialUrl: '/' });
-    expect(screen.getByTestId('auth-loading')).toBeTruthy();
+    expect(screen.getByTestId('launch')).toBeTruthy();
+    expect(screen.getByLabelText('Plant Care')).toBeTruthy();
+    expect(screen.queryAllByRole('progressbar')).toHaveLength(0);
+    expect(screen.queryByTestId('auth-loading')).toBeNull();
+  });
+
+  test('the launch overlay waits for the saved appearance, so Dark users start dark', async () => {
+    resetLaunchForTests();
+    resetAppearanceForTests();
+    await AsyncStorage.setItem('plant-care.appearance', 'dark');
+    auth.getSession.mockReturnValue(new Promise(() => {}));
+    await renderRouter('src/app', { initialUrl: '/' });
+    await waitFor(() => expect(screen.getByTestId('launch')).toBeTruthy());
+    const bg = StyleSheet.flatten(screen.getByTestId('launch').props.style).backgroundColor;
+    expect(bg).toBe(colors.dark.background);
   });
 
   test('signed out users land on sign-in', async () => {

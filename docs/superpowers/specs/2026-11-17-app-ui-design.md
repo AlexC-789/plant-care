@@ -1,5 +1,8 @@
 # Plant Care iOS app: UI design
 
+> **Amended 2026-11-17:** the app is light by default with a Light/Dark choice in Settings
+> (see `2026-11-17-appearance-setting-design.md`); it no longer follows the phone's setting.
+
 Date: 2026-11-17
 Status: Draft for owner review
 Canvas (high-fidelity screens): https://claude.ai/artifact/FVr5hjCEB2vj7uZ7gpcKUy (private until shared)

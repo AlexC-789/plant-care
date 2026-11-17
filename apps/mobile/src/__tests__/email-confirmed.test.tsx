@@ -1,6 +1,7 @@
 import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { clearConfirmationUrl, readConfirmationUrl } from '@/auth/confirmationUrl';
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { fakeSession } from '@/test-utils/supabaseMock';
 
@@ -17,11 +18,12 @@ const readUrl = readConfirmationUrl as jest.Mock;
 async function open(session: unknown = null) {
   auth.getSession.mockResolvedValue({ data: { session }, error: null });
   const view = await renderRouter('src/app', { initialUrl: '/email-confirmed' });
-  await waitFor(() => expect(screen.queryByTestId('auth-loading')).toBeNull());
+  await waitFor(() => expect(screen.queryByTestId('launch')).toBeNull(), { timeout: 3000 });
   return view;
 }
 
 beforeEach(() => {
+  queryClient.clear();
   jest.clearAllMocks();
   readUrl.mockReturnValue({ search: '', hash: '#access_token=x&type=signup' });
 });

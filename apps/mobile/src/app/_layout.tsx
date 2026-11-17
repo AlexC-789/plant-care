@@ -1,29 +1,55 @@
+import { QueryClientProvider } from '@tanstack/react-query';
 import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import * as SplashScreen from 'expo-splash-screen';
+import { useEffect } from 'react';
+import { View } from 'react-native';
 
 import { AuthProvider, useSession } from '@/auth/AuthProvider';
-import { useTheme } from '@/theme';
+import { LaunchAnimation } from '@/launch/LaunchAnimation';
+import { useLaunchGate } from '@/launch/useLaunchGate';
+import { queryClient } from '@/lib/queryClient';
+import { loadStoredAppearance, useAppearanceLoaded, useTheme } from '@/theme';
+import { ShimmerProvider } from '@/ui';
+
+// Keep the native splash (plain paper) up until the launch animation's first frame is on
+// screen, so the hand-off is paper to paper with no flash.
+void SplashScreen.preventAutoHideAsync().catch(() => {});
+const hideSplash = () => void SplashScreen.hideAsync().catch(() => {});
 
 function RootNavigator() {
   const { isLoading } = useSession();
   const { colors } = useTheme();
+  const appearanceLoaded = useAppearanceLoaded();
+  const { mounted, fadingOut, onAnimationDone, onExited } = useLaunchGate(isLoading);
 
-  if (isLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: colors.background,
-        }}>
-        <ActivityIndicator testID="auth-loading" size="large" color={colors.secondaryLabel} />
-      </View>
-    );
-  }
+  // Read the saved Light/Dark choice before showing anything (a few ms; the native splash
+  // covers it), so Dark users never see a light first frame.
+  useEffect(() => {
+    if (!appearanceLoaded) void loadStoredAppearance();
+  }, [appearanceLoaded]);
 
-  // (app) and (auth) layouts redirect based on the session.
-  return <Slot />;
+  // Without a launch animation (e.g. the root remounted), hide the native splash now;
+  // otherwise the overlay hides it once its first frame is on screen.
+  useEffect(() => {
+    if (appearanceLoaded && !mounted) hideSplash();
+  }, [appearanceLoaded, mounted]);
+
+  if (!appearanceLoaded) return null;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      {/* (app) and (auth) layouts redirect based on the session. */}
+      {isLoading ? null : <Slot />}
+      {mounted ? (
+        <LaunchAnimation
+          onDone={onAnimationDone}
+          fadingOut={fadingOut}
+          onExited={onExited}
+          onReady={hideSplash}
+        />
+      ) : null}
+    </View>
+  );
 }
 
 export default function RootLayout() {
@@ -43,10 +69,14 @@ export default function RootLayout() {
   };
 
   return (
-    <ThemeProvider value={navTheme}>
-      <AuthProvider>
-        <RootNavigator />
-      </AuthProvider>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={navTheme}>
+        <ShimmerProvider>
+          <AuthProvider>
+            <RootNavigator />
+          </AuthProvider>
+        </ShimmerProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }

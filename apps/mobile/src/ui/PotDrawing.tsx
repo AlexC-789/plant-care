@@ -1,7 +1,28 @@
 import { Platform } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 import { useTheme } from '@/theme';
+
+/** Stroke data, shared with the launch animation (which draws `body`, then `leaves`). */
+export const POT_PATHS = {
+  body: [
+    // saucer with the capped fill hole on the front right
+    'M22 112 H138 A8 8 0 0 1 138 128 H22 A8 8 0 0 1 22 112 Z',
+    'M122 120 h 10',
+    // pot with rim
+    'M36 62 L 44 112 H 116 L 124 62',
+    'M32 54 L 32 62 H 128 L 128 54',
+    'M30 54 H 130',
+    // stake: plant-label head above the soil
+    'M112 50 V 54',
+    'M108 30 H116 Q118 30 118 32 V48 Q118 50 116 50 H108 Q106 50 106 48 V32 Q106 30 108 30 Z',
+  ],
+  leaves: [
+    'M70 52 C 62 40, 50 30, 40 26 C 46 38, 56 48, 70 52',
+    'M74 52 C 72 36, 76 20, 84 10 C 88 24, 84 40, 74 52',
+    'M78 52 C 84 46, 92 42, 100 42 C 95 49, 87 54, 78 52',
+  ],
+} as const;
 
 /**
  * Hairline drawing of the real product: the saucer (tank) under a pot, with the
@@ -22,20 +43,9 @@ export function PotDrawing({ width = 160 }: { width?: number }) {
       strokeWidth={1.5}
       strokeLinecap="round"
       strokeLinejoin="round">
-      {/* leaves */}
-      <Path d="M70 52 C 62 40, 50 30, 40 26 C 46 38, 56 48, 70 52" />
-      <Path d="M74 52 C 72 36, 76 20, 84 10 C 88 24, 84 40, 74 52" />
-      <Path d="M78 52 C 84 46, 92 42, 100 42 C 95 49, 87 54, 78 52" />
-      {/* stake: plant-label head above the soil */}
-      <Rect x={106} y={30} width={12} height={20} rx={2} />
-      <Path d="M112 50 V 54" />
-      {/* pot with rim */}
-      <Path d="M30 54 H 130" />
-      <Path d="M32 54 L 32 62 H 128 L 128 54" />
-      <Path d="M36 62 L 44 112 H 116 L 124 62" />
-      {/* saucer with the capped fill hole on the front right */}
-      <Rect x={14} y={112} width={132} height={16} rx={8} />
-      <Path d="M122 120 h 10" />
+      {[...POT_PATHS.body, ...POT_PATHS.leaves].map((d) => (
+        <Path key={d} d={d} />
+      ))}
     </Svg>
   );
 }

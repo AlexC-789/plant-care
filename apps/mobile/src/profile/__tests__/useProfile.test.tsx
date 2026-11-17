@@ -4,6 +4,7 @@ import { useSession } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { useEntitlement } from '@/profile/useEntitlement';
 import { useProfile, type Profile } from '@/profile/useProfile';
+import { createQueryWrapper } from '@/test-utils/queryWrapper';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories must be self-contained
 jest.mock('@/lib/supabase', () => require('@/test-utils/supabaseMock'));
@@ -49,7 +50,11 @@ function mockProfilesTable(opts: {
   return calls;
 }
 
+let wrapper: ReturnType<typeof createQueryWrapper>['wrapper'];
+let client: ReturnType<typeof createQueryWrapper>['client'];
+
 beforeEach(() => {
+  ({ wrapper, client } = createQueryWrapper());
   jest.clearAllMocks();
   (useSession as jest.Mock).mockReturnValue({
     session: { user: { id: USER_ID, email: 'a@example.com' } },
@@ -59,7 +64,7 @@ beforeEach(() => {
 
 test('loads the signed-in user\'s profile', async () => {
   const calls = mockProfilesTable({ select: { data: baseProfile, error: null } });
-  const { result } = await renderHook(() => useProfile());
+  const { result } = await renderHook(() => useProfile(), { wrapper });
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   expect(result.current.profile).toEqual(baseProfile);
   expect(supabase.from).toHaveBeenCalledWith('profiles');
@@ -72,7 +77,7 @@ test('update sends only the changed column and refreshes state', async () => {
     select: { data: baseProfile, error: null },
     update: { data: updated, error: null },
   });
-  const { result } = await renderHook(() => useProfile());
+  const { result } = await renderHook(() => useProfile(), { wrapper });
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   await act(async () => result.current.update({ units: 'imperial' }));
   expect(calls.update).toEqual([{ units: 'imperial' }]);
@@ -85,7 +90,7 @@ test('a failed update sets an error and keeps the old profile', async () => {
     select: { data: baseProfile, error: null },
     update: { data: null, error: { message: 'permission denied' } },
   });
-  const { result } = await renderHook(() => useProfile());
+  const { result } = await renderHook(() => useProfile(), { wrapper });
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   await act(async () => result.current.update({ units: 'imperial' }));
   expect(result.current.profile).toEqual(baseProfile);
@@ -94,7 +99,7 @@ test('a failed update sets an error and keeps the old profile', async () => {
 
 test('a failed load sets an error', async () => {
   mockProfilesTable({ select: { data: null, error: { message: 'boom' } } });
-  const { result } = await renderHook(() => useProfile());
+  const { result } = await renderHook(() => useProfile(), { wrapper });
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   expect(result.current.profile).toBeNull();
   expect(result.current.error).toBe("Couldn't load your profile.");
@@ -106,7 +111,7 @@ test.each([
   ['expired', false],
 ])('useEntitlement: subscription_status %s → isSubscribed %p', async (status, expected) => {
   mockProfilesTable({ select: { data: { ...baseProfile, subscription_status: status }, error: null } });
-  const { result } = await renderHook(() => useEntitlement());
+  const { result } = await renderHook(() => useEntitlement(), { wrapper });
   await waitFor(() => expect(result.current.isLoading).toBe(false));
   expect(result.current.isSubscribed).toBe(expected);
 });
@@ -119,6 +124,34 @@ test('useEntitlement is not subscribed while the profile is loading', async () =
     b.single = jest.fn(() => new Promise(() => {}));
     return b;
   });
-  const { result } = await renderHook(() => useEntitlement());
+  const { result } = await renderHook(() => useEntitlement(), { wrapper });
   expect(result.current).toEqual({ isSubscribed: false, isLoading: true });
+});
+
+test('a second screen using the profile gets it from the cache instantly', async () => {
+  mockProfilesTable({ select: { data: baseProfile, error: null } });
+  const first = await renderHook(() => useProfile(), { wrapper });
+  await waitFor(() => expect(first.result.current.isLoading).toBe(false));
+  // From now on the server never answers: only a cache can provide the profile.
+  (supabase.from as jest.Mock).mockImplementation(() => {
+    const b: Record<string, jest.Mock> = {};
+    b.select = jest.fn(() => b);
+    b.eq = jest.fn(() => b);
+    b.single = jest.fn(() => new Promise(() => {}));
+    return b;
+  });
+  const second = await renderHook(() => useProfile(), { wrapper });
+  expect(second.result.current.isLoading).toBe(false);
+  expect(second.result.current.profile).toEqual(baseProfile);
+});
+
+test('a failed refresh keeps the cached profile and reports the error', async () => {
+  client.setQueryData(['profile', USER_ID], baseProfile);
+  mockProfilesTable({ select: { data: null, error: { message: 'offline' } } });
+  const { result } = await renderHook(() => useProfile(), { wrapper });
+  await act(async () => {
+    await client.refetchQueries({ queryKey: ['profile', USER_ID] });
+  });
+  await waitFor(() => expect(result.current.error).toBe("Couldn't load your profile."));
+  expect(result.current.profile).toEqual(baseProfile);
 });

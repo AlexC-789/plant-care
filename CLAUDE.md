@@ -18,7 +18,10 @@ apps/mobile/          Expo (SDK 58) + Expo Router app, TypeScript strict
   src/auth/ src/profile/ ...   feature code + __tests__
   src/theme/          design tokens (colours light/dark, type, spacing, radii), useTheme(),
                       useIsAccessibilitySize(); the ONLY place colour values live
-  src/ui/             shared building blocks: Text, Button, InsetGroup, Row, Icon, TextLink, PotDrawing
+  src/ui/             shared building blocks: Text, Button, InsetGroup, Row, Icon, TextLink, PotDrawing,
+                      Skeleton/SkeletonText/SkeletonRow/LoadingGroup, ShimmerProvider
+  src/launch/         launch animation + once-per-run gate
+  src/lib/queryClient.ts  the client cache (TanStack Query)
   src/test-utils/     supabaseMock for jest.mock('@/lib/supabase')
 supabase/             config.toml, migrations/, tests/database/ (pgTAP),
                       functions/ (Edge Functions, Deno; tests: npm run fn:test)
@@ -48,10 +51,33 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 - After changing `supabase/config.toml`, restart Supabase (`npx supabase stop` + `npm run db:start`).
 - Email confirmation is ON (sign-up → sign-in; resend has a 60 s cooldown matching
   `max_frequency`). Local emails go to Mailpit: http://127.0.0.1:54324.
+- Appearance: **light by default** (not the phone's setting); users can choose Dark in Settings.
+  Stored on the phone (`src/theme/appearance.ts`, AsyncStorage) and read before the first
+  frame. `useTheme()` follows this choice, never `useColorScheme()`.
 - UI follows `docs/superpowers/specs/2026-11-17-app-ui-design.md` (canvas linked there).
   Screens use `src/ui` + theme tokens only; raw colours outside `src/theme/` fail lint. Never cap
   font scaling (`maxFontSizeMultiplier`/`allowFontScaling={false}`). Icons: `Icon` (SF Symbols on
   iOS, Material Symbols elsewhere). No emoji.
+- **Loading rules (owner, 2026-11-17), every screen** — `docs/superpowers/specs/2026-11-17-loading-rules-design.md`:
+  1. Lazy loading: fetch per screen, on demand, paged; images via `expo-image` (load when shown,
+     cached); long lists virtualised (`FlatList`/`FlashList`, never `ScrollView` + `map`); heavy
+     rarely-used modules load with their screen.
+  2. UI before data: render the full layout immediately; never a blank screen or a
+     full-screen spinner (`ActivityIndicator` only inside a busy button).
+  3. Loading looks like the UI: wrap placeholders in `LoadingGroup` (300 ms delay, one
+     "Loading" announcement) using `Skeleton` / `SkeletonText` / `SkeletonRow`; wrap arriving
+     content in `FadeIn` (150 ms). The shared shimmer is the only looping motion allowed, runs
+     only while a skeleton is mounted, and is static under Reduce Motion (`useReduceMotion`).
+- Server data on the phone goes through TanStack Query (`src/lib/queryClient.ts`): show cached
+  data instantly (kept 24 h), refresh in the background and when the app returns to the
+  foreground; the cache is cleared on sign-out. A failed load with no cache shows "—", never a
+  guessed value. No Redis until
+  rate limiting or sustained DB load needs it.
+- Animations use React Native's `Animated` (native driver where possible). Reanimated 4 can't
+  load under Jest in this setup.
+- Launch: native splash is plain paper (blank image, theme background) → `LaunchAnimation`
+  (draws the pot ~0.7 s, rests 0.5 s, then fades out into the first screen) once per app run. The splash is hidden
+  from the overlay's first layout, so the hand-off is paper to paper.
 - Don't add expo-status-bar's `<StatusBar>`: it hangs React's act() in Jest; the system style
   already follows light/dark.
 - Route files only in `src/app/`; tests go in `src/**/__tests__/` (not under `src/app/`).

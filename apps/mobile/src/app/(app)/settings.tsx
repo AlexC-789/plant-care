@@ -1,12 +1,17 @@
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { useSession } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { useProfile, type ProfileUpdate } from '@/profile/useProfile';
-import { space, useTheme } from '@/theme';
-import { InsetGroup, Row, Text } from '@/ui';
+import { space, useAppearance, useTheme, type Appearance } from '@/theme';
+import { FadeIn, InsetGroup, LoadingGroup, Row, SkeletonRow, SkeletonText, Text } from '@/ui';
 
 type Units = NonNullable<ProfileUpdate['units']>;
+
+const APPEARANCES: { value: Appearance; label: string }[] = [
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
 
 const UNITS: { value: Units; label: string }[] = [
   { value: 'auto', label: 'Automatic' },
@@ -17,35 +22,71 @@ const UNITS: { value: Units; label: string }[] = [
 /** Shown as a sheet; the navigation bar (title + Done) comes from the (app) stack. */
 export default function Settings() {
   const { session } = useSession();
-  const { profile, error, update } = useProfile();
+  const { profile, isLoading, error, update } = useProfile();
   const { colors } = useTheme();
+  const { appearance, setAppearance } = useAppearance();
 
   return (
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       style={{ backgroundColor: colors.background }}
       contentContainerStyle={styles.content}>
+      <InsetGroup header="Appearance">
+        {APPEARANCES.map(({ value, label }) => (
+          <Row
+            key={value}
+            label={label}
+            accessory={appearance === value ? 'checkmark' : 'none'}
+            onPress={() => setAppearance(value)}
+          />
+        ))}
+      </InsetGroup>
+
       <InsetGroup header="Units" footer="Automatic follows your phone's region.">
-        {UNITS.map(({ value, label }) => {
-          const selected = profile?.units === value;
-          return (
-            <Row
-              key={value}
-              label={label}
-              accessory={selected ? 'checkmark' : 'none'}
-              onPress={() => {
-                if (!selected) void update({ units: value });
-              }}
-            />
-          );
-        })}
+        {isLoading ? (
+          <LoadingGroup>
+            {UNITS.map(({ value }) => (
+              <SkeletonRow key={value} />
+            ))}
+          </LoadingGroup>
+        ) : null}
+        {isLoading
+          ? null
+          : UNITS.map(({ value, label }) => {
+              const selected = profile?.units === value;
+              return (
+                <FadeIn key={value}>
+                  <Row
+                    label={label}
+                    accessory={selected ? 'checkmark' : 'none'}
+                    onPress={() => {
+                      if (!selected) void update({ units: value });
+                    }}
+                  />
+                </FadeIn>
+              );
+            })}
       </InsetGroup>
 
       <InsetGroup header="Plan">
-        <Row
-          label="Subscription"
-          value={profile?.subscription_status === 'active' ? 'Active' : 'Free (testing)'}
-        />
+        {isLoading ? (
+          <Row label="Subscription">
+            <View style={styles.trailing}>
+              <LoadingGroup>
+                <SkeletonText width={96} />
+              </LoadingGroup>
+            </View>
+          </Row>
+        ) : (
+          <FadeIn>
+            <Row
+              label="Subscription"
+              value={
+                !profile ? '—' : profile.subscription_status === 'active' ? 'Active' : 'Free (testing)'
+              }
+            />
+          </FadeIn>
+        )}
       </InsetGroup>
 
       <InsetGroup header="Account">
@@ -72,4 +113,5 @@ export default function Settings() {
 const styles = StyleSheet.create({
   content: { padding: space.l, gap: space.xxl, paddingBottom: space.xxxl },
   error: { marginHorizontal: space.xs },
+  trailing: { flex: 1, alignItems: 'flex-end' },
 });

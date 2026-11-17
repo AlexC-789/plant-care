@@ -1,7 +1,6 @@
 import { renderHook } from '@testing-library/react-native';
-import * as RN from 'react-native';
 
-import { colors, useIsAccessibilitySize, useTheme } from '@/theme';
+import { useIsAccessibilitySize } from '@/theme';
 
 jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
   __esModule: true,
@@ -11,19 +10,6 @@ jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
 const useWindowDimensions: jest.Mock = require('react-native/Libraries/Utilities/useWindowDimensions').default;
 
 afterEach(() => jest.restoreAllMocks());
-
-test('useTheme follows the system colour scheme', async () => {
-  jest.spyOn(RN, 'useColorScheme').mockReturnValue('dark');
-  const { result } = await renderHook(() => useTheme());
-  expect(result.current.scheme).toBe('dark');
-  expect(result.current.colors).toBe(colors.dark);
-});
-
-test('useTheme defaults to light when the scheme is unknown', async () => {
-  jest.spyOn(RN, 'useColorScheme').mockReturnValue(null);
-  const { result } = await renderHook(() => useTheme());
-  expect(result.current.colors).toBe(colors.light);
-});
 
 test.each([
   [1.3, false],

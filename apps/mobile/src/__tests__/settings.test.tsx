@@ -1,5 +1,9 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+import { queryClient } from '@/lib/queryClient';
+import { resetAppearanceForTests } from '@/theme';
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/profile/useProfile';
 import { fakeSession } from '@/test-utils/supabaseMock';
@@ -49,11 +53,16 @@ function mockProfile(row: Profile) {
 async function openSettings() {
   auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
   const view = await renderRouter('src/app', { initialUrl: '/settings' });
+  await waitFor(() => expect(screen.queryByTestId('launch')).toBeNull(), { timeout: 3000 });
   await waitFor(() => expect(screen.getByText('a@example.com')).toBeTruthy());
   return view;
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  queryClient.clear();
+  resetAppearanceForTests();
+  jest.clearAllMocks();
+});
 
 test('shows email and free plan, and no name field', async () => {
   mockProfile(profile);
@@ -113,3 +122,63 @@ test('sign out calls supabase and returns to sign-in', async () => {
   await waitFor(() => expect(view.getPathname()).toBe('/sign-in'));
 });
 
+
+test('while the profile loads: email at once, skeletons for units and plan, no wrong values', async () => {
+  (supabase.from as jest.Mock).mockImplementation(() => {
+    const b: Record<string, jest.Mock> = {};
+    b.select = jest.fn(() => b);
+    b.eq = jest.fn(() => b);
+    b.single = jest.fn(() => new Promise(() => {})); // never answers
+    return b;
+  });
+  auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
+  await renderRouter('src/app', { initialUrl: '/settings' });
+  await waitFor(() => expect(screen.getByText('a@example.com')).toBeTruthy());
+  await waitFor(() => expect(screen.getAllByLabelText('Loading').length).toBe(2));
+  expect(screen.queryByText('Free (testing)')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Automatic' })).toBeNull();
+});
+
+test('a failed load with nothing cached shows a dash, never a wrong plan', async () => {
+  (supabase.from as jest.Mock).mockImplementation(() => {
+    const b: Record<string, jest.Mock> = {};
+    b.select = jest.fn(() => b);
+    b.eq = jest.fn(() => b);
+    b.single = jest.fn(async () => ({ data: null, error: { message: 'offline' } }));
+    return b;
+  });
+  auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
+  await renderRouter('src/app', { initialUrl: '/settings' });
+  await waitFor(() => expect(screen.getByText("Couldn't load your profile.")).toBeTruthy(), {
+    timeout: 4000,
+  });
+  expect(screen.getByText('—')).toBeTruthy();
+  expect(screen.queryByText('Free (testing)')).toBeNull();
+});
+
+describe('Appearance', () => {
+  test('Light is chosen by default', async () => {
+    mockProfile(profile);
+    await openSettings();
+    expect(screen.getByText('Appearance')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Light' })).toBeSelected();
+    expect(screen.getByRole('button', { name: 'Dark' })).not.toBeSelected();
+  });
+
+  test('choosing Dark selects it and saves it on the phone', async () => {
+    mockProfile(profile);
+    await openSettings();
+    await fireEvent.press(screen.getByRole('button', { name: 'Dark' }));
+    expect(screen.getByRole('button', { name: 'Dark' })).toBeSelected();
+    await waitFor(async () => expect(await AsyncStorage.getItem('plant-care.appearance')).toBe('dark'));
+  });
+
+  test('signing out keeps the choice', async () => {
+    mockProfile(profile);
+    await openSettings();
+    await fireEvent.press(screen.getByRole('button', { name: 'Dark' }));
+    const { emitAuthEvent } = jest.requireMock('@/lib/supabase');
+    await act(async () => emitAuthEvent('SIGNED_OUT', null));
+    expect(await AsyncStorage.getItem('plant-care.appearance')).toBe('dark');
+  });
+});

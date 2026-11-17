@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 
 type SessionState = { session: Session | null; isLoading: boolean };
@@ -22,7 +23,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (active) setState({ session: null, isLoading: false });
       });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      // Never show one user's cached data to the next person who signs in.
+      if (event === 'SIGNED_OUT') queryClient.clear();
       if (active) setState({ session, isLoading: false });
     });
 
