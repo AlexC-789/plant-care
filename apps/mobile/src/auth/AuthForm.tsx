@@ -1,14 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+
+import { space, typography, useTheme } from '@/theme';
+import { Button, Icon, InsetGroup, Text } from '@/ui';
 
 import { authErrorMessage } from './authErrors';
 import { RESEND_COOLDOWN_SECONDS } from './emailConfirmation';
@@ -46,6 +40,8 @@ export function AuthForm({
   onResendConfirmation,
   resendCooldownFromStart = false,
 }: Props) {
+  const { colors } = useTheme();
+  const inputStyle = [styles.input, typography.body, { color: colors.label }];
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState('');
   const [fieldErrors, setFieldErrors] = useState<CredentialErrors>({});
@@ -142,106 +138,110 @@ export function AuthForm({
 
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.flex, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Text style={styles.title} accessibilityRole="header">
-        {title}
-      </Text>
-
-      <TextInput
-        accessibilityLabel="Email"
-        placeholder="Email"
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoCorrect={false}
-        autoComplete="email"
-        keyboardType="email-address"
-        textContentType="emailAddress"
-      />
-      {fieldErrors.email ? <Text style={styles.error}>{fieldErrors.email}</Text> : null}
-
-      <TextInput
-        accessibilityLabel="Password"
-        placeholder="Password"
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        secureTextEntry
-        autoCapitalize="none"
-        autoComplete={passwordAutoComplete}
-        onSubmitEditing={handleSubmit}
-      />
-      {fieldErrors.password ? <Text style={styles.error}>{fieldErrors.password}</Text> : null}
-
-      {formError ? (
-        <Text style={styles.error} accessibilityRole="alert">
-          {formError}
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled">
+        <Text variant="title" accessibilityRole="header" style={styles.title}>
+          {title}
         </Text>
-      ) : null}
-      {notice ? <Text style={styles.notice}>{notice}</Text> : null}
 
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={submitLabel}
-        accessibilityState={{ disabled: pending, busy: pending }}
-        disabled={pending}
-        onPress={handleSubmit}
-        style={({ pressed }) => [styles.button, (pressed || pending) && styles.buttonDim]}>
-        {pending ? <ActivityIndicator color="#fff" /> : null}
-        <Text style={styles.buttonText}>{submitLabel}</Text>
-      </Pressable>
+        <InsetGroup>
+          <TextInput
+            accessibilityLabel="Email"
+            placeholder="Email"
+            placeholderTextColor={colors.secondaryLabel}
+            style={inputStyle}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            keyboardType="email-address"
+            textContentType="emailAddress"
+          />
+          <TextInput
+            accessibilityLabel="Password"
+            placeholder="Password"
+            placeholderTextColor={colors.secondaryLabel}
+            style={inputStyle}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoCapitalize="none"
+            autoComplete={passwordAutoComplete}
+            onSubmitEditing={handleSubmit}
+          />
+        </InsetGroup>
 
-      {showResend ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={resendLabel}
-          accessibilityState={{ disabled: resendDisabled, busy: resendPending }}
-          disabled={resendDisabled}
-          onPress={handleResend}
-          style={[styles.secondaryButton, resendDisabled && styles.buttonDim]}>
-          <Text style={styles.secondaryButtonText}>{resendLabel}</Text>
-        </Pressable>
-      ) : null}
+        {fieldErrors.email || fieldErrors.password ? (
+          <View style={styles.messages}>
+            {fieldErrors.email ? (
+              <Text variant="footnote" color="statusNow">
+                {fieldErrors.email}
+              </Text>
+            ) : null}
+            {fieldErrors.password ? (
+              <Text variant="footnote" color="statusNow">
+                {fieldErrors.password}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
-      <View style={styles.footer}>{footer}</View>
+        {formError ? (
+          <View style={styles.alert} accessibilityRole="alert">
+            <Icon name="error" size={18} color="statusNow" />
+            <Text variant="subheadline" color="statusNow" style={styles.flexShrink}>
+              {formError}
+            </Text>
+          </View>
+        ) : null}
+        {notice ? (
+          <Text variant="subheadline" style={styles.messages}>
+            {notice}
+          </Text>
+        ) : null}
+
+        <View style={styles.actions}>
+          <Button label={submitLabel} onPress={handleSubmit} disabled={pending} busy={pending} />
+          {showResend ? (
+            <Button
+              label={resendLabel}
+              variant="bordered"
+              onPress={handleResend}
+              disabled={resendDisabled}
+              busy={resendPending}
+            />
+          ) : null}
+        </View>
+
+        <View style={styles.footer}>{footer}</View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, gap: 8, backgroundColor: '#fff' },
-  title: { fontSize: 28, fontWeight: '600', marginBottom: 16 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
-  },
-  error: { color: '#b00020' },
-  notice: { color: '#1b5e20' },
-  button: {
-    marginTop: 12,
-    backgroundColor: '#2e7d32',
-    borderRadius: 8,
-    paddingVertical: 12,
-    flexDirection: 'row',
+  flex: { flex: 1 },
+  container: {
+    flexGrow: 1,
     justifyContent: 'center',
-    gap: 8,
+    paddingHorizontal: space.l,
+    paddingVertical: space.xxxl,
+    gap: space.l,
   },
-  buttonDim: { opacity: 0.7 },
-  secondaryButton: {
-    marginTop: 8,
-    borderWidth: 1,
-    borderColor: '#2e7d32',
-    borderRadius: 8,
-    paddingVertical: 12,
-    alignItems: 'center',
+  title: { marginHorizontal: space.xs, marginBottom: space.s },
+  input: { minHeight: space.touch, paddingHorizontal: space.l, paddingVertical: space.m },
+  messages: { marginHorizontal: space.xs, gap: space.xs },
+  alert: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space.s,
+    marginHorizontal: space.xs,
   },
-  secondaryButtonText: { color: '#2e7d32', fontSize: 16, fontWeight: '600' },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  footer: { marginTop: 16, alignItems: 'center' },
+  flexShrink: { flexShrink: 1 },
+  actions: { gap: space.m, marginTop: space.xs },
+  footer: { alignItems: 'center' },
 });

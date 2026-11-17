@@ -43,7 +43,12 @@ describe('routing', () => {
     const view = await openApp('/');
     expect(view.getPathname()).toBe('/');
     expect(screen.getByText('No plants yet')).toBeTruthy();
-    expect(screen.getByText('Scan your first plant to get started.')).toBeTruthy();
+    expect(screen.getByText('Adding pots arrives in the next build.')).toBeTruthy();
+    expect(
+      screen.getByLabelText(
+        'Drawing of a pot standing on the watering saucer, with the sensor stake in the soil',
+      ),
+    ).toBeTruthy();
   });
 
   test('signing in moves to the library', async () => {
@@ -111,6 +116,12 @@ describe('sign-in', () => {
     await fill('a@example.com', 'password123');
     await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
     await waitFor(() => expect(screen.getByText('Email or password is incorrect.')).toBeTruthy());
+  });
+
+  test('has a plain title, not a greeting', async () => {
+    await openApp('/sign-in');
+    expect(screen.getByRole('header', { name: 'Sign in to Plant Care' })).toBeTruthy();
+    expect(screen.queryByText('Welcome back')).toBeNull();
   });
 
   test('opened directly, shows no notice and an empty email', async () => {

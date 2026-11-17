@@ -68,6 +68,33 @@ test('switching to imperial saves units', async () => {
   await fireEvent.press(screen.getByRole('button', { name: 'Imperial' }));
   await waitFor(() => expect(updates).toContainEqual({ units: 'imperial' }));
   expect(screen.getByRole('button', { name: 'Imperial' })).toBeSelected();
+  expect(screen.getByRole('button', { name: 'Metric' })).not.toBeSelected();
+});
+
+test('units offer Automatic (from region) and save it', async () => {
+  mockProfile(profile);
+  await openSettings();
+  expect(screen.getByRole('button', { name: 'Metric' })).toBeSelected();
+  await fireEvent.press(screen.getByRole('button', { name: 'Automatic' }));
+  await waitFor(() => expect(updates).toContainEqual({ units: 'auto' }));
+  expect(screen.getByRole('button', { name: 'Automatic' })).toBeSelected();
+});
+
+test('labels are sentence case, not uppercase', async () => {
+  mockProfile(profile);
+  await openSettings();
+  for (const header of ['Profile', 'Units', 'Plan', 'Account']) {
+    expect(screen.getByText(header)).toBeTruthy();
+  }
+  expect(screen.queryByText('EMAIL')).toBeNull();
+});
+
+test('Done closes the sheet and returns to Plants', async () => {
+  mockProfile(profile);
+  const view = await openSettings();
+  expect(screen.getByRole('header', { name: 'Settings' })).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Done' }));
+  await waitFor(() => expect(view.getPathname()).toBe('/'));
 });
 
 test('editing the display name saves on blur', async () => {

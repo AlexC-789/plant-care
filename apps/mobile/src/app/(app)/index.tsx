@@ -1,16 +1,28 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
-export default function Library() {
+import { space } from '@/theme';
+import { PotDrawing, Text } from '@/ui';
+
+export default function Plants() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>No plants yet</Text>
-      <Text style={styles.subtitle}>Scan your first plant to get started.</Text>
-    </View>
+    <ScrollView
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={styles.container}>
+      <View style={styles.empty}>
+        <PotDrawing />
+        <Text variant="title3" accessibilityRole="header" style={styles.center}>
+          No plants yet
+        </Text>
+        <Text variant="subheadline" color="secondaryLabel" style={styles.center}>
+          Adding pots arrives in the next build.
+        </Text>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 8 },
-  title: { fontSize: 22, fontWeight: '600' },
-  subtitle: { fontSize: 16, color: '#555' },
+  container: { flexGrow: 1, justifyContent: 'center', padding: space.l },
+  empty: { alignItems: 'center', gap: space.s, paddingBottom: space.xxxl * 2 },
+  center: { textAlign: 'center' },
 });

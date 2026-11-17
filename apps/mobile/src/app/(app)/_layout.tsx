@@ -1,13 +1,26 @@
 import { Link, Redirect, Stack } from 'expo-router';
-import { Pressable, Text } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 
 import { useSession } from '@/auth/AuthProvider';
+import { serifFamily, space, useTheme } from '@/theme';
+import { Icon } from '@/ui';
+
+// Settings is a sheet over Plants, even when opened directly from a link.
+export const unstable_settings = { anchor: 'index' };
 
 function SettingsButton() {
   return (
     <Link href="/settings" asChild>
-      <Pressable accessibilityRole="button" accessibilityLabel="Settings" hitSlop={8}>
-        <Text style={{ color: '#2e7d32', fontSize: 16 }}>Settings</Text>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Settings"
+        style={{
+          width: space.touch,
+          height: space.touch,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+        <Icon name="account" size={24} color="tint" />
       </Pressable>
     </Link>
   );
@@ -15,11 +28,40 @@ function SettingsButton() {
 
 export default function AppLayout() {
   const { session } = useSession();
+  const { colors } = useTheme();
   if (!session) return <Redirect href="/sign-in" />;
+
   return (
-    <Stack>
-      <Stack.Screen name="index" options={{ title: 'My plants', headerRight: SettingsButton }} />
-      <Stack.Screen name="settings" options={{ title: 'Settings' }} />
+    <Stack
+      screenOptions={{
+        headerStyle: { backgroundColor: colors.background },
+        headerShadowVisible: false,
+        headerTintColor: colors.tint,
+        headerTitleStyle: { color: colors.label },
+        contentStyle: { backgroundColor: colors.background },
+      }}>
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Plants',
+          headerLargeTitle: true,
+          headerLargeTitleShadowVisible: false,
+          headerLargeTitleStyle: { fontFamily: serifFamily, color: colors.label },
+          // Large titles are iOS-only; elsewhere the serif title sits in the bar.
+          headerTitleStyle:
+            Platform.OS === 'ios'
+              ? { color: colors.label }
+              : { fontFamily: serifFamily, fontSize: 28, color: colors.label },
+          headerRight: SettingsButton,
+        }}
+      />
+      <Stack.Screen
+        name="settings"
+        options={{
+          presentation: Platform.OS === 'ios' ? 'formSheet' : 'modal',
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }
