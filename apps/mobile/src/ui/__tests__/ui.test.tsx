@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import * as RN from 'react-native';
 import { StyleSheet } from 'react-native';
 
-import { colors, typography } from '@/theme';
+import { colors, resetAppearanceForTests, typography } from '@/theme';
 import { Button, Icon, InsetGroup, PotDrawing, Row, Text } from '@/ui';
 
 jest.mock('expo-symbols', () => ({
@@ -21,13 +21,13 @@ const flat = (el: { props: { style?: unknown } }) => StyleSheet.flatten(el.props
 
 beforeEach(() => {
   SymbolView.mockClear();
-  jest.spyOn(RN, 'useColorScheme').mockReturnValue('light');
+  resetAppearanceForTests('light');
 });
 afterEach(() => jest.restoreAllMocks());
 
 describe('Text', () => {
   test('applies the variant and token colour, following dark mode', async () => {
-    jest.spyOn(RN, 'useColorScheme').mockReturnValue('dark');
+    resetAppearanceForTests('dark');
     await render(<Text variant="title">Plants</Text>);
     const style = flat(screen.getByText('Plants'));
     expect(style.fontSize).toBe(typography.title.fontSize);
