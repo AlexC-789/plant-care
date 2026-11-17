@@ -1,5 +1,6 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
+import { resetLaunchForTests } from '@/launch/useLaunchGate';
 import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { emitAuthEvent, fakeSession } from '@/test-utils/supabaseMock';
@@ -18,7 +19,7 @@ beforeEach(() => {
 
 async function openApp(url = '/') {
   const view = await renderRouter('src/app', { initialUrl: url });
-  await waitFor(() => expect(screen.queryByTestId('auth-loading')).toBeNull());
+  await waitFor(() => expect(screen.queryByTestId('launch')).toBeNull(), { timeout: 3000 });
   return view;
 }
 
@@ -28,10 +29,14 @@ async function fill(email: string, password: string) {
 }
 
 describe('routing', () => {
-  test('shows a loading indicator while the session is read', async () => {
+  test('while the session is read: the launch animation, never a spinner', async () => {
+    resetLaunchForTests();
     auth.getSession.mockReturnValue(new Promise(() => {}));
     await renderRouter('src/app', { initialUrl: '/' });
-    expect(screen.getByTestId('auth-loading')).toBeTruthy();
+    expect(screen.getByTestId('launch')).toBeTruthy();
+    expect(screen.getByLabelText('Plant Care')).toBeTruthy();
+    expect(screen.queryAllByRole('progressbar')).toHaveLength(0);
+    expect(screen.queryByTestId('auth-loading')).toBeNull();
   });
 
   test('signed out users land on sign-in', async () => {

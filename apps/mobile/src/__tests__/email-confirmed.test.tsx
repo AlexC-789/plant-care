@@ -18,7 +18,7 @@ const readUrl = readConfirmationUrl as jest.Mock;
 async function open(session: unknown = null) {
   auth.getSession.mockResolvedValue({ data: { session }, error: null });
   const view = await renderRouter('src/app', { initialUrl: '/email-confirmed' });
-  await waitFor(() => expect(screen.queryByTestId('auth-loading')).toBeNull());
+  await waitFor(() => expect(screen.queryByTestId('launch')).toBeNull(), { timeout: 3000 });
   return view;
 }
 
