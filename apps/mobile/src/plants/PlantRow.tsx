@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Plant } from '@/plants/api';
 import { radius, space, useTheme } from '@/theme';
-import { Icon, PotDrawing, Text } from '@/ui';
+import { PotDrawing, Text } from '@/ui';
 
 const PHOTO = 60;
 
@@ -39,7 +39,7 @@ export function PlantRow({
       <View style={styles.text}>
         <Text variant="title3">{plant.name}</Text>
         <View style={styles.status}>
-          <Icon name="quiet" size={8} color="statusQuiet" />
+          <View testID="status-dot" style={[styles.dot, { backgroundColor: colors.statusQuiet }]} />
           <Text variant="subheadline" style={styles.statusText}>
             {status}
           </Text>
@@ -67,5 +67,6 @@ const styles = StyleSheet.create({
   },
   text: { flex: 1, gap: space.xs },
   status: { flexDirection: 'row', alignItems: 'center', gap: space.s },
+  dot: { width: 8, height: 8, borderRadius: 4 },
   statusText: { flex: 1 },
 });

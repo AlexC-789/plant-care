@@ -2,6 +2,7 @@ import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testi
 
 import { usePlants } from '@/plants/queries';
 import { supabase } from '@/lib/supabase';
+import { colors } from '@/theme';
 import { fakeSession } from '@/test-utils/supabaseMock';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories must be self-contained
@@ -89,6 +90,12 @@ test('rows show name and status line, with the summary; a row opens its plant', 
   expect(screen.queryByText('Needs you')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: /^Monstera/ }));
   expect(mockPush).toHaveBeenCalledWith('/plant/b');
+});
+
+test('the status marker is a solid dot (the Material font has no filled circle)', async () => {
+  loaded([plant('a', 'Fern')]);
+  await openHome();
+  expect(screen.getByTestId('status-dot')).toHaveStyle({ backgroundColor: colors.light.statusQuiet });
 });
 
 test('long, emoji and right-to-left names render in full (they wrap)', async () => {
