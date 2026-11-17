@@ -1,0 +1,10 @@
+{
+  "access_token": "fixture-token",
+  "model_version": "plant_id:fixture",
+  "input": { "similar_images": false, "images": ["https://example.invalid/1.jpg"] },
+  "result": {
+    "is_plant": { "probability": 0.12, "threshold": 0.5, "binary": false },
+    "classification": { "suggestions": [ { "id": "s1", "name": "Ficus lyrata", "probability": 0.5, "details": { "common_names": ["Fiddle-leaf fig"] } } ] }
+  },
+  "status": "COMPLETED"
+}

@@ -156,6 +156,25 @@ export type Database = {
           },
         ];
       };
+      search_log: {
+        Row: {
+          created_at: string;
+          id: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          created_at?: string;
+          id?: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          id?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       species: {
         Row: {
           checked_against: string | null;

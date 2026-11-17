@@ -1,0 +1,16 @@
+{
+  "access_token": "fixture-token",
+  "model_version": "plant_health_assessment:fixture",
+  "input": { "similar_images": false, "images": ["https://example.invalid/1.jpg"] },
+  "result": {
+    "is_plant": { "probability": 0.99, "threshold": 0.5, "binary": true },
+    "is_healthy": { "probability": 0.18, "threshold": 0.525, "binary": false },
+    "disease": {
+      "suggestions": [
+        { "id": "d1", "name": "water excess or uneven watering", "probability": 0.62, "details": { "language": "en", "entity_id": "d1" } },
+        { "id": "d2", "name": "nutrient deficiency", "probability": 0.21, "details": { "language": "en", "entity_id": "d2" } }
+      ]
+    }
+  },
+  "status": "COMPLETED"
+}
