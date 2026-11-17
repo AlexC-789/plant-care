@@ -81,6 +81,18 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 - Don't add expo-status-bar's `<StatusBar>`: it hangs React's act() in Jest; the system style
   already follows light/dark.
 - Route files only in `src/app/`; tests go in `src/**/__tests__/` (not under `src/app/`).
+- Plant library (M2; spec `docs/superpowers/specs/2026-11-17-m2-plant-library-design.md`, §8a security):
+  - `species` is read-only to users; `scans` are inserted only by functions (service role); the owner may set
+    `scans.plant_id` once, only to an own plant. `plants`/`scans` are owner-only under RLS.
+  - Functions `identify-plant` (body exactly `{ photoPaths }`), `check-health`, `search-plants`; shared code in
+    `supabase/functions/_shared` (plain `fetch`, no npm deps). `verify_jwt` on, validate every input and reject
+    unknown fields, uniform errors (no stack/keys/provider text), body ≤ 10 KB, 20 Plant.id calls / 24 h / user,
+    log only request id, user id, outcome. `PLANT_ID_API_KEY` only in `supabase/functions/.env` (git-ignored).
+  - Photos: private bucket `plant-photos`, 3 MB, JPEG only, path `{uid}/{uuid}.jpg`. The app always re-encodes
+    (`preparePhoto`: longest side ≤ 1600 px, JPEG 0.7) so no EXIF/GPS is uploaded; show via 1 h signed URLs.
+    Deleting a plant removes its scans and every stored photo.
+  - Security proofs (GPS-free upload, no objects left after delete, PNG / >3 MB rejected):
+    `node apps/mobile/e2e/m2-security.mjs` (Playwright, local Supabase + `expo start --web --port 8081`).
 - Press handlers stay synchronous (`void doAsync()`); RNTL awaits async handlers.
 - Watering safety limits (≤ 40 ml/dose, ≤ 150 ml/24 h, never pump when float switch is low,
   stop after 2 doses with no moisture rise) live in firmware and the shared watering module.

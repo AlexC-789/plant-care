@@ -60,6 +60,20 @@ confirmation email remains the check.
      confirmation link") and once with `x@mailinator.com` (should be rejected).
   5. Check the function logs: "allowing <domain>" warnings mean DNS isn't working there.
 
+## Plant identification (Plant.id)
+
+`identify-plant` and `check-health` call Plant.id (Kindwise). Create an account, then put the key in
+`supabase/functions/.env` (git-ignored):
+
+```
+PLANT_ID_API_KEY=<your key>
+```
+
+Restart so it is picked up: `npx supabase stop` then `npm run db:start` (or restart
+`npx supabase functions serve`). Hosted: `npx supabase secrets set PLANT_ID_API_KEY=<your key>`.
+
+After pulling milestone 2, run `npm ci` (new `expo-image-picker` and `expo-image-manipulator`).
+
 ## Run the app
 
 ```bash
@@ -83,6 +97,10 @@ phone on the same Wi-Fi, and restart `expo start`.
 | `npm run db:test` | Database tests (pgTAP) incl. security rules |
 | `npm run fn:test` | Edge Function tests (Deno) |
 | `npm run db:types` | Regenerate `apps/mobile/src/lib/database.types.ts` after a migration |
+
+Security proofs against a running local stack and web app (`npx expo start --web --port 8081`, then
+`SUPABASE_URL=… SUPABASE_ANON_KEY=… SUPABASE_SERVICE_ROLE_KEY=… node apps/mobile/e2e/m2-security.mjs`,
+values from `npx supabase status -o json`; needs Playwright installed globally).
 
 Local Supabase Studio (database browser): http://127.0.0.1:54323
 
