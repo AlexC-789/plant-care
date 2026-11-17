@@ -2,6 +2,7 @@ import { Link, Redirect, Stack } from 'expo-router';
 import { Platform, Pressable } from 'react-native';
 
 import { useSession } from '@/auth/AuthProvider';
+import { CloseButton } from '@/navigation/CloseButton';
 import { serifFamily, space, useTheme } from '@/theme';
 import { Icon } from '@/ui';
 
@@ -58,8 +59,11 @@ export default function AppLayout() {
       <Stack.Screen
         name="settings"
         options={{
-          presentation: Platform.OS === 'ios' ? 'formSheet' : 'modal',
-          headerShown: false,
+          // iOS page sheet with the native navigation bar (title + Done).
+          presentation: 'modal',
+          title: 'Settings',
+          headerBackVisible: false,
+          headerRight: CloseButton,
         }}
       />
     </Stack>
