@@ -117,3 +117,19 @@ test('sign out calls supabase and returns to sign-in', async () => {
   await waitFor(() => expect(view.getPathname()).toBe('/sign-in'));
 });
 
+
+test('while the profile loads: email at once, skeletons for units and plan, no wrong values', async () => {
+  (supabase.from as jest.Mock).mockImplementation(() => {
+    const b: Record<string, jest.Mock> = {};
+    b.select = jest.fn(() => b);
+    b.eq = jest.fn(() => b);
+    b.single = jest.fn(() => new Promise(() => {})); // never answers
+    return b;
+  });
+  auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
+  await renderRouter('src/app', { initialUrl: '/settings' });
+  await waitFor(() => expect(screen.getByText('a@example.com')).toBeTruthy());
+  await waitFor(() => expect(screen.getAllByLabelText('Loading').length).toBe(2));
+  expect(screen.queryByText('Free (testing)')).toBeNull();
+  expect(screen.queryByRole('button', { name: 'Automatic' })).toBeNull();
+});
