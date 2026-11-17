@@ -32,6 +32,11 @@ Where the page lives:
    email in the field; success: "Confirmation email sent to {email}." Button disabled
    while sending; errors use the existing messages plus rate limiting:
    "Too many emails sent. Wait a few minutes and try again."
+   **Cooldown (added 2026-11-17):** after any confirmation email is sent (sign-up or
+   resend) the button is disabled for **60 seconds** and reads "Resend in {n}s",
+   counting down. The server enforces the same minimum gap
+   (`[auth.email] max_frequency = "60s"`), so the limit holds even if the app is
+   bypassed; hosted Supabase also defaults to 60 s.
 3. **Confirmation link** → Supabase verifies, then redirects to `/email-confirmed`:
    - normal: heading "Email confirmed", text "Go back to the app and sign in.",
      plus a "Sign in" link (handy when confirmed on a computer);

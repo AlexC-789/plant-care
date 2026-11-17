@@ -23,6 +23,7 @@
   - Page error: heading `Link expired`, text `This link has expired or was already used. Sign in and we'll send you a new one.`
   - Both pages: link `Sign in` → `/sign-in`.
 - `EXPO_PUBLIC_EMAIL_CONFIRMED_URL` default `http://127.0.0.1:8081/email-confirmed`; passed as `emailRedirectTo` on sign-up and resend.
+- Resend cooldown: 60 s after any confirmation email (sign-up or resend); button disabled with label `Resend in {n}s`. Server: `[auth.email] max_frequency = "60s"`.
 - `supabase/config.toml`: `enable_confirmations = true` (the `[auth.email]` one), `site_url = "http://127.0.0.1:8081"`, `additional_redirect_urls = ["http://127.0.0.1:8081/email-confirmed", "http://localhost:8081/email-confirmed"]`, `[auth.rate_limit] email_sent = 30`.
 - The `/email-confirmed` page never signs anyone in.
 
@@ -30,7 +31,7 @@
 
 1. **Sign-in screen opened directly (no search params)** → no notice, empty email field. (Task 1)
 2. **User edits the email field after the failed sign-in, then taps resend** → resend goes to the field's current (trimmed) email; an invalid/empty field shows the validation message and sends nothing. (Task 2)
-3. **Resend tapped twice quickly** → one request; button disabled while sending. (Task 2)
+3. **Resend tapped twice quickly** → one request; button disabled while sending, then the 60 s cooldown starts. (Task 2)
 4. **Error delivered in the query string instead of the fragment** (`?error=access_denied&error_code=otp_expired`) → `Link expired`. (Task 3)
 5. **Signed-in user opens `/email-confirmed`** → page shows; no redirect into the app or to sign-in. (Task 3)
 
@@ -82,7 +83,7 @@ README.md
 
 **Interfaces:**
 - Consumes: `EMAIL_CONFIRMED_URL` (Task 1).
-- Produces: `AuthForm` prop `onResendConfirmation?: (email: string) => Promise<AuthSubmitResult>`; the button appears only when this prop is set and the last submit error had code `email_not_confirmed`.
+- Produces: `AuthForm` props `onResendConfirmation?: (email: string) => Promise<AuthSubmitResult>` and `resendCooldownFromStart?: boolean` (sign-in passes `true` when arriving with `notice=confirm-sent`, because sign-up just sent an email); `export const RESEND_COOLDOWN_SECONDS = 60` in `emailConfirmation.ts`. The button appears only when `onResendConfirmation` is set and the last submit error had code `email_not_confirmed`.
 
 - [ ] **Step 1: Write failing tests**
   - `authErrorMessage({ code: 'over_email_send_rate_limit' })` → `Too many emails sent. Wait a few minutes and try again.`
@@ -91,8 +92,11 @@ README.md
   - Changing the Email field to `' b@example.com '` before pressing → resend uses `b@example.com`; changing it to `nope` → `Enter a valid email address.` and `resend` not called.
   - `resend` pending: press twice → called once, button disabled; resolving re-enables it.
   - `resend` resolves `{ error: { code: 'over_email_send_rate_limit' } }` → rate-limit message.
+  - Cooldown (jest fake timers): after a successful resend the button is disabled and reads `Resend in 60s`; after advancing 1 s → `Resend in 59s`; after 60 s total → `Resend confirmation email`, enabled, and a second press calls `resend` again.
+  - Arriving with `?email=a@example.com&notice=confirm-sent` then failing sign-in with `email_not_confirmed` → button already reads `Resend in 60s` (counted from arrival) and is disabled.
+  - A failed resend (error) does **not** start the cooldown.
 - [ ] **Step 2:** Run → FAIL.
-- [ ] **Step 3:** Implement: add the code to `MESSAGES`; `AuthForm` keeps `lastErrorCode` from the submit result/exception, a separate `resendPending` state + in-flight ref, validates only the email via `validateCredentials(email, 'x'.repeat(8)).email`; sign-in passes `onResendConfirmation` calling `supabase.auth.resend(...)` and returning `{ error }` or `{ notice }`. Add `resend: jest.fn()` to the mock.
+- [ ] **Step 3:** Implement: set `max_frequency = "60s"` under `[auth.email]` in `config.toml` (restart Supabase); cooldown stored as `resendAvailableAt: number` (ms timestamp) with a 1 s interval to re-render while cooling, cleared on unmount; add the code to `MESSAGES`; `AuthForm` keeps `lastErrorCode` from the submit result/exception, a separate `resendPending` state + in-flight ref, validates only the email via `validateCredentials(email, 'x'.repeat(8)).email`; sign-in passes `onResendConfirmation` calling `supabase.auth.resend(...)` and returning `{ error }` or `{ notice }`. Add `resend: jest.fn()` to the mock.
 - [ ] **Step 4:** `npm test && npm run typecheck && npm run lint` → pass.
 - [ ] **Step 5: Commit** `feat(auth): resend confirmation email from sign-in`.
 
@@ -122,6 +126,6 @@ README.md
 - Modify: `README.md` (Mailpit at http://127.0.0.1:54324; confirmation flow; `EXPO_PUBLIC_EMAIL_CONFIRMED_URL` in `.env.local`), `CLAUDE.md` (one line: confirmations on; Mailpit for local email).
 
 - [ ] **Step 1:** Update docs.
-- [ ] **Step 2: E2E** (Playwright, `npx expo start --web --port 8081` with `.env.local` incl. the new var): sign up → lands on `/sign-in` with email filled and the notice; sign in → `Confirm your email first…` + resend button; press resend → `Confirmation email sent to …`; fetch the newest message for that address from Mailpit (`GET http://127.0.0.1:54324/api/v1/search?query=to:<email>`, then `/api/v1/message/<ID>`), extract the confirmation link, open it → `Email confirmed`; sign in → `No plants yet`. Open the first (already-used) link again → `Link expired`. Screenshot sign-in-with-notice and both page states.
+- [ ] **Step 2: E2E** (Playwright, `npx expo start --web --port 8081` with `.env.local` incl. the new var): sign up → lands on `/sign-in` with email filled and the notice; sign in → `Confirm your email first…` + resend button; press resend → wait until the countdown ends (or confirm it reads `Resend in …s` right after sign-up, then wait 60 s) → `Confirmation email sent to …`; fetch the newest message for that address from Mailpit (`GET http://127.0.0.1:54324/api/v1/search?query=to:<email>`, then `/api/v1/message/<ID>`), extract the confirmation link, open it → `Email confirmed`; sign in → `No plants yet`. Open the first (already-used) link again → `Link expired`. Screenshot sign-in-with-notice and both page states.
 - [ ] **Step 3:** `npm test && npm run typecheck && npm run lint && npm run db:test` → all pass.
 - [ ] **Step 4: Commit** `docs: email confirmation setup`; push branch.
