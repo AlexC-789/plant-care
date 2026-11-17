@@ -15,6 +15,7 @@
     "db:types": "supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts"
   },
   "devDependencies": {
+    "deno": "^2.9.6",
     "supabase": "^3.2.0"
   }
 }
