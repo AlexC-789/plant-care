@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { Animated, Easing } from 'react-native';
 
 import { useReduceMotion } from '@/theme';
@@ -15,7 +15,7 @@ const ShimmerContext = createContext<Animated.Value | null>(null);
  */
 export function ShimmerProvider({ children }: { children: ReactNode }) {
   const reduceMotion = useReduceMotion();
-  const progress = useRef(new Animated.Value(0)).current;
+  const [progress] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     if (reduceMotion) return;
