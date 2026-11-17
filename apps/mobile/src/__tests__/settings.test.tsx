@@ -1,4 +1,5 @@
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { Platform, StyleSheet } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 import type { Profile } from '@/profile/useProfile';
@@ -6,6 +7,17 @@ import { fakeSession } from '@/test-utils/supabaseMock';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories must be self-contained
 jest.mock('@/lib/supabase', () => require('@/test-utils/supabaseMock'));
+
+const mockInsets = { top: 0, bottom: 0, left: 0, right: 0 };
+jest.mock('react-native-safe-area-context', () => ({
+  ...jest.requireActual('react-native-safe-area-context'),
+  useSafeAreaInsets: () => mockInsets,
+}));
+const mockWindow = { width: 390, height: 844, scale: 3, fontScale: 1 };
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: () => mockWindow,
+}));
 
 const auth = supabase.auth as unknown as Record<string, jest.Mock>;
 
@@ -120,4 +132,43 @@ test('sign out calls supabase and returns to sign-in', async () => {
   // Local scope clears this device's session even when the server can't be reached.
   expect(auth.signOut).toHaveBeenCalledWith({ scope: 'local' });
   await waitFor(() => expect(view.getPathname()).toBe('/sign-in'));
+});
+
+describe('top bar', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+    mockInsets.top = 0;
+    mockWindow.fontScale = 1;
+  });
+
+  test('on Android the bar clears the status bar (full-screen modal)', async () => {
+    jest.replaceProperty(Platform, 'OS', 'android');
+    mockInsets.top = 32;
+    mockProfile(profile);
+    await openSettings();
+    const style = StyleSheet.flatten(screen.getByTestId('settings-bar').props.style);
+    expect(style.paddingTop).toBeGreaterThanOrEqual(32);
+  });
+
+  test('on iOS the form sheet needs no status-bar inset', async () => {
+    mockInsets.top = 47;
+    mockProfile(profile);
+    await openSettings();
+    const style = StyleSheet.flatten(screen.getByTestId('settings-bar').props.style);
+    expect(style.paddingTop).toBeLessThan(47);
+  });
+
+  test('at normal sizes the title is centred between equal sides', async () => {
+    mockProfile(profile);
+    await openSettings();
+    expect(screen.getByTestId('settings-bar-spacer')).toBeTruthy();
+  });
+
+  test('at accessibility text sizes the title left-aligns so Done keeps its width', async () => {
+    mockWindow.fontScale = 3;
+    mockProfile(profile);
+    await openSettings();
+    expect(screen.queryByTestId('settings-bar-spacer')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+  });
 });

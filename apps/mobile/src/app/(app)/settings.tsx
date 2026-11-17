@@ -1,11 +1,12 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useSession } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
 import { useProfile, type ProfileUpdate } from '@/profile/useProfile';
-import { space, typography, useTheme } from '@/theme';
+import { space, typography, useIsAccessibilitySize, useTheme } from '@/theme';
 import { Button, InsetGroup, Row, Text } from '@/ui';
 
 type Units = NonNullable<ProfileUpdate['units']>;
@@ -25,15 +26,23 @@ export default function Settings() {
   const { session } = useSession();
   const { profile, error, update } = useProfile();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
+  const largeText = useIsAccessibilitySize();
+  // iOS shows a form sheet below the status bar; elsewhere it's a full-screen modal.
+  const topInset = Platform.OS === 'ios' ? 0 : insets.top;
 
   return (
     <View style={[styles.sheet, { backgroundColor: colors.background }]}>
-      <View style={styles.bar}>
-        <View style={styles.barSide} />
-        <Text variant="headline" accessibilityRole="header">
+      <View testID="settings-bar" style={[styles.bar, { paddingTop: space.s + topInset }]}>
+        {/* At accessibility sizes the title left-aligns and shrinks so Done keeps its width. */}
+        {largeText ? null : <View testID="settings-bar-spacer" style={styles.barSide} />}
+        <Text
+          variant="headline"
+          accessibilityRole="header"
+          style={largeText ? styles.titleLarge : undefined}>
           Settings
         </Text>
-        <View style={[styles.barSide, styles.barRight]}>
+        <View style={largeText ? undefined : [styles.barSide, styles.barRight]}>
           <Button label="Done" variant="plain" onPress={close} />
         </View>
       </View>
@@ -130,6 +139,7 @@ const styles = StyleSheet.create({
     minHeight: space.touch + space.s,
   },
   barSide: { flex: 1 },
+  titleLarge: { flexShrink: 1, marginHorizontal: space.s },
   barRight: { alignItems: 'flex-end' },
   content: { padding: space.l, gap: space.xxl, paddingBottom: space.xxxl },
   nameInput: { flex: 1, minHeight: space.touch - space.m * 2, padding: 0, textAlign: 'right' },

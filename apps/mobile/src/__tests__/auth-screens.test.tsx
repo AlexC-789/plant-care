@@ -116,6 +116,8 @@ describe('sign-in', () => {
     await fill('a@example.com', 'password123');
     await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }));
     await waitFor(() => expect(screen.getByText('Email or password is incorrect.')).toBeTruthy());
+    // Screen readers announce it: one accessible alert element carrying the message.
+    expect(screen.getByRole('alert', { name: 'Email or password is incorrect.' })).toBeTruthy();
   });
 
   test('has a plain title, not a greeting', async () => {

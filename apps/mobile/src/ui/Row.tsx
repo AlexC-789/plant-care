@@ -27,7 +27,9 @@ export function Row({ label, value, accessory = 'none', onPress, destructive, ch
         style={stacked ? undefined : value === undefined && !children ? styles.labelFill : styles.label}>
         {label}
       </Text>
-      {children ??
+      {children ? (
+        stacked ? <View style={styles.stretch}>{children}</View> : children
+      ) :
         (value !== undefined ? (
           <Text color="secondaryLabel" style={stacked ? undefined : styles.value}>
             {value}
@@ -70,4 +72,5 @@ const styles = StyleSheet.create({
   labelFill: { flex: 1 },
   value: { flex: 1, textAlign: 'right' },
   pressed: { opacity: 0.6 },
+  stretch: { alignSelf: 'stretch' },
 });

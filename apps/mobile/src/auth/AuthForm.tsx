@@ -191,7 +191,7 @@ export function AuthForm({
         ) : null}
 
         {formError ? (
-          <View style={styles.alert} accessibilityRole="alert">
+          <View style={styles.alert} accessible accessibilityRole="alert">
             <Icon name="error" size={18} color="statusNow" />
             <Text variant="subheadline" color="statusNow" style={styles.flexShrink}>
               {formError}

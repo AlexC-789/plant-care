@@ -94,6 +94,17 @@ describe('Row and InsetGroup', () => {
   });
 });
 
+test('custom row content stretches to full width when stacked', async () => {
+  useWindowDimensions.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 3 });
+  await render(
+    <Row label="Name">
+      <RN.TextInput testID="field" />
+    </Row>,
+  );
+  expect(flat(screen.getByTestId('field').parent as never).alignSelf).toBe('stretch');
+  useWindowDimensions.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
+});
+
 describe('Icon', () => {
   test('maps to SF Symbols on iOS and Material Symbols elsewhere', async () => {
     await render(<Icon name="account" />);
