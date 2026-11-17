@@ -1,7 +1,7 @@
 # UI foundation: applying the "Glazed Ceramic" design: design (small change)
 
 Date: 2026-11-17
-Status: Draft for approval
+Status: Approved 2026-11-17 (with the unslop direction below)
 Applies: [App UI design](2026-11-17-app-ui-design.md) (canvas: https://claude.ai/artifact/FVr5hjCEB2vj7uZ7gpcKUy)
 Builds on: milestone 1 + email confirmation (on `main`)
 
@@ -15,7 +15,22 @@ sign up, the empty Plants home, Settings, email-confirmed); dark mode; large-tex
 
 **Later (with the milestone that brings the feature):** plant rows and status sentences,
 plant detail, actions, the "Add a pot" flow, alerts, module settings, the offline and
-loading states, the empty-state line drawing, and the notification toggles in Settings.
+loading states, and the notification toggles in Settings.
+
+## Unslop direction (approved)
+- **Product:** a companion app for a self-watering module under a houseplant's pot.
+- **Character:** calm, warm, plainly spoken.
+- **World:** a glazed ceramic pot on a windowsill and its care card: warm paper, quiet ink,
+  morning light.
+- **Moment:** the empty home's hairline line drawing of the real object (saucer, pot,
+  stake), built in code with `react-native-svg`. It's the only illustration in the app.
+- **Signature:** New York serif only for the one title per screen; colour only when
+  something needs a person (errors in `statusNow`, everything else ink and pine).
+
+Audit fixes folded in: dark mode; one palette instead of per-file colours; no uppercase
+tracked labels; sign-in title "Sign in to Plant Care" instead of the greeting
+"Welcome back"; a symbol button instead of the text "Settings" in the header; Settings as
+grouped rows.
 
 ## Owner decisions (2026-11-17)
 - **Keep units, the design's way:** new default **Automatic (from region)**, with Metric and
@@ -51,13 +66,14 @@ Icons: SF Symbols on iOS via `expo-symbols`, with an equivalent fallback on Andr
 
 **Screens:**
 - **Plants (home):** large serif title "Plants" on the paper background; toolbar
-  `person.crop.circle` opens Settings. Empty state per the canvas: "No plants yet", then
-  "Adding pots arrives in the next build." The "+" button and "Add a pot" appear with the
-  milestone that builds the flow, so nothing on screen does nothing.
+  `person.crop.circle` opens Settings. Empty state per the canvas: the line drawing, then
+  "No plants yet", then "Adding pots arrives in the next build." The "+" button and
+  "Add a pot" appear with the milestone that builds the flow, so nothing on screen does
+  nothing.
 - **Settings:** a sheet with "Done". Groups: Profile (display name); Units (Automatic /
   Metric / Imperial as a checkmark list); Plan ("Free (testing)" / "Active", kept from
   milestone 1 for testing the entitlement switch); Account (email, Sign out).
-- **Sign in / sign up:** serif title, fields in an inset group, prominent capsule button,
+- **Sign in / sign up:** serif title ("Sign in to Plant Care" / "Create your account"), fields in an inset group, prominent capsule button,
   bordered "Resend…" button, tint links. Error text uses `statusNow` (6.5:1); notices use
   `label`. All copy and behaviour unchanged.
 - **Email confirmed:** paper background, serif title, secondary body, tint "Sign in" link.
