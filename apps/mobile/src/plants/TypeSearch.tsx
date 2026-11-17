@@ -67,6 +67,7 @@ export function TypeSearch({ onPick: choose }: { onPick: (species: Species) => v
             onChangeText={setText}
             autoFocus
             autoCorrect={false}
+            maxLength={60}
           />
           {isError ? (
             <Text variant="footnote" color="secondaryLabel">

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(29);
+select plan(33);
 
 create function pg_temp.new_user(uid uuid, mail text) returns void language sql as $$
   insert into auth.users (id, email, aud, role, instance_id)
@@ -47,6 +47,12 @@ select lives_ok($$ update public.plants set name = 'Fern 2' where name = 'Fern' 
 select throws_ok($$ insert into public.plants (name) values ('') $$, '23514', null, 'name cannot be empty');
 select throws_ok($$ insert into public.plants (name) values (repeat('x', 61)) $$, '23514', null, 'name is at most 60 chars');
 select throws_ok($$ insert into public.plants (name, room) values ('x', repeat('r', 41)) $$, '23514', null, 'room is at most 40 chars');
+select throws_ok($$ insert into public.plants (name, custom_type) values ('x', repeat('t', 61)) $$, '23514', null, 'custom_type is at most 60 chars');
+select throws_ok($$ insert into public.plants (name, custom_type) values ('x', '') $$, '23514', null, 'custom_type cannot be empty');
+select throws_ok($$ insert into public.plants (name, photo_path) values ('x', '22222222-2222-2222-2222-222222222222/00000000-0000-0000-0000-000000000001.jpg') $$,
+  '23514', null, 'photo_path must be under the owner folder');
+select lives_ok($$ insert into public.plants (name, photo_path) values ('x', '11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-000000000001.jpg') $$,
+  'own photo_path is accepted');
 select throws_ok($$ insert into public.plants (user_id, name) values ('22222222-2222-2222-2222-222222222222', 'x') $$,
   '42501', null, 'A cannot insert a plant for B');
 
