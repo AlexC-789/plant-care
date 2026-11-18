@@ -62,11 +62,15 @@ beforeEach(() => {
 
 describe('usePlants', () => {
   it('pages 20 at a time, newest first, signing the page photos in one call', async () => {
-    const plants = [
-      { id: 'p1', photo_path: 'u/a.jpg' },
-      { id: 'p2', photo_path: null },
+    const rows = [
+      { id: 'p1', photo_path: 'u/a.jpg', device: { id: 'd1' } },
+      { id: 'p2', photo_path: null, device: null },
     ];
-    const calls = mockTables({ plants: { data: plants, error: null } });
+    const plants = [
+      { id: 'p1', photo_path: 'u/a.jpg', device: { id: 'd1', resumePending: false } },
+      { id: 'p2', photo_path: null, device: null },
+    ];
+    const calls = mockTables({ plants: { data: rows, error: null } });
     bucket.createSignedUrls.mockResolvedValue({ data: [{ path: 'u/a.jpg', signedUrl: 'https://s/a' }], error: null });
     const { result } = await renderHook(() => usePlants(), { wrapper });
     await waitFor(() => expect(result.current.data).toBeDefined());
