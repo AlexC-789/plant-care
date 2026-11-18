@@ -279,3 +279,50 @@ test('About leads with Light and Watering facts; the description has an inline M
   await press('Less');
   expect(screen.getByText(LONG.trim()).props.numberOfLines).toBe(3);
 });
+
+async function checkWith(result: object, photoCount = 1) {
+  mocked(api.checkHealth).mockResolvedValue(result);
+  let n = 0;
+  mocked(photos.preparePhoto).mockImplementation(async () => ({ uri: `file:///p${++n}.jpg`, width: 1, height: 1 }));
+  await open('/plant/p1/health');
+  for (let i = 0; i < photoCount; i++) await press('Take photo', i);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
+  await press('Check');
+}
+
+test.each([
+  [true, 'Looks healthy'],
+  [false, 'Needs attention'],
+  [null, 'Not sure'],
+])('the health result shows the status line for healthy=%s', async (healthy, label) => {
+  await checkWith({ healthy, note: 'A note.', advice: null });
+  await screen.findByText('A note.');
+  expect(screen.getByText(label)).toBeTruthy();
+  expect(screen.queryByText('What to do')).toBeNull();
+});
+
+test('the health result shows the checked photo, preferring the problem spot, and a "What to do" card with advice', async () => {
+  await checkWith({ healthy: false, note: 'Brown tips.', advice: 'Water less.' }, 2);
+  await screen.findByText('Brown tips.');
+  expect(screen.getByLabelText('Checked photo').props.source).toEqual([{ uri: 'file:///p2.jpg' }]);
+  expect(screen.getByText('What to do')).toBeTruthy();
+  expect(screen.getByText('Water less.')).toBeTruthy();
+});
+
+test('without a problem photo the result shows the whole-plant photo', async () => {
+  await checkWith({ healthy: true, note: 'Fine.', advice: null });
+  await screen.findByText('Fine.');
+  expect(screen.getByLabelText('Checked photo').props.source).toEqual([{ uri: 'file:///p1.jpg' }]);
+});
+
+test('Check and Done sit in the bottom bar', async () => {
+  await open('/plant/p1/health');
+  expect(screen.getByTestId('bottom-bar')).toBeTruthy();
+  await press('Take photo', 0);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
+  mocked(api.checkHealth).mockResolvedValue({ healthy: true, note: 'ok', advice: null });
+  await press('Check');
+  await screen.findByText('ok');
+  expect(screen.getByTestId('bottom-bar')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+});

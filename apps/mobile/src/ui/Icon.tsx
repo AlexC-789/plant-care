@@ -11,6 +11,9 @@ const SYMBOLS = {
   plus: { ios: 'plus', android: 'add', web: 'add' },
   light: { ios: 'sun.max', android: 'light_mode', web: 'light_mode' },
   water: { ios: 'drop', android: 'water_drop', web: 'water_drop' },
+  healthy: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },
+  unsure: { ios: 'questionmark.circle.fill', android: 'help', web: 'help' },
+  care: { ios: 'leaf', android: 'eco', web: 'eco' },
   error: { ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' },
 } as const;
 
