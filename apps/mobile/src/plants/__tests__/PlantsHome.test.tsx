@@ -69,14 +69,14 @@ test('empty state explains and the Add a pot button opens the add flow', async (
     screen.getByText("Add your first pot and it'll look after its own watering from then on."),
   ).toBeTruthy();
   await fireEvent.press(screen.getByText('Add a pot'));
-  expect(mockPush).toHaveBeenCalledWith('/add/plant');
+  expect(mockPush).toHaveBeenCalledWith('/add/photo');
 });
 
 test('the toolbar plus opens the add flow', async () => {
   loaded([plant('a', 'Fern')]);
   await openHome();
   await fireEvent.press(screen.getByLabelText('Add a pot'));
-  expect(mockPush).toHaveBeenCalledWith('/add/plant');
+  expect(mockPush).toHaveBeenCalledWith('/add/photo');
 });
 
 test('rows show name and status line, with the summary; a row opens its plant', async () => {

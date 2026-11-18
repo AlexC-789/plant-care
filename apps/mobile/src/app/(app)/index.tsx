@@ -20,7 +20,7 @@ export default function Plants() {
   } = usePlants();
   const plants = data?.pages.flatMap((p) => p.plants) ?? [];
   const photoUrls = Object.assign({}, ...(data?.pages.map((p) => p.photoUrls) ?? []));
-  const add = () => router.push('/add/plant');
+  const add = () => router.push('/add/photo');
 
   // Shown in place of rows: skeleton while loading, the error with no cache, or the empty state.
   const placeholder = data ? (

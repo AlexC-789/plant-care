@@ -17,6 +17,7 @@ export default function AddLayout() {
           contentStyle: { backgroundColor: colors.background },
         }}>
         {/* shortcut: no step count until the device steps (module, Wi-Fi, pot, stake, tank) exist; then "Plant · 1 of 6" returns. */}
+        <Stack.Screen name="photo" options={{ title: 'Add a plant', headerBackVisible: false, gestureEnabled: false }} />
         <Stack.Screen name="plant" options={{ title: 'Add a plant', headerBackVisible: false, gestureEnabled: false }} />
         <Stack.Screen name="capture" options={{ title: 'Add photos' }} />
         <Stack.Screen name="search" options={{ title: 'Plant type' }} />

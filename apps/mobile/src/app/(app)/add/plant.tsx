@@ -31,7 +31,7 @@ export default function PlantStep() {
 
   const whole = draft.photos.find((p) => p.kind === 'whole');
   const typeName = !draft.species ? '' : 'custom' in draft.species ? draft.species.custom : draft.species.name;
-  const name = draft.name.trim();
+  const name = draft.nickname.trim();
 
   // Applies a suggestion: sets the type; Name follows only while it is empty or still the previous suggestion's name.
   const apply = (s: { speciesId: string; commonName: string }) => {
@@ -39,7 +39,7 @@ export default function PlantStep() {
     const prev = d.species && 'id' in d.species ? d.species.name : '';
     set({
       species: { id: s.speciesId, name: s.commonName },
-      name: !d.name.trim() || d.name === prev ? s.commonName : d.name,
+      nickname: !d.nickname.trim() || d.nickname === prev ? s.commonName : d.nickname,
     });
   };
 
@@ -159,8 +159,8 @@ export default function PlantStep() {
                 placeholder="Required"
                 placeholderTextColor={colors.secondaryLabel}
                 style={[styles.input, typography.body, { color: colors.label }]}
-                value={draft.name}
-                onChangeText={(t) => set({ name: t })}
+                value={draft.nickname}
+                onChangeText={(t) => set({ nickname: t })}
                 maxLength={60}
               />
             </Row>

@@ -33,7 +33,7 @@ function AddButton() {
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Add a pot"
-      onPress={() => router.push('/add/plant')}
+      onPress={() => router.push('/add/photo')}
       style={{
         width: space.touch,
         height: space.touch,
