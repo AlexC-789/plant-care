@@ -1,4 +1,4 @@
-import { Stack, useRouter } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -52,9 +52,12 @@ export default function IdentifyStep() {
     router.dismissTo('/');
   };
 
+  // The plant is saved: going back here must not touch its photos.
+  if (draft.plantId) return <Redirect href="/add/health" />;
+
   return (
     <View style={styles.flex}>
-      <Stack.Screen options={{ headerRight: draft.plantId ? undefined : () => <TextLink label="Cancel" onPress={cancel} /> }} />
+      <Stack.Screen options={{ headerRight: () => <TextLink label="Cancel" onPress={cancel} /> }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <StepProgress step={2} />
         <Text variant="title" accessibilityRole="header">

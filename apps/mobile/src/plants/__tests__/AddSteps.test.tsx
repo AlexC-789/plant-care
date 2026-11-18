@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { BackHandler } from 'react-native';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
@@ -17,6 +18,7 @@ jest.mock('@/plants/api', () => ({
   searchLocalSpecies: jest.fn(),
   searchPlantNames: jest.fn(),
   pickSpecies: jest.fn(),
+  checkHealth: jest.fn(),
 }));
 jest.mock('@/plants/photos', () => ({
   preparePhoto: jest.fn(),
@@ -34,6 +36,7 @@ jest.mock('expo-image-picker', () => ({
 // Steps 2-5 don't exist yet: record pushes, then pass them through.
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
+const mockDismissTo = jest.fn();
 jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   useRouter: () => {
@@ -42,6 +45,7 @@ jest.mock('expo-router', () => ({
       ...r,
       push: (href: string) => (mockPush(href), r.push(href)),
       replace: (href: string) => (mockReplace(href), r.replace(href)),
+      dismissTo: (href: string) => (mockDismissTo(href), r.dismissTo(href)),
     };
   },
 }));
@@ -412,7 +416,7 @@ describe('step 3: where', () => {
       await fireEvent.press(continueBtn());
       await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
       await act(async () => router.back()); // leaves step 3 before the hand-off
-      await waitFor(() => expect(screen.getByText('What kind of plant is it?')).toBeTruthy());
+      await waitFor(() => expect(screen.getByText('Want a quick health check?')).toBeTruthy()); // identify redirected
       expect(screen.queryByText('Cancel')).toBeNull();
       await act(async () => jest.advanceTimersByTime(800));
       expect(mockReplace).not.toHaveBeenCalled(); // unmounted: the timer died with it
@@ -434,5 +438,115 @@ describe('step 3: where', () => {
     expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']);
     expect(api.createPlant).not.toHaveBeenCalled();
     await waitFor(() => expect(screen.queryByText('Where does it live?')).toBeNull());
+  });
+});
+
+describe('step 4: health', () => {
+  const OK = { healthy: false, note: 'Brown tips.', advice: 'Water less.' };
+  beforeEach(() => {
+    mocked(api.createPlant).mockResolvedValue(plant as never);
+    mocked(api.checkHealth).mockResolvedValue(OK);
+  });
+  // Saves the plant at step 3 and waits for the hand-off to step 4.
+  const toHealth = async (extra: number[] = []) => {
+    await toWhere({ extra });
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy(), { timeout: 3000 });
+  };
+  const arrive = async (extra: number[] = []) => {
+    await toHealth(extra);
+    await waitFor(() => expect(screen.queryByText('Fern is saved.')).toBeNull(), { timeout: 3000 });
+  };
+
+  test('with a problem photo the check starts by itself, once, with whole + problem', async () => {
+    mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
+    await arrive([3]); // problem u/2
+    await waitFor(() => expect(screen.getByText('Looking at your plant…')).toBeTruthy());
+    expect(api.checkHealth).toHaveBeenCalledTimes(1);
+    expect(api.checkHealth).toHaveBeenCalledWith('p1', ['u/1.jpg', 'u/2.jpg']);
+    expect(screen.getByRole('progressbar', { name: 'Step 4 of 4' })).toBeTruthy();
+    expect(screen.queryByText('Check its health now')).toBeNull();
+  });
+
+  test('a remount does not start a second check', async () => {
+    await arrive([3]);
+    await screen.findByText('Brown tips.');
+    await act(async () => router.replace('/add/where'));
+    await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Brown tips.')).toBeTruthy(), { timeout: 3000 });
+    expect(api.checkHealth).toHaveBeenCalledTimes(1);
+  });
+
+  test('without a problem photo it offers a check using the whole photo; Skip leaves it', async () => {
+    await arrive();
+    expect(screen.getByText('Want a quick health check?')).toBeTruthy();
+    expect(api.checkHealth).not.toHaveBeenCalled();
+    await press('Check its health now');
+    await screen.findByText('Brown tips.');
+    expect(api.checkHealth).toHaveBeenCalledWith('p1', ['u/1.jpg']);
+    expect(screen.getByText('What to do')).toBeTruthy();
+    expect(screen.queryByText('Looking at your plant…')).toBeNull();
+  });
+
+  test('Skip for now closes the flow and opens the plant; nothing was uploaded to delete', async () => {
+    await arrive();
+    mockPush.mockClear();
+    await press('Skip for now');
+    expect(mockDismissTo).toHaveBeenCalledWith('/');
+    expect(mockPush).toHaveBeenCalledWith('/plant/p1');
+    expect(photos.deletePhotos).not.toHaveBeenCalled();
+  });
+
+  test('a failed check shows the error with Try again and Skip for now', async () => {
+    mocked(api.checkHealth).mockRejectedValueOnce(new Error('boom'));
+    await arrive([3]);
+    await screen.findByText("Couldn't check right now.");
+    expect(screen.getByRole('button', { name: 'Skip for now' })).toBeTruthy();
+    await press('Try again');
+    await screen.findByText('Brown tips.');
+    expect(api.checkHealth).toHaveBeenCalledTimes(2);
+  });
+
+  test('a limit failure shows the server copy', async () => {
+    const LIMIT = "You've reached the health check limit for now. Try again later.";
+    mocked(api.checkHealth).mockRejectedValueOnce(new Error(LIMIT));
+    await arrive([3]);
+    await screen.findByText(LIMIT);
+  });
+
+  test('Done closes the flow and opens the plant; a started check deletes nothing', async () => {
+    await arrive([3]);
+    await screen.findByText('Brown tips.');
+    mockPush.mockClear();
+    await press('Done', 1);
+    expect(mockDismissTo).toHaveBeenCalledWith('/');
+    expect(mockPush).toHaveBeenCalledWith('/plant/p1');
+    await waitFor(() => expect(screen.queryByText('Brown tips.')).toBeNull());
+    expect(photos.deletePhotos).not.toHaveBeenCalled();
+  });
+
+  test('step 4 has no Back, Cancel or swipe; header Done and Android back both close', async () => {
+    await arrive();
+    expect(screen.queryByText('Cancel')).toBeNull();
+    mockPush.mockClear();
+    const handler = jest.spyOn(BackHandler, 'addEventListener');
+    await act(async () => router.replace('/add/where'));
+    await act(async () => router.replace('/add/health'));
+    await waitFor(() => expect(handler).toHaveBeenCalled());
+    const back = handler.mock.calls.at(-1)![1];
+    await act(async () => void (back as () => void)());
+    expect(mockPush).toHaveBeenCalledWith('/plant/p1');
+    handler.mockRestore();
+  });
+
+  test('after a save, steps 1 and 2 redirect to step 4', async () => {
+    await arrive();
+    await act(async () => router.push('/add/photo'));
+    await waitFor(() => expect(screen.getByText('Want a quick health check?')).toBeTruthy());
+    expect(screen.queryByText('Take a photo of your plant')).toBeNull();
+    await act(async () => router.push('/add/identify'));
+    await waitFor(() => expect(screen.getByText('Want a quick health check?')).toBeTruthy());
+    expect(screen.queryByText('What kind of plant is it?')).toBeNull();
   });
 });

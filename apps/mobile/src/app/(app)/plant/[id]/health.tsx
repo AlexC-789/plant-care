@@ -1,13 +1,13 @@
-import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { HealthResult } from '@/plants/HealthResult';
 import { CaptureCards, type CaptureCard, type Photo } from '@/plants/CaptureCards';
 import { deletePhotos } from '@/plants/photos';
 import { useCheckHealth } from '@/plants/queries';
-import { radius, space, useTheme } from '@/theme';
-import { BottomBar, Button, FadeIn, Icon, Text } from '@/ui';
+import { space } from '@/theme';
+import { BottomBar, Button, Text } from '@/ui';
 
 const CARDS: CaptureCard[] = [
   {
@@ -22,11 +22,6 @@ const CARDS: CaptureCard[] = [
     optional: true,
   },
 ];
-const STATUS = {
-  true: { icon: 'healthy', color: 'statusFine', label: 'Looks healthy' },
-  false: { icon: 'error', color: 'statusSoon', label: 'Needs attention' },
-  null: { icon: 'unsure', color: 'statusQuiet', label: 'Not sure' },
-} as const;
 // The server's own message for a 429; any other failure reads as "couldn't check".
 const LIMIT = "You've reached the health check limit for now. Try again later.";
 
@@ -62,49 +57,15 @@ export default function Health() {
     );
   };
 
-  const { colors } = useTheme();
   const result = check.data;
   // The photo that was checked: the problem spot if there is one, else the whole plant.
-  const status = STATUS[`${result?.healthy}` as keyof typeof STATUS];
   const shown = photos.find((p) => p.kind === 'problem') ?? photos[0];
   return (
     <View style={styles.flex}>
       <Stack.Screen options={{ title: 'Check its health' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         {result ? (
-          <FadeIn style={styles.result}>
-            {shown ? (
-              <Image
-                accessibilityLabel="Checked photo"
-                source={{ uri: shown.localUri }}
-                style={styles.photo}
-              />
-            ) : null}
-            <View style={styles.status}>
-              <Icon
-                name={status.icon}
-                size={18}
-                color={status.color}
-              />
-              <Text variant="subheadline" color={status.color}>
-                {status.label}
-              </Text>
-            </View>
-            <Text variant="title3" accessibilityRole="header">
-              {result.note}
-            </Text>
-            {result.advice ? (
-              <View style={[styles.card, { backgroundColor: colors.surface }]}>
-                <View style={styles.status}>
-                  <Icon name="care" size={18} color="tint" />
-                  <Text variant="headline" accessibilityRole="header">
-                    What to do
-                  </Text>
-                </View>
-                <Text variant="body">{result.advice}</Text>
-              </View>
-            ) : null}
-          </FadeIn>
+          <HealthResult result={result} photoUri={shown?.localUri} />
         ) : (
           <>
             <CaptureCards cards={CARDS} photos={photos} onChange={change} />
@@ -139,9 +100,5 @@ export default function Health() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  result: { gap: space.l },
-  photo: { aspectRatio: 4 / 3, borderRadius: radius.thumb },
-  status: { flexDirection: 'row', alignItems: 'center', gap: space.s },
-  card: { borderRadius: radius.group, padding: space.l, gap: space.s },
   content: { padding: space.l, gap: space.l },
 });

@@ -20,6 +20,7 @@ export default function AddLayout() {
         <Stack.Screen name="photo" options={{ title: 'Add a plant', headerBackVisible: false, gestureEnabled: false }} />
         <Stack.Screen name="identify" options={{ title: 'Add a plant' }} />
         <Stack.Screen name="where" options={{ title: 'Add a plant' }} />
+        <Stack.Screen name="health" options={{ title: 'Add a plant', headerBackVisible: false, gestureEnabled: false }} />
         <Stack.Screen name="plant" options={{ title: 'Add a plant', headerBackVisible: false, gestureEnabled: false }} />
         <Stack.Screen name="capture" options={{ title: 'Add photos' }} />
         <Stack.Screen name="search" options={{ title: 'Plant type' }} />

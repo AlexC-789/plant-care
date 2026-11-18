@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack, useRouter } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { useAddDraft } from '@/plants/addDraft';
@@ -19,9 +19,12 @@ export default function PhotoStep() {
     router.back();
   };
 
+  // The plant is saved: going back here must not touch its photos.
+  if (draft.plantId) return <Redirect href="/add/health" />;
+
   return (
     <View style={styles.flex}>
-      <Stack.Screen options={{ headerRight: draft.plantId ? undefined : () => <TextLink label="Cancel" onPress={cancel} /> }} />
+      <Stack.Screen options={{ headerRight: () => <TextLink label="Cancel" onPress={cancel} /> }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <StepProgress step={1} />
         <Text variant="title" accessibilityRole="header">

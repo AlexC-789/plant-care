@@ -1,4 +1,4 @@
-import { Stack, useRouter, type Href } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
@@ -28,8 +28,7 @@ export default function WhereStep() {
 
   useEffect(() => {
     if (!saved) return;
-    // shortcut: /add/health is created in Task 5; drop the cast then.
-    const t = setTimeout(() => router.replace('/add/health' as Href), SUCCESS_MS);
+    const t = setTimeout(() => router.replace('/add/health'), SUCCESS_MS);
     return () => clearTimeout(t);
   }, [saved, router]);
 
