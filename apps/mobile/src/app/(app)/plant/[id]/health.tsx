@@ -72,7 +72,7 @@ export default function Health() {
       <Stack.Screen options={{ title: 'Check its health' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         {result ? (
-          <FadeIn style={styles.content}>
+          <FadeIn style={styles.result}>
             {shown ? (
               <Image
                 accessibilityLabel="Checked photo"
@@ -139,6 +139,7 @@ export default function Health() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  result: { gap: space.l },
   photo: { aspectRatio: 4 / 3, borderRadius: radius.thumb },
   status: { flexDirection: 'row', alignItems: 'center', gap: space.s },
   card: { borderRadius: radius.group, padding: space.l, gap: space.s },
