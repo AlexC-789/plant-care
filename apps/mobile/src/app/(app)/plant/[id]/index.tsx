@@ -9,6 +9,7 @@ import { AboutPlant } from '@/plants/AboutPlant';
 import { HealthCard } from '@/plants/HealthCard';
 import { signPhotoUrls } from '@/plants/photos';
 import { useLatestHealth, usePlant, useSpecies } from '@/plants/queries';
+import { TimelineStrip } from '@/plants/TimelineStrip';
 import { radius, space, useTheme } from '@/theme';
 import { Button, FadeIn, LoadingGroup, PotDrawing, Skeleton, SkeletonText, Text } from '@/ui';
 
@@ -111,6 +112,7 @@ export default function PlantDetail() {
               </Text>
               <Text variant="subheadline">The module steps arrive in the next build.</Text>
             </View>
+            <TimelineStrip plantId={id} />
             <HealthCard plantId={id} latest={health} />
             {species ? <AboutPlant species={species} /> : null}
           </FadeIn>
