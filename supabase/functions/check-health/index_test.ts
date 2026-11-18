@@ -141,13 +141,16 @@ Deno.test('top issue >= 0.3 and mapped: plain-words note and advice (recorded fi
   assertFalse(JSON.stringify(body).includes('water excess'));
 });
 
-Deno.test('top issue < 0.3, or unmapped: unsure copy, never the provider name', async () => {
+Deno.test('top issue < 0.3, or unmapped: unclear (healthy < 0.5) or unsure copy, never the provider name', async () => {
+  const UNCLEAR = { healthy: false, note: "It doesn't look fully healthy, but the cause isn't clear from this photo.", advice: null };
   for (const s of [[{ name: 'fungi', probability: 0.29 }], [{ name: 'Phytophthora obscura', probability: 0.9 }], []]) {
-    const w = world({ plantId: health(0.3, s) });
-    const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
-    assertEquals(body, { scanId: 'scan-1', ...UNSURE }, JSON.stringify(s));
-    assertEquals(w.scans[0].status, 'ok');
-    assertFalse(JSON.stringify(body).includes('Phytophthora'));
+    for (const [isHealthy, expected] of [[0.3, UNCLEAR], [0.6, UNSURE]] as const) {
+      const w = world({ plantId: health(isHealthy, s) });
+      const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
+      assertEquals(body, { scanId: 'scan-1', ...expected }, JSON.stringify([isHealthy, s]));
+      assertEquals(w.scans[0].status, 'ok');
+      assertFalse(JSON.stringify(body).includes('Phytophthora'));
+    }
   }
 });
 

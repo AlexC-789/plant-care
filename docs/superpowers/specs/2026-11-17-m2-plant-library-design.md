@@ -20,7 +20,8 @@ with the device milestones and must slot in without rework.
   a daily per-user scan limit, and Plant.id's own "is this a plant" result.
 - **Identification and health are separate.** A scan only identifies (cheapest call). Plant detail
   has a **"Check its health"** button that runs Plant.id's health assessment on demand.
-  Owner change 2026-11-17: a Problem spot photo triggers an automatic health check on Continue (1 credit, shared limit). Later checks are on demand.
+  Owner change 2026-11-18: not healthy (healthy < 0.5) with no confident cause → "It doesn't look fully healthy, but the cause isn't clear from this photo." (status: needs attention); "Couldn't tell" stays for the in-between and not-a-plant cases.
+Owner change 2026-11-17: a Problem spot photo triggers an automatic health check on Continue (1 credit, shared limit). Later checks are on demand.
 - **Our own houseplant database** for facts and search, not paid lookups: about 150 common
   houseplants, written fresh and checked against botanical/horticultural references, reviewed by
   the owner once. Plant.id's paid detail lookups are not used.

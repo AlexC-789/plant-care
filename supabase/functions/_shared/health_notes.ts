@@ -2,6 +2,7 @@ import type { HealthResult } from './plantid.ts';
 
 export const HEALTHY_NOTE = 'It looks healthy in this photo.';
 export const UNSURE_NOTE = "Couldn't tell from this photo. Try one with the leaves in view.";
+export const UNCLEAR_NOTE = "It doesn't look fully healthy, but the cause isn't clear from this photo.";
 
 export interface HealthNote {
   healthy: boolean | null;
@@ -32,10 +33,14 @@ const NOTES = new Map<string, Omit<HealthNote, 'healthy'>>(Object.entries({
   'spider mites': { note: 'There may be tiny mites on it. Look for fine webs.', advice: 'Rinse the leaves and keep the air around it less dry.' },
 }));
 
-/** Healthy probability >= 0.8 -> healthy; else a mapped top issue >= 0.3 (Plant.id's own scores run low); otherwise unsure. */
+/** Healthy probability >= 0.8 -> healthy; else a mapped top issue >= 0.3 (Plant.id's own scores run low);
+ *  else healthy < 0.5 (Plant.id's yes/no line) -> not healthy, cause unclear; otherwise unsure. */
 export function healthNote(r: HealthResult): HealthNote {
   if (r.isHealthyProbability >= 0.8) return { healthy: true, note: HEALTHY_NOTE, advice: null };
   const top = r.issues[0];
   const mapped = top && top.probability >= 0.3 ? NOTES.get(top.name.toLowerCase()) : undefined;
-  return mapped ? { healthy: false, ...mapped } : { healthy: null, note: UNSURE_NOTE, advice: null };
+  if (mapped) return { healthy: false, ...mapped };
+  return r.isHealthyProbability < 0.5
+    ? { healthy: false, note: UNCLEAR_NOTE, advice: null }
+    : { healthy: null, note: UNSURE_NOTE, advice: null };
 }
