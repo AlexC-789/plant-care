@@ -69,6 +69,7 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
     const stored = { ...health, top_issue: isPlant ? result.issues[0] ?? null : null };
     const scanId = await insertScan(deps, { ...scan, status: isPlant ? 'ok' : 'not_plant', is_plant: result.isPlantProbability, health: stored });
     // checked photos join the timeline with their result; the check itself still succeeds if this fails
+    // shortcut: a photo deleted while its check runs comes back as a row without an object; rare, lock if seen.
     const rows = paths.map((path) => ({ user_id: userId, plant_id: plantId, path, scan_id: scanId }));
     const onTimeline = await rest(deps, 'plant_photos?on_conflict=plant_id,path', {
       method: 'POST', headers: { prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(rows),

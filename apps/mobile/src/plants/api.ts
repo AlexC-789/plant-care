@@ -159,7 +159,7 @@ export async function fetchPlantPhotos(plantId: string, page: number): Promise<P
 /** Upload, then make it the main photo; the `plants_photo_to_timeline` trigger adds the timeline row. */
 export async function addPlantPhoto(userId: string, plantId: string, photo: PreparedPhoto): Promise<string> {
   const path = await uploadPhoto(userId, photo);
-  const { error } = await supabase.from('plants').update({ photo_path: path }).eq('id', plantId);
+  const { error } = await supabase.from('plants').update({ photo_path: path }).eq('id', plantId).select('id').single();
   if (error) {
     await deletePhotos([path]).catch(() => {});
     throw error;
@@ -168,27 +168,12 @@ export async function addPlantPhoto(userId: string, plantId: string, photo: Prep
 }
 
 /**
- * Row first; if it was the main photo the next newest takes over (none → null, pot drawing);
- * the stored object goes last, so nothing ever points at a deleted object.
+ * One atomic server call deletes the row and moves the main photo to the next newest (none → null,
+ * pot drawing); the stored object goes last, so nothing ever points at a deleted object.
  */
-export async function deletePlantPhoto(plantId: string, photo: { id: string; path: string }): Promise<void> {
-  const { error } = await supabase.from('plant_photos').delete().eq('id', photo.id);
+export async function deletePlantPhoto(photo: { id: string }): Promise<void> {
+  const { data: path, error } = await supabase.rpc('delete_plant_photo', { photo_id: photo.id });
   if (error) throw error;
-  const { data: plant, error: e1 } = await supabase.from('plants').select('photo_path').eq('id', plantId).single();
-  if (e1) throw e1;
-  if (plant.photo_path === photo.path) {
-    const { data: next, error: e2 } = await supabase
-      .from('plant_photos')
-      .select('path')
-      .eq('plant_id', plantId)
-      .order('taken_at', { ascending: false })
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    if (e2) throw e2;
-    const { error: e3 } = await supabase.from('plants').update({ photo_path: next?.path ?? null }).eq('id', plantId);
-    if (e3) throw e3;
-  }
   // shortcut: orphaned object if removal fails, a cleanup job comes at store readiness.
-  await deletePhotos([photo.path]).catch(() => {});
+  if (path) await deletePhotos([path]).catch(() => {});
 }

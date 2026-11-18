@@ -126,6 +126,7 @@ describe('useDeletePlant', () => {
       plant_photos: { data: [{ path: 'u/main.jpg' }, { path: 'u/s1.jpg' }, { path: 'u/t1.jpg' }], error: null },
     });
     client.setQueryData(['plant', 'p1'], { id: 'p1' });
+    client.setQueryData(['plant-photos', 'p1'], { pages: [], pageParams: [] });
     client.setQueryData(['plants', USER_ID], {
       pages: [{ plants: [{ id: 'p1' }, { id: 'p2' }], photoUrls: {} }],
       pageParams: [0],
@@ -137,6 +138,7 @@ describe('useDeletePlant', () => {
     expect(calls.map((c) => `${c.table}.${c.method}`)).toContain('plants.delete');
     expect(bucket.remove).toHaveBeenCalledWith(['u/main.jpg', 'u/s1.jpg', 'u/s2.jpg', 'u/s3.jpg', 'u/t1.jpg']);
     expect(client.getQueryData(['plant', 'p1'])).toBeUndefined();
+    expect(client.getQueryData(['plant-photos', 'p1'])).toBeUndefined();
     expect(
       (client.getQueryData(['plants', USER_ID]) as { pages: { plants: { id: string }[] }[] }).pages[0].plants,
     ).toEqual([{ id: 'p2' }]);
@@ -281,6 +283,7 @@ describe('useAddPlantPhoto', () => {
     expect(path).toMatch(new RegExp(`^${USER_ID}/[0-9a-f-]{36}\.jpg$`));
     expect(bucket.upload).toHaveBeenCalledWith(path, expect.anything(), { contentType: 'image/jpeg' });
     expect(calls).toContainEqual({ table: 'plants', method: 'update', args: [{ photo_path: path }] });
+    expect(calls).toContainEqual({ table: 'plants', method: 'select', args: ['id'] }); // 0 rows (plant gone) → error
     expect(calls).toContainEqual({ table: 'plants', method: 'eq', args: ['id', 'p1'] });
   });
 
@@ -297,57 +300,25 @@ describe('useAddPlantPhoto', () => {
 });
 
 describe('useDeletePlantPhoto', () => {
-  const del = async (plantId: string, photo: { id: string; path: string }) => {
+  it('deletes through one atomic call (row + main-photo promotion), then removes the returned object', async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({ data: 'u/main.jpg', error: null });
+    client.setQueryData(['plant-photos', 'p1'], { pages: [], pageParams: [] });
     const { result } = await renderHook(() => useDeletePlantPhoto(), { wrapper });
     await act(async () => {
-      await result.current.mutateAsync({ plantId, photo });
+      await result.current.mutateAsync({ plantId: 'p1', photo: { id: 'f1', path: 'u/main.jpg' } });
     });
-  };
-
-  it('a photo that is not the main photo: row, then object; the plant is untouched', async () => {
-    const calls = mockTables({
-      plant_photos: { error: null },
-      plants: { data: { photo_path: 'u/main.jpg' }, error: null },
-    });
-    await del('p1', { id: 'f1', path: 'u/old.jpg' });
-    expect(calls).toContainEqual({ table: 'plant_photos', method: 'eq', args: ['id', 'f1'] });
-    expect(calls.map((c) => `${c.table}.${c.method}`)).toContain('plant_photos.delete');
-    expect(calls.map((c) => `${c.table}.${c.method}`)).not.toContain('plants.update');
-    expect(bucket.remove).toHaveBeenCalledWith(['u/old.jpg']);
-  });
-
-  it('the main photo: the next newest becomes the main photo', async () => {
-    const calls = mockTables({
-      plant_photos: [{ error: null }, { data: { path: 'u/next.jpg' }, error: null }],
-      plants: [{ data: { photo_path: 'u/main.jpg' }, error: null }, { error: null }],
-    });
-    await del('p1', { id: 'f1', path: 'u/main.jpg' });
-    expect(calls).toContainEqual({ table: 'plants', method: 'update', args: [{ photo_path: 'u/next.jpg' }] });
+    expect(supabase.rpc).toHaveBeenCalledWith('delete_plant_photo', { photo_id: 'f1' });
     expect(bucket.remove).toHaveBeenCalledWith(['u/main.jpg']);
+    expect(client.getQueryState(['plant-photos', 'p1'])?.isInvalidated).toBe(true);
   });
 
-  it('the only photo: the plant goes back to no photo (pot drawing)', async () => {
-    const calls = mockTables({
-      plant_photos: [{ error: null }, { data: null, error: null }],
-      plants: [{ data: { photo_path: 'u/main.jpg' }, error: null }, { error: null }],
-    });
-    await del('p1', { id: 'f1', path: 'u/main.jpg' });
-    expect(calls).toContainEqual({ table: 'plants', method: 'update', args: [{ photo_path: null }] });
-  });
-
-  it('never removes the object while a row or the plant could still point at it', async () => {
-    for (const results of [
-      { plant_photos: { error: { message: 'denied' } }, plants: { data: { photo_path: 'u/x.jpg' }, error: null } },
-      {
-        plant_photos: [{ error: null }, { data: null, error: null }],
-        plants: [{ data: { photo_path: 'u/main.jpg' }, error: null }, { error: { message: 'offline' } }],
-      },
-    ]) {
+  it('removes nothing when the call fails or the photo was already gone', async () => {
+    for (const r of [{ data: null, error: { message: 'offline' } }, { data: null, error: null }]) {
       bucket.remove.mockClear();
-      mockTables(results);
+      (supabase.rpc as jest.Mock).mockResolvedValue(r);
       const { result } = await renderHook(() => useDeletePlantPhoto(), { wrapper });
       await act(async () => {
-        await expect(result.current.mutateAsync({ plantId: 'p1', photo: { id: 'f1', path: 'u/main.jpg' } })).rejects.toBeTruthy();
+        await result.current.mutateAsync({ plantId: 'p1', photo: { id: 'f1', path: 'u/x.jpg' } }).catch(() => {});
       });
       expect(bucket.remove).not.toHaveBeenCalled();
     }

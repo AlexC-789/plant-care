@@ -270,6 +270,7 @@ export type Database = {
     };
     Functions: {
       backfill_plant_photos: { Args: Record<PropertyKey, never>; Returns: undefined };
+      delete_plant_photo: { Args: { photo_id: string }; Returns: string };
       species_search_text: {
         Args: { common_names: string[]; scientific_name: string };
         Returns: string;

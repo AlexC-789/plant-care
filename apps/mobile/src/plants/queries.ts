@@ -88,6 +88,7 @@ export function useDeletePlant() {
       );
       queryClient.removeQueries({ queryKey: ['plant', id] });
       queryClient.removeQueries({ queryKey: ['health', id] });
+      queryClient.removeQueries({ queryKey: plantPhotosKey(id) });
     },
   });
 }
@@ -147,7 +148,7 @@ export function useDeletePlantPhoto() {
   const invalidate = useInvalidateTimeline();
   return useMutation({
     mutationFn: ({ plantId, photo }: { plantId: string; photo: { id: string; path: string } }) =>
-      api.deletePlantPhoto(plantId, photo),
+      api.deletePlantPhoto(photo),
     onSuccess: (_void, { plantId }) => invalidate(plantId),
   });
 }

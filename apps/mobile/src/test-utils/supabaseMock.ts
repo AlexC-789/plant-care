@@ -19,6 +19,7 @@ export const supabase = {
     signOut: jest.fn().mockResolvedValue({ error: null }),
   },
   from: jest.fn(),
+  rpc: jest.fn(),
   storage: { from: jest.fn() },
   functions: { invoke: jest.fn() },
 };
