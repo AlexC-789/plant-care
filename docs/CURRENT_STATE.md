@@ -59,7 +59,8 @@ handoff §2.4. Jest prints a worker-exit warning at the end (pre-existing; `-- -
 - `apps/mobile/.env.local` points at hosted; the local values are kept there as comments.
 - Changing auth settings through the Management API needs `project_admin_write`; do them in the dashboard.
 - Hosted gives `service_role` no table privileges, so every function failed with 42501 ("Something
-  went wrong") until `20261118120000_service_role_grants.sql`; identify verified 200 on hosted after.
+  went wrong") until `20261118120000_service_role_grants.sql` + `…130000` (execute on
+  `species_search_text`, which the generated `species.search_text` calls); identify verified 200 on hosted.
 - Phone testing away from the LAN: `npx expo start --tunnel` (`@expo/ngrok` installed globally).
 
 ## Local environment (Windows, checked 2026-11-18)

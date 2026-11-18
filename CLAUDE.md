@@ -50,7 +50,8 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
   writable by `authenticated` — use column-level grants.
 - Edge Functions use `service_role`, which hosted projects grant nothing by default (local grants all):
   a table a function touches gets explicit grants in a migration, asserted in
-  `supabase/tests/database/service_role_grants.test.sql`.
+  `supabase/tests/database/service_role_grants.test.sql` (incl. execute on functions that generated
+  columns call). Local grants these anyway, so local tests can't catch a miss: verify on hosted.
 - Schema changes only via `supabase/migrations/`; then `npm run db:types`.
 - Gate paid features only through `useEntitlement()`.
 - Sign-up email check: `before-user-created` auth hook (Edge Function). It must fail open on
