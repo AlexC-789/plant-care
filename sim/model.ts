@@ -67,3 +67,9 @@ export function fill(w: World, fraction: number): World {
 export function offline(s: Scenario, simStartMs: number, nowMs: number): boolean {
   return s === 'offline-6h' && nowMs >= simStartMs + 3_600_000 && nowMs < simStartMs + 7 * 3_600_000;
 }
+
+// Next wake time. A key-press (nudged) wake must never run ahead of real time: the server drops ts > now + 5 min.
+export function nextWakeAt(simNow: number, stepMs: number, realNow: number, nudged: boolean): number {
+  const stepped = simNow + stepMs;
+  return nudged ? Math.max(simNow, Math.min(stepped, realNow)) : stepped;
+}

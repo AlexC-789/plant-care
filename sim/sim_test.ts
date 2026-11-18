@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { SENSOR, advance, fill, initialWorld, offline, pump, readSensors } from './model.ts';
+import { SENSOR, advance, fill, initialWorld, nextWakeAt, offline, pump, readSensors } from './model.ts';
 import { newState, wake } from '../supabase/functions/_shared/watering.ts';
 
 const TS = '2026-01-01T00:00:00.000Z';
@@ -70,4 +70,12 @@ test('24 simulated hours of normal watering stay inside the limits', () => {
 test('stake-out-of-soil faults after two doses', () => {
   const { state } = run('stake-out-of-soil', 6);
   assert.equal(state.fault, 'no_moisture_rise');
+});
+
+test('a key-press wake never runs ahead of real time', () => {
+  const real = 1_000_000_000;
+  assert.equal(nextWakeAt(real - 60_000, 900_000, real, true), real); // real-time mode: wake now, not +900 s
+  assert.equal(nextWakeAt(real, 900_000, real, true), real);
+  assert.equal(nextWakeAt(real - 86_400_000, 900_000, real, true), real - 86_400_000 + 900_000); // catching up
+  assert.equal(nextWakeAt(real, 900_000, real, false), real + 900_000); // timer fired
 });

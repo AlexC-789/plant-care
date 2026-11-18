@@ -14,7 +14,7 @@ import {
   type DeviceEvent, type ModuleState, type RawReading,
   afterSync, clearFault, freshState, newState, nextSyncDelayS, wake,
 } from '../supabase/functions/_shared/watering.ts';
-import { type Scenario, type World, advance, fill, initialWorld, offline, pump, readSensors } from './model.ts';
+import { type Scenario, type World, advance, fill, initialWorld, nextWakeAt, offline, pump, readSensors } from './model.ts';
 
 const FIRMWARE = 'sim-0.1.0';
 const here = new URL('.', import.meta.url);
@@ -109,13 +109,13 @@ async function sync(): Promise<void> {
       process.exit(0);
     }
   } else gone = 0;
-  if (status === 200) {
+  if (status === 200 && json) {
     readings.splice(0, sentR); events.splice(0, sentE); acked.splice(0, sentA);
     for (const c of json.commands ?? []) {
       if (c.type === 'clear_fault') state = clearFault(state);
       acked.push(c.id);
     }
-    state = afterSync(state, true, json.instructions);
+    state = afterSync(state, true, json.instructions ?? undefined);
   } else state = afterSync(state, false);
   console.log(`${new Date(simNow).toISOString()} sync ${status || 'offline'} sent ${sentR} readings ${sentE} events, next in ${nextSyncDelayS(state)}s`);
 }
@@ -140,17 +140,18 @@ while (!quit) {
   save();
 
   // Sleep one read interval: fast while catching up, real time afterwards; a key press cuts it short.
-  const stepS = state.instructions.read_interval_s;
-  const behind = simNow + stepS * 1000 <= Date.now();
-  const hours = stepS / 3600;
-  simNow += stepS * 1000;
-  world = advance(world, hours);
-  if (keys.length === 0 && !quit) {
+  const stepMs = state.instructions.read_interval_s * 1000;
+  const behind = simNow + stepMs <= Date.now();
+  let nudged = keys.length > 0;
+  if (!nudged && !quit) {
     await new Promise<void>((resolve) => {
-      const t = setTimeout(resolve, (behind ? stepS / speed : stepS) * 1000);
-      nudge = () => { clearTimeout(t); resolve(); };
+      const t = setTimeout(resolve, (behind ? stepMs / speed : stepMs));
+      nudge = () => { nudged = true; clearTimeout(t); resolve(); };
     });
     nudge = null;
   }
+  const prev = simNow;
+  simNow = nextWakeAt(simNow, stepMs, Date.now(), nudged);
+  world = advance(world, (simNow - prev) / 3_600_000);
 }
 process.exit(0);
