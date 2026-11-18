@@ -68,7 +68,12 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
     // top_issue is stored for threshold tuning only: never in the response or a log line
     const stored = { ...health, top_issue: isPlant ? result.issues[0] ?? null : null };
     const scanId = await insertScan(deps, { ...scan, status: isPlant ? 'ok' : 'not_plant', is_plant: result.isPlantProbability, health: stored });
-    return respond(json({ scanId, ...health }), isPlant ? 'ok' : 'not_plant');
+    // checked photos join the timeline with their result; the check itself still succeeds if this fails
+    const rows = paths.map((path) => ({ user_id: userId, plant_id: plantId, path, scan_id: scanId }));
+    const onTimeline = await rest(deps, 'plant_photos?on_conflict=plant_id,path', {
+      method: 'POST', headers: { prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(rows),
+    }).then(() => '', () => '_timeline_failed');
+    return respond(json({ scanId, ...health }), (isPlant ? 'ok' : 'not_plant') + onTimeline);
   } catch {
     return respond(jsonError(500, 'Something went wrong.'), 'error');
   } finally {

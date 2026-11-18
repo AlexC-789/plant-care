@@ -87,7 +87,8 @@ Edit keeps name, type, room, delete plant.
 - **Health checks:** `check-health` additionally upserts a `plant_photos` row per checked photo with
   `scan_id` (service role; on conflict set scan_id). The function stays the only writer of `scan_id`.
 - **Backfill (migration):** rows from `plants.photo_path` (taken_at = plant created_at) and from scans with
-  `plant_id` set (each photo path, taken_at = scan created_at, scan_id for health scans), `on conflict do nothing`.
+  `plant_id` set (each photo path, taken_at = scan created_at, scan_id for health scans), one row per
+  path (earliest health scan wins); an existing row only gains a scan_id it lacks (implementation, 2026-11-18).
 - **Deleting a plant:** rows cascade; `deletePlant` also gathers `plant_photos` paths so every stored object
   goes (§8a.8). The e2e "no objects remain" proof is extended to cover timeline photos.
 - Storage, limits (20 Plant.id/day), signed URLs (1 h) unchanged.
