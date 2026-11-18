@@ -17,6 +17,8 @@ jest.mock('@/plants/api', () => ({
   fetchSpecies: jest.fn(),
   fetchLatestHealth: jest.fn(),
   checkHealth: jest.fn(),
+  fetchPlantPhotos: jest.fn(),
+  addPlantPhoto: jest.fn(),
 }));
 jest.mock('@/plants/photos', () => ({
   preparePhoto: jest.fn(),
@@ -30,13 +32,13 @@ jest.mock('expo-image-picker', () => ({
   launchCameraAsync: jest.fn(),
   launchImageLibraryAsync: jest.fn(),
 }));
-// The edit route is Task 12's: record the push and don't navigate.
+// The edit and photos routes aren't under test here: record the push and don't navigate.
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   useRouter: () => {
     const r = jest.requireActual('expo-router').useRouter();
-    return { ...r, push: (href: string) => (mockPush(href), href.endsWith('/edit') ? undefined : r.push(href)) };
+    return { ...r, push: (href: string) => (mockPush(href), /\/edit$|\/photos\?/.test(href) ? undefined : r.push(href)) };
   },
 }));
 
@@ -62,6 +64,7 @@ beforeEach(() => {
   mocked(api.fetchPlant).mockResolvedValue(fern);
   mocked(api.fetchSpecies).mockResolvedValue(monstera);
   mocked(api.fetchLatestHealth).mockResolvedValue(null);
+  mocked(api.fetchPlantPhotos).mockResolvedValue({ photos: [], photoUrls: {} });
   mocked(photos.signPhotoUrls).mockResolvedValue({ 'u/p.jpg': 'https://signed/p.jpg' });
   mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: true });
   mocked(ImagePicker.launchCameraAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///raw.jpg' }] });
@@ -325,4 +328,115 @@ test('Check and Done sit in the bottom bar', async () => {
   await screen.findByText('ok');
   expect(screen.getByTestId('bottom-bar')).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Done' })).toBeTruthy();
+});
+
+describe('timeline', () => {
+  const ph = (i: number, health: object | null = null) => ({
+    id: `ph${i}`,
+    path: `u/t${i}.jpg`,
+    taken_at: `2026-11-${String(20 - i).padStart(2, '0')}T12:00:00Z`,
+    scan_id: null,
+    health,
+  });
+  const urls = (n: number) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`u/t${i}.jpg`, `https://signed/t${i}.jpg`]));
+  const short = { day: 'numeric', month: 'short' } as const;
+  const withPhotos = (n: number) =>
+    mocked(api.fetchPlantPhotos).mockResolvedValue({
+      photos: Array.from({ length: n }, (_, i) => ph(i, i === 0 ? { healthy: false, note: 'n', advice: null } : null)),
+      photoUrls: urls(n),
+    });
+
+  test('no photos: no strip and no See all, only Add a photo', async () => {
+    await open();
+    await screen.findByText('Fernando');
+    expect(screen.queryByText('Timeline')).toBeNull();
+    expect(screen.queryByText('See all')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Add a photo' })).toBeTruthy();
+  });
+
+  test('thumbnails run newest first with a date and a status dot only when checked', async () => {
+    withPhotos(3);
+    await open();
+    await screen.findByText('Timeline');
+    const d = new Date('2026-11-20T12:00:00Z');
+    await screen.findByLabelText(`Photo from ${d.toLocaleDateString(undefined, { ...short, year: 'numeric' })}`);
+    expect(screen.getAllByTestId('timeline-thumb').map((t) => t.props.source)).toEqual([
+      [{ uri: 'https://signed/t0.jpg', cacheKey: 'u/t0.jpg' }],
+      [{ uri: 'https://signed/t1.jpg', cacheKey: 'u/t1.jpg' }],
+      [{ uri: 'https://signed/t2.jpg', cacheKey: 'u/t2.jpg' }],
+    ]);
+    expect(screen.getByText(d.toLocaleDateString(undefined, short))).toBeTruthy();
+    expect(screen.getAllByTestId('timeline-dot')).toHaveLength(1);
+  });
+
+  test('See all opens the viewer at 0; a thumbnail opens it at its index', async () => {
+    withPhotos(3);
+    await open();
+    await press('See all');
+    expect(mockPush).toHaveBeenLastCalledWith('/plant/p1/photos?start=0');
+    const thumbs = await screen.findAllByRole('button', { name: /^Photo from/ });
+    await fireEvent.press(thumbs[2]);
+    expect(mockPush).toHaveBeenLastCalledWith('/plant/p1/photos?start=2');
+  });
+
+  test('reaching the end loads the next page', async () => {
+    mocked(api.fetchPlantPhotos).mockImplementation(async (_id: string, page: number) => ({
+      photos: Array.from({ length: page === 0 ? api.PAGE_SIZE : 1 }, (_, i) => ph(page * 100 + i)),
+      photoUrls: {},
+    }));
+    await open();
+    await screen.findByText('Timeline');
+    await fireEvent(screen.getByTestId('timeline-list'), 'endReached');
+    await waitFor(() => expect(api.fetchPlantPhotos).toHaveBeenCalledWith('p1', 1));
+  });
+
+  async function addOne() {
+    mocked(api.addPlantPhoto).mockResolvedValue('u/new.jpg');
+    await open();
+    await screen.findByText('Fernando');
+    await press('Add a photo');
+    await press('Take photo');
+    await screen.findByText('Added to the timeline.');
+  }
+
+  test('Add a photo uploads it, then offers a check or Not now', async () => {
+    await addOne();
+    expect(api.addPlantPhoto).toHaveBeenCalledWith(expect.any(String), 'p1', { uri: 'file:///prepared.jpg', width: 1, height: 1 });
+    await press('Not now');
+    expect(screen.queryByText('Added to the timeline.')).toBeNull();
+    expect(api.checkHealth).not.toHaveBeenCalled();
+  });
+
+  test('a permission refusal shows the settings copy; an upload failure a short error', async () => {
+    mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: false });
+    await open();
+    await screen.findByText('Fernando');
+    await press('Add a photo');
+    await press('Take photo');
+    await screen.findByText('Camera access is off. Allow it in Settings to take photos.');
+    mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: true });
+    mocked(api.addPlantPhoto).mockRejectedValue(new Error('x'));
+    await press('Take photo');
+    await screen.findByText("Couldn't add that photo. Try again.");
+    expect(screen.queryByText('Added to the timeline.')).toBeNull();
+  });
+
+  test('Check its health runs once even on a double tap, and the card shows progress', async () => {
+    mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
+    await addOne();
+    const button = screen.getAllByRole('button', { name: 'Check its health' })[0];
+    await fireEvent.press(button);
+    await fireEvent.press(button);
+    expect(api.checkHealth).toHaveBeenCalledTimes(1);
+    expect(api.checkHealth).toHaveBeenCalledWith('p1', ['u/new.jpg']);
+    await screen.findByText('Looking at your plant…');
+  });
+
+  test('at the daily limit the limit copy shows and the photo stays', async () => {
+    mocked(api.checkHealth).mockRejectedValue(new Error(LIMIT));
+    await addOne();
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Check its health' })[0]);
+    await screen.findByText(LIMIT);
+    expect(photos.deletePhotos).not.toHaveBeenCalled();
+  });
 });

@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
+import { fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
@@ -96,39 +96,18 @@ test('picking a new type keeps the typed name and saves species_id', async () =>
   );
 });
 
-test('replacing the photo uploads the new one, saves it, then deletes the old object', async () => {
+test('the photo lives on the timeline: Edit has no photo controls', async () => {
   await open();
-  await press('Take photo');
-  await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalledTimes(1));
-  await press('Done');
-  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/p.jpg']));
-  expect(api.updatePlant).toHaveBeenCalledWith('p1', expect.objectContaining({ photo_path: 'u/new.jpg' }));
-  expect(mocked(api.updatePlant).mock.invocationCallOrder[0]).toBeLessThan(
-    mocked(photos.deletePhotos).mock.invocationCallOrder[0],
-  );
-});
-
-test('removing the photo saves photo_path null, then deletes the old object', async () => {
-  await open();
-  await press('Remove current photo');
-  await press('Done');
-  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/p.jpg']));
-  expect(api.updatePlant).toHaveBeenCalledWith('p1', expect.objectContaining({ photo_path: null }));
-});
-
-test('leaving without Done deletes a replacement that was uploaded', async () => {
-  const { unmount } = await open();
-  await press('Take photo');
-  await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalledTimes(1));
-  await act(async () => unmount());
-  await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/new.jpg']));
-  expect(api.updatePlant).not.toHaveBeenCalled();
+  expect(screen.queryByRole('button', { name: 'Take photo' })).toBeNull();
+  expect(screen.queryByRole('button', { name: /Remove/ })).toBeNull();
+  expect(screen.queryByLabelText('Fernando photo')).toBeNull();
 });
 
 test('Delete asks first (copy, Cancel keeps it), then deletes row + all photos and returns to Plants', async () => {
   const rows: Record<string, unknown> = {
     plants: { photo_path: 'u/p.jpg' },
     scans: [{ photo_paths: ['u/s1.jpg'] }, { photo_paths: ['u/s2.jpg'] }],
+    plant_photos: [{ path: 'u/p.jpg' }, { path: 'u/t1.jpg' }],
   };
   const calls: string[] = [];
   mocked(supabase.from).mockImplementation((table: string) => {
@@ -146,21 +125,10 @@ test('Delete asks first (copy, Cancel keeps it), then deletes row + all photos a
   await press('Delete plant');
   await press('Delete');
   await waitFor(() =>
-    expect(photos.deletePhotos).toHaveBeenCalledWith(['u/p.jpg', 'u/s1.jpg', 'u/s2.jpg']),
+    expect(photos.deletePhotos).toHaveBeenCalledWith(['u/p.jpg', 'u/s1.jpg', 'u/s2.jpg', 'u/t1.jpg']),
   );
   expect(calls).toContain('plants.delete');
   await waitFor(() => expect(screen).toHavePathname('/'));
-});
-
-test('closing the sheet while a save with a new photo is in flight keeps that photo', async () => {
-  mocked(api.updatePlant).mockReturnValue(new Promise(() => {}));
-  const { unmount } = await open();
-  await press('Take photo');
-  await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalledTimes(1));
-  await press('Done');
-  await waitFor(() => expect(api.updatePlant).toHaveBeenCalled());
-  await act(async () => unmount());
-  expect(photos.deletePhotos).not.toHaveBeenCalled();
 });
 
 test('the form scrolls clear of the keyboard', async () => {

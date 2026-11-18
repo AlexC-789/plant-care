@@ -1,5 +1,4 @@
 import { Image } from 'expo-image';
-import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 
@@ -8,6 +7,7 @@ import { radius, space, useTheme } from '@/theme';
 import { Button, Text } from '@/ui';
 
 import { deletePhotos, preparePhoto, uploadPhoto } from './photos';
+import { DENIED, pickPhoto, type PhotoSource } from './pickPhoto';
 
 export type Photo = { kind: string; localUri: string; path: string };
 export type CaptureCard = { kind: string; title: string; hint: string; optional?: boolean };
@@ -18,11 +18,6 @@ export const ADD_CARDS: CaptureCard[] = [
   { kind: 'flower', title: 'Flower', hint: "If it's flowering", optional: true },
   { kind: 'problem', title: 'Problem spot', hint: 'If something looks wrong', optional: true },
 ];
-
-const DENIED = {
-  camera: 'Camera access is off. Allow it in Settings to take photos.',
-  library: 'Photo access is off. Allow it in Settings to choose photos.',
-};
 
 /**
  * One card per `cards` entry. A photo is resized and uploaded as soon as it is taken or chosen;
@@ -39,7 +34,7 @@ export function CaptureCards({
 }) {
   const { colors } = useTheme();
   const userId = useSession().session?.user.id;
-  const [denied, setDenied] = useState<keyof typeof DENIED | null>(null);
+  const [denied, setDenied] = useState<PhotoSource | null>(null);
   const [skipped, setSkipped] = useState<string[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -50,22 +45,15 @@ export function CaptureCards({
     return photos.filter((p) => p.kind !== kind);
   };
 
-  async function pick(kind: string, source: keyof typeof DENIED) {
-    const camera = source === 'camera';
+  async function pick(kind: string, source: PhotoSource) {
     setFailed(false);
     try {
-      const perm = await (camera
-        ? ImagePicker.requestCameraPermissionsAsync()
-        : ImagePicker.requestMediaLibraryPermissionsAsync());
-      if (!perm.granted) return setDenied(source);
+      const picked = await pickPhoto(source);
+      if (picked.denied) return setDenied(source);
       setDenied(null);
-      const options = { mediaTypes: ['images' as const] };
-      const res = await (camera
-        ? ImagePicker.launchCameraAsync(options)
-        : ImagePicker.launchImageLibraryAsync(options));
-      if (res.canceled || !userId) return;
+      if (!picked.uri || !userId) return;
       setBusy(kind);
-      const prepared = await preparePhoto(res.assets[0].uri);
+      const prepared = await preparePhoto(picked.uri);
       const path = await uploadPhoto(userId, prepared);
       onChange([...remove(kind), { kind, localUri: prepared.uri, path }]);
     } catch {
