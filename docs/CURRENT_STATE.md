@@ -1,13 +1,33 @@
 # Current state
 
-_Last updated: 2026-11-18 (M3 merged to `main` via PR #7; next: M4)._
+_Last updated: 2026-11-18 (M4 done on `m4-devices`, PR to `main` open; hosted deploy waits for the owner)._
 Update this file at the end of every substantial task. Detail and history live in
 `docs/LOCAL_MIGRATION_HANDOFF.md` (cloud → local handoff, 2026-11-18) and the specs/plans; this
 file is the short, current summary.
 
 ## Status
 
-- `main` = `e598e62` (PR #7 merged). M1, M2 and M3 are done. Next: M4 Devices (simulated), no spec yet.
+- `main` = `73eadcc`. M1–M3 merged. M4 done on branch `m4-devices` (PR open), not yet on hosted.
+- **M4 Devices, simulated** (branch `m4-devices`). Spec `docs/superpowers/specs/2026-11-18-m4-devices-design.md`,
+  plan `docs/superpowers/plans/2026-11-18-m4-devices.md`.
+  - Cloud "digital twin": the module uploads raw readings/events, the cloud converts them (`_shared/twin.ts`)
+    and sends instructions back. Module rules + compiled limits in `_shared/watering.ts` (≤ 40 ml/dose,
+    ≤ 150 ml/24 h, float low = no pump, 2 no-rise doses = fault; state loss = budget used up); the sim
+    imports it unchanged and the M7 firmware ports it.
+  - DB: `device_claims` (12-char code, 15 min), `devices` (secret only as SHA-256, never readable),
+    `readings`, `device_events`, `device_commands` (`clear_fault`); owner-only RLS, column grants,
+    service_role grants asserted; `claim_device` RPC (service_role only).
+  - Functions `device-claim`, `device-sync` (`verify_jwt = false`, bearer secret, 410 twice = unpaired,
+    bad items skipped, idempotent upserts, ≤ 20 commands per reply).
+  - Simulator `sim/` (zero deps, Node 22): `node sim/sim.ts --claim CODE [--scenario …]`; `npm run sim:test`.
+  - App: Home status per plant + "Needs you / Doing well" (refetches on focus), plant detail banner +
+    Module group (water vessel, soil, battery, check-in), Resume watering, Remove module, setup steps
+    (code → tank). Real tank level sensor replaces "I refilled it" (part chosen in M7).
+  - Reviews: every task reviewed (Opus for DB, functions, watering); final whole-branch Opus review →
+    2 Important (> 20 pending commands broke sync; Home stale after setup) + minors fixed test-first.
+  - Verified 2026-11-18: Jest 328, typecheck, lint, `db:test` 166, `fn:test`, `sim:test` 7; local e2e
+    (web app + sim on local Supabase) 8/8 steps incl. claim, tank full, fault → Resume, Remove → sim
+    unpairs; screenshots light + dark. App jest runs with `maxWorkers: '50%'` (full runs timed out).
 - **M3 photo timeline + rescan** (merged). Spec `docs/superpowers/specs/2026-11-18-m3-photo-timeline-design.md`, plan
   `docs/superpowers/plans/2026-11-18-m3-photo-timeline.md`.
   - DB: `plant_photos` (owner-only RLS, insert grant on plant_id/path/taken_at only), trigger from
@@ -88,5 +108,5 @@ handoff §2.4. Jest prints a worker-exit warning at the end (pre-existing; `-- -
 
 ## Next recommended task
 
-Owner: review/merge the M3 PR and do the phone check. Then M4 Devices (simulated) needs a
-brainstorm → design → plan (product spec §11; `docs/TASKS.md` "Later milestones").
+Owner: approve the hosted M4 deploy (`docs/TASKS.md` M4 item 1), then review/merge the M4 PR and check
+the phone on mobile data. Then M5 Watering plans (brainstorm → design → plan).
