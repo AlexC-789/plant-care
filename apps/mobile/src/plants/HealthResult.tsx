@@ -11,13 +11,12 @@ const STATUS = {
   null: { icon: 'unsure', color: 'statusQuiet', label: 'Not sure' },
 } as const;
 
-/** A finished health check: the checked photo, a status line, the note and what to do. */
-export function HealthResult({ result, photoUri }: { result: Result; photoUri?: string }) {
+/** The status line, note and what to do for a finished check. */
+export function HealthText({ result }: { result: Result }) {
   const { colors } = useTheme();
   const status = STATUS[`${result.healthy}` as keyof typeof STATUS];
   return (
-    <FadeIn style={styles.result}>
-      {photoUri ? <Image accessibilityLabel="Checked photo" source={{ uri: photoUri }} style={styles.photo} /> : null}
+    <>
       <View style={styles.status}>
         <Icon name={status.icon} size={18} color={status.color} />
         <Text variant="subheadline" color={status.color}>
@@ -38,6 +37,16 @@ export function HealthResult({ result, photoUri }: { result: Result; photoUri?: 
           <Text variant="body">{result.advice}</Text>
         </View>
       ) : null}
+    </>
+  );
+}
+
+/** A finished health check: the checked photo, then its text. */
+export function HealthResult({ result, photoUri }: { result: Result; photoUri?: string }) {
+  return (
+    <FadeIn style={styles.result}>
+      {photoUri ? <Image accessibilityLabel="Checked photo" source={{ uri: photoUri }} style={styles.photo} /> : null}
+      <HealthText result={result} />
     </FadeIn>
   );
 }

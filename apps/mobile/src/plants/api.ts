@@ -17,6 +17,12 @@ export type NewPlant = {
 };
 export type PlantPatch = Partial<Pick<Plant, 'name' | 'room' | 'species_id' | 'custom_type' | 'photo_path'>>;
 export type Confidence = 'very_likely' | 'likely' | 'possibly';
+/** Attach an identify scan to a plant (the owner may set `scans.plant_id` once). */
+export async function linkScan(scanId: string, plantId: string): Promise<void> {
+  const { error } = await supabase.from('scans').update({ plant_id: plantId }).eq('id', scanId);
+  if (error) throw error;
+}
+
 export type IdentifyResult = {
   scanId?: string;
   isPlant: boolean;
