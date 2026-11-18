@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "worktree": {
+    "baseRef": "head"
+  },
+  "deniedMcpServers": [
+    { "serverName": "claude.ai Expedia" },
+    { "serverName": "claude.ai Kiwi.com" },
+    { "serverName": "claude.ai lastminute.com" },
+    { "serverName": "claude.ai Gmail" },
+    { "serverName": "claude.ai Google Calendar" }
+  ]
+}
