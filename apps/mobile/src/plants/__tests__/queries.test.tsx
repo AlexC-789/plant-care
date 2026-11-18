@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { useSession } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
+import { linkScan } from '@/plants/api';
 import {
   useCheckHealth,
   useCreatePlant,
@@ -351,5 +352,19 @@ describe('useDeletePlantPhoto', () => {
       });
       expect(bucket.remove).not.toHaveBeenCalled();
     }
+  });
+});
+
+describe('linkScan', () => {
+  it('sets scans.plant_id on the scan', async () => {
+    const calls = mockTables({ scans: { error: null } });
+    await linkScan('scan1', 'p1');
+    expect(calls).toContainEqual({ table: 'scans', method: 'update', args: [{ plant_id: 'p1' }] });
+    expect(calls).toContainEqual({ table: 'scans', method: 'eq', args: ['id', 'scan1'] });
+  });
+
+  it('throws when the update fails', async () => {
+    mockTables({ scans: { error: { message: 'denied' } } });
+    await expect(linkScan('scan1', 'p1')).rejects.toBeTruthy();
   });
 });
