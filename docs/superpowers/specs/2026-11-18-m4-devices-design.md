@@ -1,7 +1,7 @@
 # Milestone 4: devices (simulated) and the digital twin — design
 
 Date: 2026-11-18
-Status: Draft for owner review (builder check done 2026-11-18)
+Status: Approved by owner 2026-11-18
 Builds on: [Software design](2026-11-16-plant-care-design.md) (§5.4–5.9, §6, §11 item 4),
 [App UI design](2026-11-17-app-ui-design.md) (§4–6), [Hardware v1](../../hardware/2026-11-16-saucer-and-stake-v1.md).
 Amends all three (see §10).
@@ -255,6 +255,7 @@ One sentence per plant, top-down, from the `devices` row and the current time:
 | 1 | `fault_code` set | Now | Watering stopped · Check the stake is in the soil | `no_moisture_rise`: "Watering stopped. Check the stake is in the soil and the tube isn't kinked, then resume." + **Resume watering**. `sensor_out_of_range`: "Watering stopped. Check the stake is pushed into the soil; it resumes by itself." |
 | 2 | `float_low` | Now | Tank needs refilling | "The tank needs refilling. Watering is paused until it's filled." |
 | 3 | `last_seen_at` older than 3 × `sync_interval_s` (3 missed check-ins) | Quiet (Now if the last battery was < 20 %: "…its battery was low") | Not heard from since 09:12 | "Not heard from since 09:12. It should keep watering on its last instructions." |
+| 3b | no reading yet (`reading_ts` null) | Quiet | Waiting for its first check-in | none |
 | 4 | `soil_pct` > 55 | Soon | Soil is very wet · Watering is on hold | none |
 | 5 | `battery_pct` < 20 | Soon | Battery is low · Charge it this week | "Battery is low. Charge it this week." |
 | 6 | otherwise | Fine | Doing well · Still learning how fast it drinks | none |
