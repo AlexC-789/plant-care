@@ -44,12 +44,15 @@ handoff §2.4. Jest prints a worker-exit warning at the end (pre-existing; `-- -
   which breaks `fn:test`'s POSIX loop. Fix: `docs/TASKS.md` T0.
 - Passing on this branch: lint, typecheck, Jest (261 tests), pgTAP via `npx supabase test db`
   (71 tests on `main`'s schema). `fn:test` not run yet.
-- Superpowers and Ponytail plugins are **not installed** locally. The handoff (§3.3) recommends
-  installing both; waiting for the owner's go-ahead. Their rules are also in `CLAUDE.md`.
+- Plugins (user scope, installed 2026-11-18): `superpowers@claude-plugins-official` 7.0.2,
+  `ponytail@ponytail` 5.3.3 (its task board writes a local CSV under `~/.config/ponytail/band/`;
+  webhook off). `unslop` arrives synced from claude.ai. Project plugin: `expo` (`apps/mobile/.claude`).
+- MCP: `.claude/settings.json` blocks the unrelated claude.ai connectors (Expedia, Kiwi.com,
+  lastminute.com, Gmail, Google Calendar) in this project; Claude Docs and Google Drive remain.
+- `gh` CLI is not installed (needed for `gh pr create`; see `docs/TASKS.md` T0).
 
 ## Open decisions (owner)
 
-- Install Superpowers + Ponytail plugins (handoff §3.3)?
 - App UI design open questions 1–4 (`docs/superpowers/specs/2026-11-17-app-ui-design.md` §8).
 - `origin/claude/busy-ride-ov5sv2`: 5 unmerged app-UI-design doc commits (2026-11-17), probably
   superseded by the spec on `main`. Keep or delete?

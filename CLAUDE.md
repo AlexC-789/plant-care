@@ -108,8 +108,9 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
   first, one line over fifty. Applies to every implementation and review.
 - Test-first (TDD: failing test, then the smallest change that passes).
 - **Git (owner, 2026-11-18):** commit freely on feature branches (one commit per task, never on
-  `main`); the owner reviews afterwards, so report each commit. Ask before pushing, opening or merging
-  a PR; never force-push or rewrite pushed history. Never discard or overwrite uncommitted work;
+  `main`) and push them. When a big task is done, open a PR to `main` (`gh pr create`) with what
+  changed, what was verified and what is open; the owner reviews and merges. Never merge, push to
+  `main`, force-push or rewrite pushed history. Never discard or overwrite uncommitted work;
   check `git status` before editing. No new dependencies, speculative refactors or unrelated
   changes without asking.
 
@@ -145,6 +146,8 @@ directly; delegate only when it saves real effort.
 - **Substantial task loop:** read the spec + code → list affected files → short plan → decide on
   delegation → implement (TDD) → integrate → run checks → `code-reviewer` on significant changes →
   fix confirmed issues → read the full `git diff` → update `docs/CURRENT_STATE.md` and
-  `docs/TASKS.md` → commit → report what changed, what was verified, what is still open.
+  `docs/TASKS.md` → commit + push → PR → report what changed, what was verified, what is still open.
+- Process skills: Superpowers (brainstorming, writing-plans, subagent-driven-development, TDD,
+  verification) and Ponytail are installed as user plugins; use them with these agents.
 - Keep context lean: read only the spec sections you need, use `/compact` on long tasks and a
   fresh session per milestone. Record decisions in the docs, not only in chat.

@@ -14,7 +14,10 @@ Handoff §7 has the full list. Still open on this PC:
 3. Repo root: `npm ci` (installs `deno` 2.9.6 and `supabase` 3.2.0).
 4. Check: `npx deno --version`, `npx supabase --version`.
 5. Env files from handoff §5.3 (`apps/mobile/.env.local` exists; `supabase/functions/.env` exists).
-6. Optional: `gh auth login` for PRs; Playwright for the e2e script (handoff §5.5).
+6. GitHub CLI for PRs: `winget install GitHub.cli`, new terminal, `gh auth login`.
+7. Optional: Playwright for the e2e script (handoff §5.5).
+8. Optional, account-wide: disconnect unused connectors at claude.ai/customize/connectors
+   (this repo already blocks them locally).
 
 **Done when** `npm test`, `npm run typecheck`, `npm run lint`, `npm run fn:test` and
 `npm run db:test` all run locally.
