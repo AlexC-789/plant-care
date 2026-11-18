@@ -11,6 +11,7 @@ Routing boards: "Routing A" (rejected) and "Routing B" (chosen).
 - 12 Nov: Hard requirement added: no visible tube or cable on the outside of the pot. Routing B1 chosen: flat spine in the pot's colour up the back, rim clip, plant-label-shaped stake head. Routing A (through the drainage hole) rejected: needs repotting and a suitable hole, waters from the bottom, buries the electronics in the wettest soil. Twig and woven cord remain possible style variants of B.
 - 12 Nov: Drainage hole no longer required in principle (pending a no-hole pooling test).
 - 16 Nov: Sensing set decided: capacitive soil moisture probe, a water level sensor in the reservoir (hanging float switch), and water volume metered by pump runtime. Reverses the 12 Nov "tank-low by firmware only" change.
+- 18 Nov (M4, see `docs/superpowers/specs/2026-11-18-m4-devices-design.md`): Tank level sensor added (measured water level); the float switch stays as the low-water cut-off. Part and mounting are chosen in M7 (candidates: a v1.2 capacitive probe hung upright from the rim, or a plate on the dry side of the bay wall). This replaces the pumped-volume estimate and "I refilled it". Power note (the battery must last a vacation): the level sensor and the float switch draw power only while being read (GPIO-powered or switched, no standing pull-up current), like the soil probe, and the SuperMini's always-on power LED is removed (alone it would drain the battery in about 6 weeks).
 
 ## Assumptions
 
@@ -33,7 +34,8 @@ Routing boards: "Routing A" (rejected) and "Routing B" (chosen).
 11. Sensing:
     - Soil: capacitive moisture probe in the stake, powered from a GPIO only while reading; calibrated per pot (air reading and reading after the first full watering); thresholds as % of that span.
     - Reservoir level: hanging float switch clipped to the tank rim next to the pickup tube, tripping at ~100 ml left; its wires join the existing pass-through above the waterline (no new hole below max water + 4 mm).
-    - Water metering: pumped volume = runtime × calibrated ml/s, corrected for battery voltage. Water left = full volume − pumped since the last refill; reset when the float switch goes from "low" to "not low" after a refill. Per dose ≤ 40 ml, per day ≤ 150 ml; stop and flag after 2 doses with no moisture rise.
+    - Tank level (amended 18 Nov, M4): a level sensor measures the water (chosen in M7); water left comes from its calibrated reading, not from pumped volume. Both it and the float switch are powered only while read. The float switch stays as the cut-off: never pump while it reads low.
+    - Water metering: pumped volume = runtime × calibrated ml/s (battery-voltage correction in M7). Used for "watered N ml" and the limits, not for water left. Per dose ≤ 40 ml, per day ≤ 150 ml; stop and flag after 2 doses with no moisture rise.
 
 ## Concepts
 
