@@ -41,14 +41,17 @@ function world(opts: { device?: Row | null; fail?: boolean } = {}) {
         const ok = u.searchParams.get('secret_hash') === `eq.${await hash}` && w.device;
         return Response.json(ok ? [w.device] : []);
       }
-      if (table === 'readings') {
-        for (const r of body) if (!w.readings.has(r.ts)) w.readings.set(r.ts, r);
+      const upsert = (map: Map<string, Row>, key: (r: Row) => string, conflict: string) => {
+        const prefer = (init?.headers as Record<string, string>)?.prefer ?? '';
+        const ignore = prefer.includes('resolution=ignore-duplicates') && u.searchParams.get('on_conflict') === conflict;
+        for (const r of body) {
+          if (!map.has(key(r))) map.set(key(r), r);
+          else if (!ignore) return new Response('dup', { status: 409 });
+        }
         return new Response(null, { status: 201 });
-      }
-      if (table === 'device_events') {
-        for (const e of body) if (!w.events.has(`${e.ts}|${e.type}|${e.code}`)) w.events.set(`${e.ts}|${e.type}|${e.code}`, e);
-        return new Response(null, { status: 201 });
-      }
+      };
+      if (table === 'readings') return upsert(w.readings, (r) => r.ts, 'device_id,ts');
+      if (table === 'device_events') return upsert(w.events, (e) => `${e.ts}|${e.type}|${e.code}`, 'device_id,ts,type,code');
       if (table === 'device_commands' && init?.method === 'PATCH') {
         const ids = u.searchParams.get('id')!.slice(4, -1).split(',');
         for (const c of w.commands) if (ids.includes(c.id)) c.acked_at ??= body.acked_at;
@@ -125,13 +128,13 @@ Deno.test('skips bad items and stores the rest', async () => {
   const x = world();
   logs.length = 0;
   const res = await sync(base({
-    readings: [reading({ ts: '1970-01-01T00:00:00Z' }), reading({ soil_raw: 5000 }), reading({ ts: '2026-11-18T10:00:00Z' })],
+    readings: [reading({ ts: '1970-01-01T00:00:00Z' }), reading({ soil_raw: 5000 }), reading({ battery_mv: 0 }), reading({ battery_mv: 5000 }), reading({ ts: '2026-11-18T10:00:00Z' })],
     events: [{ ts: '2026-11-18T10:00:00Z', type: 'explode' }],
   }), x);
   assertEquals(res.status, 200);
   assertEquals(x.w.readings.size, 1);
   assertEquals(x.w.events.size, 0);
-  assertEquals(JSON.parse(logs.at(-1)!).skipped, 3);
+  assertEquals(JSON.parse(logs.at(-1)!).skipped, 5);
 });
 
 Deno.test('a retried sync stores nothing twice and acks again harmlessly', async () => {
@@ -186,4 +189,11 @@ Deno.test('uniform 500 when the database fails, nothing sensitive logged', async
   assertEquals(await res.json(), { error: 'Something went wrong.' });
   const all = logs.join('\n');
   assert(!all.includes(SECRET) && !all.includes(await sha256Hex(SECRET)));
+});
+
+Deno.test('explicit null pump_ms and code are the same as absent', async () => {
+  const x = world();
+  const res = await sync(base({ events: [{ ts: '2026-11-18T10:00:00Z', type: 'refill_detected', pump_ms: null, code: null }] }), x);
+  assertEquals(res.status, 200);
+  assertEquals(x.w.events.size, 1);
 });

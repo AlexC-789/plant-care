@@ -61,7 +61,7 @@ export async function handler(req: Request, deps: Deps, now: () => number = Date
       const ts = isObj(r) ? goodTs(r.ts, t) : null;
       if (
         !isObj(r) || !ts || !onlyKeys(r, ['ts', 'soil_raw', 'tank_raw', 'float_low', 'battery_mv', 'charging']) ||
-        !int(r.soil_raw, 0, 4095) || !int(r.tank_raw, 0, 4095) || !int(r.battery_mv, 0, 6000) || !bool(r.float_low) || !bool(r.charging)
+        !int(r.soil_raw, 0, 4095) || !int(r.tank_raw, 0, 4095) || !int(r.battery_mv, 2500, 4500) || !bool(r.float_low) || !bool(r.charging)
       ) {
         skipped++;
         continue;
@@ -75,8 +75,8 @@ export async function handler(req: Request, deps: Deps, now: () => number = Date
     for (const e of events) {
       const ts = isObj(e) ? goodTs(e.ts, t) : null;
       const ok = isObj(e) && ts && onlyKeys(e, ['ts', 'type', 'pump_ms', 'code']) && TYPES.includes(e.type as string) &&
-        (e.type === 'watered' ? int(e.pump_ms, 1, 60_000) : e.pump_ms === undefined) &&
-        (e.type === 'fault' ? FAULTS.includes(e.code as string) : e.code === undefined);
+        (e.type === 'watered' ? int(e.pump_ms, 1, 60_000) : e.pump_ms == null) &&
+        (e.type === 'fault' ? FAULTS.includes(e.code as string) : e.code == null);
       if (!ok) {
         skipped++;
         continue;
