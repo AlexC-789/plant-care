@@ -48,6 +48,9 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
 - Every user-owned table: RLS on, owner-only policies, pgTAP tests proving it (incl. a
   cross-user test). Server-controlled columns (e.g. `subscription_status`) are never
   writable by `authenticated` — use column-level grants.
+- Edge Functions use `service_role`, which hosted projects grant nothing by default (local grants all):
+  a table a function touches gets explicit grants in a migration, asserted in
+  `supabase/tests/database/service_role_grants.test.sql`.
 - Schema changes only via `supabase/migrations/`; then `npm run db:types`.
 - Gate paid features only through `useEntitlement()`.
 - Sign-up email check: `before-user-created` auth hook (Edge Function). It must fail open on
