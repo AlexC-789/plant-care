@@ -1,7 +1,7 @@
 # Add a plant as steps — design
 
 Date: 2026-11-18
-Status: Draft for owner approval
+Status: Approved by owner 2026-11-18
 Supersedes: M2 design (`2026-11-17-m2-plant-library-design.md`) §5.2 and the add-flow parts of §5.3 / §5.7.
 Builds on: M2 design §5.3–5.7, §6, §8a (unchanged: data, functions, security, limits).
 
