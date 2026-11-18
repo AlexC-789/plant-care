@@ -17,23 +17,24 @@ export default function WhereStep() {
   const { draft, set } = useAddDraft();
   const create = useCreatePlant();
   const [saveFailed, setSaveFailed] = useState(false);
-  const [done, setDone] = useState<string | null>(null);
   // Guards a second tap before the first re-render disables the button.
   const saving = useRef(false);
 
   const type = typeName(draft);
   const name = plantName(draft);
   const room = draft.room.trim();
+  // Also true when the user comes back to this step after a save: show the success and move on.
+  const saved = !!draft.plantId;
 
   useEffect(() => {
-    if (!done) return;
+    if (!saved) return;
     // shortcut: /add/health is created in Task 5; drop the cast then.
     const t = setTimeout(() => router.replace('/add/health' as Href), SUCCESS_MS);
     return () => clearTimeout(t);
-  }, [done, router]);
+  }, [saved, router]);
 
   async function save() {
-    if (!name || saving.current || draft.plantId) return;
+    if (!name || saving.current || saved) return;
     saving.current = true;
     setSaveFailed(false);
     try {
@@ -50,7 +51,6 @@ export default function WhereStep() {
       // Leaf and flower photos only live on as part of an identify scan; the problem photo waits for step 4.
       const gone = draft.photos.filter((p) => (p.kind === 'leaf' || p.kind === 'flower') && !draft.scanId);
       if (gone.length) void deletePhotos(gone.map((p) => p.path)).catch(() => {});
-      setDone(room ? `${name} is in the ${room}.` : `${name} is saved.`);
     } catch {
       saving.current = false;
       setSaveFailed(true);
@@ -64,15 +64,15 @@ export default function WhereStep() {
 
   return (
     <View style={styles.flex}>
-      <Stack.Screen options={{ headerRight: done ? undefined : () => <TextLink label="Cancel" onPress={cancel} /> }} />
+      <Stack.Screen options={{ headerRight: saved || create.isPending ? undefined : () => <TextLink label="Cancel" onPress={cancel} /> }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         contentContainerStyle={styles.content}>
         <StepProgress step={3} />
-        {done ? (
-          <StepDone title={done} />
+        {saved ? (
+          <StepDone title={room ? `${name} is in the ${room}.` : `${name} is saved.`} />
         ) : (
           <>
             <Text variant="title" accessibilityRole="header">
@@ -111,7 +111,7 @@ export default function WhereStep() {
         )}
       </ScrollView>
       <BottomBar>
-        <Button label="Continue" busy={create.isPending} disabled={!name || create.isPending || !!done} onPress={() => void save()} />
+        <Button label="Continue" busy={create.isPending} disabled={!name || create.isPending || saved} onPress={() => void save()} />
       </BottomBar>
     </View>
   );

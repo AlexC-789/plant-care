@@ -380,6 +380,54 @@ describe('step 3: where', () => {
     expect(lastSaved().name).toBe(long);
   });
 
+  test('two synchronous taps create one plant (ref guard)', async () => {
+    await toWhere();
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    const btn = continueBtn();
+    // Both presses land before React re-renders, so only the ref can stop the second.
+    const click = () => btn.props.onClick({ stopPropagation() {}, nativeEvent: {} });
+    await act(async () => {
+      click();
+      click();
+    });
+    await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+    expect(api.createPlant).toHaveBeenCalledTimes(1);
+  });
+
+  test('Cancel is hidden while the save is pending', async () => {
+    mocked(api.createPlant).mockReturnValue(new Promise(() => {}));
+    await toWhere();
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    expect(screen.getByText('Cancel')).toBeTruthy();
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(screen.queryByText('Cancel')).toBeNull());
+    expect(photos.deletePhotos).not.toHaveBeenCalled();
+  });
+
+  test('after a save, earlier steps have no Cancel and step 3 moves straight on', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    try {
+      await toWhere();
+      await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+      await fireEvent.press(continueBtn());
+      await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+      await act(async () => router.back()); // leaves step 3 before the hand-off
+      await waitFor(() => expect(screen.getByText('What kind of plant is it?')).toBeTruthy());
+      expect(screen.queryByText('Cancel')).toBeNull();
+      await act(async () => jest.advanceTimersByTime(800));
+      expect(mockReplace).not.toHaveBeenCalled(); // unmounted: the timer died with it
+      await act(async () => router.push('/add/where'));
+      await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+      expect(screen.queryByText('Cancel')).toBeNull();
+      await act(async () => jest.advanceTimersByTime(800));
+      expect(mockReplace).toHaveBeenCalledWith('/add/health');
+      expect(api.createPlant).toHaveBeenCalledTimes(1);
+      expect(photos.deletePhotos).not.toHaveBeenCalled();
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   test('Cancel before saving deletes every upload and closes', async () => {
     await toWhere();
     await fireEvent.press(screen.getByText('Cancel'));
