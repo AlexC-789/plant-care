@@ -63,7 +63,7 @@ create table public.device_events (
   pump_ms   int,
   ml        numeric,
   code      text,
-  unique (device_id, ts, type)
+  unique nulls not distinct (device_id, ts, type, code)
 );
 create index device_events_device_ts on public.device_events (device_id, ts desc);
 
@@ -122,7 +122,8 @@ grant insert (plant_id) on public.device_claims to authenticated;
 grant insert (device_id, type) on public.device_commands to authenticated;
 
 grant select, update on public.devices to service_role;
-grant insert on public.readings, public.device_events to service_role;
+-- select: ON CONFLICT (device_id, ts) needs it for idempotent uploads
+grant select, insert on public.readings, public.device_events to service_role;
 grant select, update on public.device_commands to service_role;
 
 -- One open claim code per plant: a new one replaces the old.

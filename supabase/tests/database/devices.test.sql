@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(40);
+select plan(44);
 
 create function pg_temp.new_user(uid uuid, mail text) returns void language sql as $$
   insert into auth.users (id, email, aud, role, instance_id)
@@ -82,6 +82,15 @@ select is((select count(*)::int from public.readings where device_id = 'dddddddd
 select is((select count(*)::int from public.device_events where device_id = 'dddddddd-0000-0000-0000-00000000000a'), 0, 'events cascade');
 select is((select count(*)::int from public.device_commands where device_id = 'dddddddd-0000-0000-0000-00000000000a'), 0, 'commands cascade');
 select is((select count(*)::int from public.devices where id = 'dddddddd-0000-0000-0000-00000000000b'), 1, 'B''s device untouched');
+
+-- service_role: idempotent uploads need SELECT on the conflict target
+set local role service_role;
+select lives_ok($$ insert into public.readings (device_id, ts, soil_raw, tank_raw, float_low, battery_mv, charging) select device_id, ts, 1, 1, false, 1, false from public.readings where device_id = 'dddddddd-0000-0000-0000-00000000000b' on conflict (device_id, ts) do nothing $$, 'service_role can upsert a duplicate reading');
+select is((select count(*)::int from public.readings where device_id = 'dddddddd-0000-0000-0000-00000000000b'), 1, 'duplicate reading leaves the count unchanged');
+select lives_ok($$ insert into public.device_events (device_id, ts, type, code) values ('dddddddd-0000-0000-0000-00000000000b', '2026-01-01T00:00:00Z', 'fault', 'no_moisture_rise'), ('dddddddd-0000-0000-0000-00000000000b', '2026-01-01T00:00:00Z', 'fault', 'sensor_out_of_range') $$, 'two faults in one wake with different codes are both kept');
+insert into public.device_events (device_id, ts, type) values ('dddddddd-0000-0000-0000-00000000000b', '2026-01-02T00:00:00Z', 'fault');
+select throws_ok($$ insert into public.device_events (device_id, ts, type) values ('dddddddd-0000-0000-0000-00000000000b', '2026-01-02T00:00:00Z', 'fault') $$, '23505', null, 'exact duplicate event (null codes) conflicts');
+reset role;
 
 -- claim_device (superuser stands in for service_role)
 create temp table res as
