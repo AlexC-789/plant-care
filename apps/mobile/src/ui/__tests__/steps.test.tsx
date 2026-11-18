@@ -46,3 +46,11 @@ test('StepDone enters with opacity only under Reduce Motion', async () => {
   await act(async () => {});
   expect(screen.getAllByTestId('done-icon').every((n) => !StyleSheet.flatten(n.props.style).transform)).toBe(true);
 });
+
+test('StepDone announces its title once on mount', async () => {
+  const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+  announce.mockClear(); // the jest setup mock also counts earlier tests' StepDones
+  await render(<StepDone title="Got it." />);
+  expect(announce).toHaveBeenCalledTimes(1);
+  expect(announce).toHaveBeenCalledWith('Got it.');
+});
