@@ -15,7 +15,7 @@ const NOTES = new Map<string, Omit<HealthNote, 'healthy'>>(Object.entries({
   'water excess or uneven watering': { note: 'Some leaves look yellow. Often too much water.', advice: 'Let the top few centimetres of soil dry before watering again.' },
   'root rot': { note: 'Some leaves look yellow. Often too much water.', advice: 'Let the top few centimetres of soil dry before watering again.' },
   'water deficiency': { note: 'The leaves look dry or droopy. Often too little water.', advice: 'Water thoroughly, then water when the top few centimetres of soil are dry.' },
-  'nutrient deficiency': { note: 'The leaves look pale. It may need feeding.', advice: 'Feed with a diluted houseplant fertiliser during the growing season.' },
+  'nutrient deficiency': { note: 'Some leaves look pale or yellow. It may need feeding.', advice: 'Feed with a diluted houseplant fertiliser during the growing season.' },
   'light excess': { note: 'Some leaves look scorched. Often too much direct sun.', advice: 'Move it out of strong direct sun.' },
   'sunburn': { note: 'Some leaves look scorched. Often too much direct sun.', advice: 'Move it out of strong direct sun.' },
   'light deficiency': { note: 'It looks stretched or pale. Often too little light.', advice: 'Move it closer to a bright window.' },
@@ -33,12 +33,13 @@ const NOTES = new Map<string, Omit<HealthNote, 'healthy'>>(Object.entries({
   'spider mites': { note: 'There may be tiny mites on it. Look for fine webs.', advice: 'Rinse the leaves and keep the air around it less dry.' },
 }));
 
-/** Healthy probability >= 0.8 -> healthy; else a mapped top issue >= 0.3 (Plant.id's own scores run low);
+/** Healthy probability >= 0.8 -> healthy; else a mapped top issue >= 0.2 (Plant.id's own scores run low;
+ *  owner 2026-11-18: a visibly yellow leaf scored 0.2997);
  *  else healthy < 0.5 (Plant.id's yes/no line) -> not healthy, cause unclear; otherwise unsure. */
 export function healthNote(r: HealthResult): HealthNote {
   if (r.isHealthyProbability >= 0.8) return { healthy: true, note: HEALTHY_NOTE, advice: null };
   const top = r.issues[0];
-  const mapped = top && top.probability >= 0.3 ? NOTES.get(top.name.toLowerCase()) : undefined;
+  const mapped = top && top.probability >= 0.2 ? NOTES.get(top.name.toLowerCase()) : undefined;
   if (mapped) return { healthy: false, ...mapped };
   return r.isHealthyProbability < 0.5
     ? { healthy: false, note: UNCLEAR_NOTE, advice: null }

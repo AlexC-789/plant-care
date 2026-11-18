@@ -209,7 +209,7 @@ allow a user to read/write/delete only under their own `user_id/` prefix (tested
 - **`check-health`** (user JWT): `{ plantId, photoPaths (1–2) }` → same ownership and limit rules →
   Plant.id health assessment → stores a `kind = health` scan → `{ healthy: boolean | null,
   note: string, advice: string | null }`. Healthy probability ≥ 0.8 → healthy; else top issue
-  ≥ 0.3 and mapped → plain-words note from a small mapping table (builder writes it, ~15 common issues);
+  ≥ 0.2 (owner 2026-11-18, was 0.3) and mapped → plain-words note from a small mapping table (builder writes it, ~15 common issues);
   otherwise "Couldn't tell from this photo…".
   Owner change 2026-11-18: threshold lowered from 0.5 (a live yellow-leaf orchid scored its top issue 0.4999). The scan's `health` jsonb also stores `top_issue { name, probability }` for tuning; never returned to the app and never logged.
 - **`search-plants`** (user JWT): `{ query }` (≥ 2 chars) → Plant.id name search (free) → up to 10
