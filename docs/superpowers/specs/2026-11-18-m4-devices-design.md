@@ -167,6 +167,11 @@ Every wake (`read_interval_s`): read soil, tank, float, battery; store the readi
 - Sync early (spec §5.4) on: refill detected (tank raw rose by a compiled step), float went low,
   a fault, battery below its low threshold.
 - On `clear_fault`: clear the fault and the no-rise counter; ack the id on the next sync.
+- **Battery (owner, 2026-11-18: must last a vacation):** a failed sync (no Wi-Fi, timeout, any non-200)
+  backs off: the next try is after 1, 2, 4, then at most 6 h, reset by the first success; watering
+  carries on locally throughout and the buffer keeps the readings (oldest dropped past its capacity).
+  Instructed intervals are accepted only within compiled bounds (read 5–60 min, sync 15 min–6 h), so a
+  twin bug can't make the module sync itself flat.
 
 The module does no calibration maths. The twin also clamps what it sends to the same limits using the
 calibrated pump rate, so there are two independent layers.
@@ -182,7 +187,9 @@ calibrated pump rate, so there are two independent layers.
 - **Watered ml** = pump_ms × pump_ml_per_s / 1000.
 - **Instructions (M4):** the spec's default plan: band 35–55 % → `water_when_soil_raw_above` = the raw
   value at 35 %; dose 30 ml → `pump_ms` at the calibrated pump rate, clamped to 40 ml; 60 min between
-  doses; 900 s / 3600 s intervals. Battery-voltage correction of the pump rate is left to M7 (shortcut:
+  doses; 900 s read interval; sync interval 3600 s, or **10 800 s when the latest battery is < 20 %**
+  (saves battery; the row stores the interval it sent as `sync_interval_s`, and the app's "not heard
+  from" threshold is 3 × that). Battery-voltage correction of the pump rate is left to M7 (shortcut:
   a full battery pumps ~10 % more, still inside the 40 ml compiled cap).
 - **Calibration** lives only on the `devices` row. M4 sets defaults at claim (soil air 2900 / wet 1200,
   tank empty / full raw from the simulator's sensor model, tank 705 ml, pump 3.0 ml/s); the simulator
@@ -199,7 +206,7 @@ New migration(s); then `npm run db:types`.
 | Table | Columns (main) | Who writes |
 |---|---|---|
 | `device_claims` | `code` pk, `user_id` default `auth.uid()`, `plant_id` → plants on delete cascade, `expires_at` default now() + 15 min, `created_at` | owner inserts (`plant_id` only; code and expiry from defaults) |
-| `devices` | `id`, `user_id`, `plant_id` unique → plants on delete cascade, `secret_hash` unique, `firmware_version`, `created_at`, `last_seen_at`; latest: `reading_ts`, `soil_pct`, `water_left_ml`, `float_low`, `battery_pct`, `charging`, `fault_code`; calibration: `soil_air_raw`, `soil_wet_raw`, `tank_empty_raw`, `tank_full_raw`, `tank_full_ml`, `pump_ml_per_s` | functions only; owner may delete |
+| `devices` | `id`, `user_id`, `plant_id` unique → plants on delete cascade, `secret_hash` unique, `firmware_version`, `created_at`, `last_seen_at`, `sync_interval_s`; latest: `reading_ts`, `soil_pct`, `water_left_ml`, `float_low`, `battery_pct`, `charging`, `fault_code`; calibration: `soil_air_raw`, `soil_wet_raw`, `tank_empty_raw`, `tank_full_raw`, `tank_full_ml`, `pump_ml_per_s` | functions only; owner may delete |
 | `readings` | pk (`device_id`, `ts`), raw (`soil_raw`, `tank_raw`, `float_low`, `battery_mv`, `charging`) + converted (`soil_pct`, `water_left_ml`, `battery_pct`) | functions only |
 | `device_events` | `id`, `device_id`, `ts`, `type`, `pump_ms`, `ml`, `code`; unique (`device_id`, `ts`, `type`) | functions only |
 | `device_commands` | `id`, `device_id`, `type` check in (`clear_fault`), `created_at`, `acked_at` | owner inserts (`device_id`, `type`); functions ack |
@@ -247,7 +254,7 @@ One sentence per plant, top-down, from the `devices` row and the current time:
 |---|---|---|---|---|
 | 1 | `fault_code` set | Now | Watering stopped · Check the stake is in the soil | `no_moisture_rise`: "Watering stopped. Check the stake is in the soil and the tube isn't kinked, then resume." + **Resume watering**. `sensor_out_of_range`: "Watering stopped. Check the stake is pushed into the soil; it resumes by itself." |
 | 2 | `float_low` | Now | Tank needs refilling | "The tank needs refilling. Watering is paused until it's filled." |
-| 3 | `last_seen_at` older than 3 h | Quiet (Now if the last battery was < 20 %: "…its battery was low") | Not heard from since 09:12 | "Not heard from since 09:12. It should keep watering on its last instructions." |
+| 3 | `last_seen_at` older than 3 × `sync_interval_s` (3 missed check-ins) | Quiet (Now if the last battery was < 20 %: "…its battery was low") | Not heard from since 09:12 | "Not heard from since 09:12. It should keep watering on its last instructions." |
 | 4 | `soil_pct` > 55 | Soon | Soil is very wet · Watering is on hold | none |
 | 5 | `battery_pct` < 20 | Soon | Battery is low · Charge it this week | "Battery is low. Charge it this week." |
 | 6 | otherwise | Fine | Doing well · Still learning how fast it drinks | none |
@@ -300,7 +307,7 @@ One sentence per plant, top-down, from the `devices` row and the current time:
 ## 10. Doc amendments (in this milestone)
 - Hardware doc: dated change "tank level sensor added (measured water level); float switch stays as the
   low-water cut-off; part and mounting chosen in M7 (candidates: a v1.2 capacitive probe hung upright
-  from the rim, or a plate on the dry side of the bay wall)"; requirement 11 updated.
+  from the rim, or a plate on the dry side of the bay wall)"; requirement 11 updated; power note (battery must last a vacation): the level sensor and the float switch draw power only while being read (GPIO-powered or switched, no standing pull-up current), like the soil probe, and the SuperMini's always-on power LED is removed (alone it would drain the battery in about 6 weeks).
 - Software spec: §5.5 → this §5; §5.6 water-left estimate → measured level, twin, runtime caps; §5.7
   commands for M4 = `clear_fault`, unpair = 410 twice; §6 data model per §7 here; §7 drops "I refilled it".
 - UI spec: "I refilled it" sheet and "Still reads low" removed; vessel line is solid (measured);
