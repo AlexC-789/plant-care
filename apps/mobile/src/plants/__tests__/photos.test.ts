@@ -13,7 +13,7 @@ jest.mock('expo-image-manipulator', () => ({
 
 /** Fake manipulator: source image of the given size; records resize and save calls. */
 function fakeManipulator(width: number, height: number) {
-  const saved = { uri: 'file:///out.jpg', width: 0, height: 0 };
+  const saved = { uri: 'file:///out.jpg', width: 0, height: 0, base64: 'AQID' };
   const save = jest.fn(async () => saved);
   const resize = jest.fn();
   const ctx = {
@@ -36,8 +36,8 @@ describe('preparePhoto', () => {
     const { resize, save } = fakeManipulator(4000, 3000);
     const out = await preparePhoto('file:///in.heic');
     expect(resize).toHaveBeenCalledWith({ width: 1600 });
-    expect(save).toHaveBeenCalledWith({ compress: 0.7, format: SaveFormat.JPEG });
-    expect(out).toEqual({ uri: 'file:///out.jpg', width: 1600, height: 1200 });
+    expect(save).toHaveBeenCalledWith({ compress: 0.7, format: SaveFormat.JPEG, base64: true });
+    expect(out).toEqual({ uri: 'file:///out.jpg', width: 1600, height: 1200, base64: 'AQID' });
   });
 
   it('resizes a portrait photo by height', async () => {
@@ -50,8 +50,8 @@ describe('preparePhoto', () => {
     const { resize, save } = fakeManipulator(800, 600);
     const out = await preparePhoto('file:///in.jpg');
     expect(resize).not.toHaveBeenCalled();
-    expect(save).toHaveBeenCalledWith({ compress: 0.7, format: SaveFormat.JPEG });
-    expect(out).toEqual({ uri: 'file:///out.jpg', width: 800, height: 600 });
+    expect(save).toHaveBeenCalledWith({ compress: 0.7, format: SaveFormat.JPEG, base64: true });
+    expect(out).toEqual({ uri: 'file:///out.jpg', width: 800, height: 600, base64: 'AQID' });
   });
 });
 
@@ -63,21 +63,26 @@ describe('storage', () => {
   };
   beforeEach(() => (supabase.storage.from as jest.Mock).mockReturnValue(bucket));
 
-  it('uploads to plant-photos/{user}/{uuid}.jpg as image/jpeg and returns the path', async () => {
+  // Android: fetch(file://).arrayBuffer() came back empty and 0-byte photos were stored, so the bytes come
+  // from the encoder's base64 instead of reading the file back.
+  it('uploads the decoded JPEG bytes to plant-photos/{user}/{uuid}.jpg as image/jpeg and returns the path', async () => {
     bucket.upload.mockResolvedValue({ error: null });
-    (globalThis.fetch as unknown) = jest.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(3) }));
-    const path = await uploadPhoto('user-1', { uri: 'file:///out.jpg', width: 1, height: 1 });
+    const path = await uploadPhoto('user-1', { uri: 'file:///out.jpg', width: 1, height: 1, base64: 'AQID' });
     expect(path).toBe('user-1/uuid-1.jpg');
     expect(supabase.storage.from).toHaveBeenCalledWith('plant-photos');
-    expect(bucket.upload).toHaveBeenCalledWith('user-1/uuid-1.jpg', expect.any(ArrayBuffer), {
-      contentType: 'image/jpeg',
-    });
+    const [, body, opts] = bucket.upload.mock.calls[0];
+    expect(Array.from(body as Uint8Array)).toEqual([1, 2, 3]);
+    expect(opts).toEqual({ contentType: 'image/jpeg' });
+  });
+
+  it('refuses to upload an empty photo', async () => {
+    await expect(uploadPhoto('u', { uri: 'x', width: 1, height: 1, base64: '' })).rejects.toThrow();
+    expect(bucket.upload).not.toHaveBeenCalled();
   });
 
   it('throws when the upload fails', async () => {
     bucket.upload.mockResolvedValue({ error: new Error('nope') });
-    (globalThis.fetch as unknown) = jest.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(3) }));
-    await expect(uploadPhoto('u', { uri: 'x', width: 1, height: 1 })).rejects.toThrow('nope');
+    await expect(uploadPhoto('u', { uri: 'x', width: 1, height: 1, base64: 'AQID' })).rejects.toThrow('nope');
   });
 
   it('removes photos in one call and skips empty input', async () => {

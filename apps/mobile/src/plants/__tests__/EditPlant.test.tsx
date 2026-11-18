@@ -49,7 +49,7 @@ beforeEach(() => {
   mocked(photos.signPhotoUrls).mockImplementation(async (ps: string[]) => Object.fromEntries(ps.map((p) => [p, `https://signed/${p}`])));
   mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: true });
   mocked(ImagePicker.launchCameraAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///raw.jpg' }] });
-  mocked(photos.preparePhoto).mockResolvedValue({ uri: 'file:///prepared.jpg', width: 1, height: 1 });
+  mocked(photos.preparePhoto).mockResolvedValue({ uri: 'file:///prepared.jpg', width: 1, height: 1, base64: 'AQID' });
   mocked(photos.uploadPhoto).mockResolvedValue('u/new.jpg');
   auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
 });

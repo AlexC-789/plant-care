@@ -279,7 +279,7 @@ describe('useAddPlantPhoto', () => {
     const { result } = await renderHook(() => useAddPlantPhoto(), { wrapper });
     let path = '';
     await act(async () => {
-      path = await result.current.mutateAsync({ plantId: 'p1', photo: { uri: 'file://x.jpg', width: 1, height: 1 } });
+      path = await result.current.mutateAsync({ plantId: 'p1', photo: { uri: 'file://x.jpg', width: 1, height: 1, base64: 'AQID' } });
     });
     expect(path).toMatch(new RegExp(`^${USER_ID}/[0-9a-f-]{36}\.jpg$`));
     expect(bucket.upload).toHaveBeenCalledWith(path, expect.anything(), { contentType: 'image/jpeg' });
@@ -293,7 +293,7 @@ describe('useAddPlantPhoto', () => {
     const { result } = await renderHook(() => useAddPlantPhoto(), { wrapper });
     await act(async () => {
       await expect(
-        result.current.mutateAsync({ plantId: 'p1', photo: { uri: 'file://x.jpg', width: 1, height: 1 } }),
+        result.current.mutateAsync({ plantId: 'p1', photo: { uri: 'file://x.jpg', width: 1, height: 1, base64: 'AQID' } }),
       ).rejects.toBeTruthy();
     });
     expect(bucket.remove).toHaveBeenCalledWith([bucket.upload.mock.calls[0][0]]);

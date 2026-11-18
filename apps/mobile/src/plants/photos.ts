@@ -6,7 +6,8 @@ import { supabase } from '@/lib/supabase';
 const BUCKET = 'plant-photos';
 const MAX_SIDE = 1600;
 
-export type PreparedPhoto = { uri: string; width: number; height: number };
+/** `base64` is the encoded JPEG: the upload uses it because reading `uri` back on Android gave 0 bytes. */
+export type PreparedPhoto = { uri: string; width: number; height: number; base64: string };
 
 /** Always re-encodes (JPEG 0.7, longest side ≤ 1600, never upscaled): this drops EXIF/GPS. */
 export async function preparePhoto(uri: string): Promise<PreparedPhoto> {
@@ -16,13 +17,14 @@ export async function preparePhoto(uri: string): Promise<PreparedPhoto> {
   if (Math.max(width, height) > MAX_SIDE) {
     image = await ctx.resize(width >= height ? { width: MAX_SIDE } : { height: MAX_SIDE }).renderAsync();
   }
-  const out = await image.saveAsync({ compress: 0.7, format: SaveFormat.JPEG });
-  return { uri: out.uri, width: out.width, height: out.height };
+  const out = await image.saveAsync({ compress: 0.7, format: SaveFormat.JPEG, base64: true });
+  return { uri: out.uri, width: out.width, height: out.height, base64: out.base64 ?? '' };
 }
 
 export async function uploadPhoto(userId: string, photo: PreparedPhoto): Promise<string> {
+  const body = Uint8Array.from(atob(photo.base64), (c) => c.charCodeAt(0));
+  if (!body.length) throw new Error('Empty photo');
   const path = `${userId}/${uuid.v4()}.jpg`;
-  const body = await (await fetch(photo.uri)).arrayBuffer();
   const { error } = await supabase.storage.from(BUCKET).upload(path, body, { contentType: 'image/jpeg' });
   if (error) throw error;
   return path;

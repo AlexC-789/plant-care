@@ -68,7 +68,7 @@ beforeEach(() => {
   mocked(photos.signPhotoUrls).mockResolvedValue({ 'u/p.jpg': 'https://signed/p.jpg' });
   mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: true });
   mocked(ImagePicker.launchCameraAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///raw.jpg' }] });
-  mocked(photos.preparePhoto).mockResolvedValue({ uri: 'file:///prepared.jpg', width: 1, height: 1 });
+  mocked(photos.preparePhoto).mockResolvedValue({ uri: 'file:///prepared.jpg', width: 1, height: 1, base64: 'AQID' });
   mocked(photos.uploadPhoto).mockImplementation(async () => `u/h${++uploads}.jpg`);
   auth.getSession.mockResolvedValue({ data: { session: fakeSession }, error: null });
 });
@@ -300,7 +300,7 @@ test('About leads with Light and Watering facts; the description has an inline M
 async function checkWith(result: object, photoCount = 1) {
   mocked(api.checkHealth).mockResolvedValue(result);
   let n = 0;
-  mocked(photos.preparePhoto).mockImplementation(async () => ({ uri: `file:///p${++n}.jpg`, width: 1, height: 1 }));
+  mocked(photos.preparePhoto).mockImplementation(async () => ({ uri: `file:///p${++n}.jpg`, width: 1, height: 1, base64: 'AQID' }));
   await open('/plant/p1/health');
   for (let i = 0; i < photoCount; i++) await press('Take photo', i);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
@@ -422,7 +422,7 @@ describe('timeline', () => {
 
   test('Add a photo uploads it, then offers a check or Not now', async () => {
     await addOne();
-    expect(api.addPlantPhoto).toHaveBeenCalledWith(expect.any(String), 'p1', { uri: 'file:///prepared.jpg', width: 1, height: 1 });
+    expect(api.addPlantPhoto).toHaveBeenCalledWith(expect.any(String), 'p1', { uri: 'file:///prepared.jpg', width: 1, height: 1, base64: 'AQID' });
     await press('Not now');
     expect(screen.queryByText('Added to the timeline.')).toBeNull();
     expect(api.checkHealth).not.toHaveBeenCalled();
