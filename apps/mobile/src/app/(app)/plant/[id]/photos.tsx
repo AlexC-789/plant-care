@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { FlatList, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 
@@ -24,6 +24,8 @@ export default function PhotoViewer() {
   const identify = useIdentify();
   const update = useUpdatePlant();
   const [index, setIndex] = useState<number | null>(null);
+  // Horizontal list cells don't stretch to the list's height, so each page gets it explicitly.
+  const [pageHeight, setPageHeight] = useState(0);
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<{ scanId?: string; list: NonNullable<typeof identify.data>['suggestions'] } | null>(null);
@@ -102,6 +104,8 @@ export default function PhotoViewer() {
     <View style={styles.flex}>
       <FlatList
         testID="photo-list"
+        style={styles.flex}
+        onLayout={(e) => setPageHeight(e.nativeEvent.layout.height)}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -112,7 +116,7 @@ export default function PhotoViewer() {
         onMomentumScrollEnd={(e) => reset(Math.round(e.nativeEvent.contentOffset.x / width))}
         onEndReached={() => hasNextPage && !isFetchingNextPage && void fetchNextPage()}
         renderItem={({ item }) => (
-          <View style={{ width }}>
+          <View style={{ width, height: pageHeight }}>
             <Image
               accessibilityLabel="Plant photo"
               source={{ uri: urls[item.path], cacheKey: item.path }}
@@ -136,7 +140,7 @@ export default function PhotoViewer() {
           <Suggestions
             suggestions={suggestions.list}
             onPick={(s) => pick(s.speciesId)}
-            onSearch={() => router.push(`/plant/${id}/edit` as Href)}
+            onSearch={() => router.push(`/plant/${id}/edit`)}
           />
         ) : null}
       </ScrollView>
@@ -146,7 +150,7 @@ export default function PhotoViewer() {
             <Text variant="body" accessibilityRole="alert">
               Delete this photo? This can&apos;t be undone.
             </Text>
-            <Button label="Delete" busy={del.isPending} disabled={del.isPending} onPress={remove} />
+            <Button label="Delete" variant="bordered" destructive busy={del.isPending} disabled={del.isPending} onPress={remove} />
             <Button label="Cancel" variant="plain" disabled={del.isPending} onPress={() => setConfirming(false)} />
           </>
         ) : (

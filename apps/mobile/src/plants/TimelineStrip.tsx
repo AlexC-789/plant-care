@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useRouter, type Href } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useRef, useState } from 'react';
 import { FlatList, Linking, Pressable, StyleSheet, View } from 'react-native';
 
@@ -31,8 +31,7 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
 
   const photos = timeline.data?.pages.flatMap((p) => p.photos) ?? [];
   const urls = Object.assign({}, ...(timeline.data?.pages.map((p) => p.photoUrls) ?? []));
-  // shortcut: route added in Task 5, drop the cast then
-  const openViewer = (start: number) => router.push(`/plant/${plantId}/photos?start=${start}` as Href);
+  const openViewer = (start: number) => router.push(`/plant/${plantId}/photos?start=${start}`);
 
   async function add(source: PhotoSource) {
     if (adding.current) return;

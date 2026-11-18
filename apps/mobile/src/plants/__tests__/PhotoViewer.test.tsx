@@ -103,7 +103,7 @@ test('Delete photo asks first, then deletes once', async () => {
   await fireEvent.press(del);
   await fireEvent.press(del);
   await waitFor(() => expect(api.deletePlantPhoto).toHaveBeenCalledTimes(1));
-  expect(api.deletePlantPhoto).toHaveBeenCalledWith('p1', { id: 'f1', path: 'u/1.jpg' });
+  expect(api.deletePlantPhoto).toHaveBeenCalledWith({ id: 'f1', path: 'u/1.jpg' });
   expect(mockBack).not.toHaveBeenCalled();
 });
 
