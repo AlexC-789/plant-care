@@ -1,14 +1,14 @@
 import { Image } from 'expo-image';
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import { useAddDraft } from '@/plants/addDraft';
 import { deletePhotos } from '@/plants/photos';
 import { useCheckHealth, useCreatePlant, useIdentify } from '@/plants/queries';
 import { Suggestions } from '@/plants/Suggestions';
 import { radius, space, typography, useTheme } from '@/theme';
-import { BottomBar, Button, InsetGroup, Row, Text } from '@/ui';
+import { BottomBar, Button, Icon, InsetGroup, Row, Text, TextLink } from '@/ui';
 
 const COULDNT = "Couldn't tell from this photo. Try one with a whole leaf in view, or search.";
 // The server's own message for a 429; any other failure reads as "couldn't tell".
@@ -93,88 +93,104 @@ export default function PlantStep() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Stack.Screen options={{ headerRight: () => <Button label="Cancel" variant="plain" onPress={cancel} /> }} />
+      <Stack.Screen options={{ headerRight: () => <TextLink label="Cancel" onPress={cancel} /> }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
         contentContainerStyle={styles.content}>
-        <Text variant="title" accessibilityRole="header">
-          Which plant is this for?
-        </Text>
-
-        <InsetGroup>
-          <Row label="Add photo" accessory="chevron" onPress={() => router.push('/add/capture')} />
-          <Row label="Name">
-            <TextInput
-              accessibilityLabel="Name"
-              placeholder="Name"
-              placeholderTextColor={colors.secondaryLabel}
-              style={[styles.input, typography.body, { color: colors.label }]}
-              value={draft.name}
-              onChangeText={(t) => set({ name: t })}
-              maxLength={60}
-            />
-          </Row>
-          <Row
-            label="Plant type"
-            value={typeName || 'Choose'}
-            accessory="chevron"
-            onPress={() => router.push('/add/search')}
-          />
-          <Row label="Room">
-            <TextInput
-              accessibilityLabel="Room"
-              placeholder="Optional"
-              placeholderTextColor={colors.secondaryLabel}
-              style={[styles.input, typography.body, { color: colors.label }]}
-              value={draft.room}
-              onChangeText={(t) => set({ room: t })}
-              maxLength={40}
-            />
-          </Row>
-        </InsetGroup>
-
-        {draft.photos.length ? (
-          <View style={styles.photos}>
-            {draft.photos.map((p, i) => (
-              <View key={p.path} style={styles.photoBox}>
-                <Image source={{ uri: p.localUri }} style={styles.photo} />
-                {i === 0 && identify.isPending ? (
-                  <View style={[styles.overlay, { backgroundColor: colors.background }]}>
-                    <Text variant="footnote" accessibilityLiveRegion="polite">
-                      Looking at your photo…
-                    </Text>
-                  </View>
-                ) : null}
-              </View>
-            ))}
-          </View>
-        ) : null}
-
-        {draft.suggestions?.length ? (
-          <Suggestions
-            suggestions={draft.suggestions}
-            onSearch={() => router.push('/add/search')}
-            onPick={apply}
-          />
-        ) : whole && !draft.scanId ? (
-          <Button label="Identify" variant="bordered" busy={identify.isPending} disabled={identify.isPending} onPress={runIdentify} />
-        ) : null}
-        {message ? (
-          <Text variant="footnote" color="statusNow" accessibilityRole="alert">
-            {message}
+        <View style={styles.section}>
+          <Text variant="title" accessibilityRole="header">
+            Which plant is this for?
           </Text>
-        ) : null}
+          {draft.photos.length ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Edit photos"
+              onPress={() => router.push('/add/capture')}
+              style={styles.photos}>
+              {draft.photos.map((p, i) => (
+                <View key={p.path} style={styles.photoBox}>
+                  <Image source={{ uri: p.localUri }} style={styles.photo} />
+                  {i === 0 && identify.isPending ? (
+                    <View style={[styles.overlay, { backgroundColor: colors.background }]}>
+                      <Text variant="footnote" accessibilityLiveRegion="polite">
+                        Looking at your photo…
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ))}
+            </Pressable>
+          ) : (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Add photos"
+              onPress={() => router.push('/add/capture')}
+              style={[styles.tile, { backgroundColor: colors.surface }]}>
+              <Icon name="camera" size={28} color="tint" />
+              <Text variant="headline" color="tint">
+                Add photos
+              </Text>
+            </Pressable>
+          )}
+          {whole && !draft.scanId && !draft.suggestions?.length ? (
+            <Button label="Identify" variant="bordered" busy={identify.isPending} disabled={identify.isPending} onPress={runIdentify} />
+          ) : null}
+          {draft.suggestions?.length ? (
+            <Suggestions
+              suggestions={draft.suggestions}
+              onSearch={() => router.push('/add/search')}
+              onPick={apply}
+            />
+          ) : null}
+          {message ? (
+            <Text variant="footnote" color="statusNow" accessibilityRole="alert">
+              {message}
+            </Text>
+          ) : null}
+        </View>
 
-        <Text variant="footnote" color="secondaryLabel">
-          {"Not sure what it is? Add a photo and we'll suggest a type. The type sets how damp the soil should stay."}
-        </Text>
-        {saveFailed ? (
-          <Text variant="footnote" color="statusNow" accessibilityRole="alert">
-            {"Couldn't save your plant. Try again."}
+        <View style={styles.section}>
+          <InsetGroup>
+            <Row label="Name">
+              <TextInput
+                accessibilityLabel="Name"
+                placeholder="Required"
+                placeholderTextColor={colors.secondaryLabel}
+                style={[styles.input, typography.body, { color: colors.label }]}
+                value={draft.name}
+                onChangeText={(t) => set({ name: t })}
+                maxLength={60}
+              />
+            </Row>
+            <Row
+              label="Plant type"
+              value={typeName || 'Choose'}
+              accessory="chevron"
+              onPress={() => router.push('/add/search')}
+            />
+            <Row label="Room">
+              <TextInput
+                accessibilityLabel="Room"
+                placeholder="Optional"
+                placeholderTextColor={colors.secondaryLabel}
+                style={[styles.input, typography.body, { color: colors.label }]}
+                value={draft.room}
+                onChangeText={(t) => set({ room: t })}
+                maxLength={40}
+              />
+            </Row>
+          </InsetGroup>
+          <Text variant="footnote" color="secondaryLabel" style={styles.hint}>
+            {"Not sure what it is? Add a photo and we'll suggest a type. The type sets how damp the soil should stay."}
           </Text>
-        ) : null}
+          {saveFailed ? (
+            <Text variant="footnote" color="statusNow" accessibilityRole="alert">
+              {"Couldn't save your plant. Try again."}
+            </Text>
+          ) : null}
+        </View>
       </ScrollView>
       <BottomBar>
         <Button label="Continue" busy={create.isPending} disabled={!name || create.isPending} onPress={() => void save()} />
@@ -185,9 +201,13 @@ export default function PlantStep() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: space.l, gap: space.l },
-  input: { flex: 1, textAlign: 'right', minHeight: space.touch },
-  photos: { flexDirection: 'row', gap: space.s },
+  content: { padding: space.l, gap: space.xl },
+  section: { gap: space.s },
+  tile: { aspectRatio: 16 / 9, borderRadius: radius.group, alignItems: 'center', justifyContent: 'center', gap: space.s },
+  // Same box as a Row's plain text: the Row supplies the height and padding.
+  input: { flex: 1, textAlign: 'right', padding: 0 },
+  hint: { marginHorizontal: space.l },
+  photos: { flexDirection: 'row', flexWrap: 'wrap', gap: space.s },
   photoBox: { borderRadius: radius.thumb, overflow: 'hidden' },
   photo: { width: 80, height: 80 },
   overlay: { ...StyleSheet.absoluteFill, opacity: 0.85, alignItems: 'center', justifyContent: 'center', padding: space.xs },

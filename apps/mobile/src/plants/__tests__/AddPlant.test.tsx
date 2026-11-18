@@ -74,7 +74,7 @@ const press = (name: string | RegExp, i = 0) => fireEvent.press(screen.getAllByR
 
 /** Plant screen -> capture -> take cards' photos (by index) -> back on the plant screen. */
 async function addPhotos(cardIndexes: number[]) {
-  await press('Add photo');
+  await press('Add photos');
   for (const i of cardIndexes) await press('Take photo', i);
   await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalledTimes(cardIndexes.length));
   await press('Done');
@@ -89,6 +89,10 @@ test('shows the title, heading and hint; Identify needs a whole-plant photo', as
     ),
   ).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Identify' })).toBeNull();
+  // The photo tile sits above the form; the form is Name, Plant type, Room only.
+  expect(screen.getByRole('button', { name: 'Add photos' })).toBeTruthy();
+  expect(screen.getByPlaceholderText('Required')).toBeTruthy();
+  expect(screen.getByPlaceholderText('Optional')).toBeTruthy();
   // A leaf alone is not enough.
   await addPhotos([1]);
   expect(screen.queryByRole('button', { name: 'Identify' })).toBeNull();
@@ -353,4 +357,12 @@ test('Continue sits in the bottom bar and the form scrolls clear of the keyboard
   while (scroll && scroll.props.automaticallyAdjustKeyboardInsets === undefined) scroll = scroll.parent;
   expect(scroll?.props.automaticallyAdjustKeyboardInsets).toBe(true);
   expect(scroll?.props.keyboardShouldPersistTaps).toBe('handled');
+});
+
+test('once photos exist the tile gives way to the thumbnails, with Identify below', async () => {
+  await open();
+  await addPhotos([0]);
+  expect(screen.queryByRole('button', { name: 'Add photos' })).toBeNull();
+  expect(screen.getByRole('button', { name: 'Edit photos' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Identify' })).toBeTruthy();
 });

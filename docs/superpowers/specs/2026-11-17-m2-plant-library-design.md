@@ -81,6 +81,7 @@ sharing plants; editing species facts.
 
 ### 5.2 Add a pot — step 1 "Your plant" (canvas 1 / 1b)
 Full-screen cover, title "Plant · 1 of 6", Cancel top-right.
+Owner change 2026-11-18: title is "Add a plant" until the device steps exist (then the step count returns); Cancel is a plain tint text button. Under the heading a large photo tile (**Add photos**; thumbnails and Identify replace it once photos exist), then a form group of Name ("Required"), Plant type, Room ("Optional") with the hint as its footnote; Continue is in the bottom bar.
 1. Heading "Which plant is this for?". Fields: **Add photo**, **Name**, **Plant type** (opens a
    searchable list), **Room** (optional free text). Hint: "Not sure what it is? Add a photo and
    we'll suggest a type. The type sets how damp the soil should stay." Primary button **Continue**.

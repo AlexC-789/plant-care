@@ -14,6 +14,7 @@ const SYMBOLS = {
   healthy: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },
   unsure: { ios: 'questionmark.circle.fill', android: 'help', web: 'help' },
   care: { ios: 'leaf', android: 'eco', web: 'eco' },
+  camera: { ios: 'camera', android: 'photo_camera', web: 'photo_camera' },
   error: { ios: 'exclamationmark.circle.fill', android: 'error', web: 'error' },
 } as const;
 
