@@ -1,3 +1,4 @@
+export { BottomBar } from './BottomBar';
 export { Button } from './Button';
 export { Icon, type IconName } from './Icon';
 export { InsetGroup } from './InsetGroup';
@@ -8,3 +9,5 @@ export { TextLink } from './TextLink';
 export { ShimmerProvider } from './ShimmerProvider';
 export { LoadingGroup, Skeleton, SkeletonRow, SkeletonText, useDelayedVisible } from './Skeleton';
 export { FadeIn } from './FadeIn';
+export { StepDone } from './StepDone';
+export { StepProgress } from './StepProgress';

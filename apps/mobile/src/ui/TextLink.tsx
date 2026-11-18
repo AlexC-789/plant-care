@@ -5,16 +5,23 @@ import { space } from '@/theme';
 
 import { Text } from './Text';
 
-/** In-app navigation link in the tint colour, with a 44 pt tap target. */
-export function TextLink({ href, label, replace }: { href: Href; label: string; replace?: boolean }) {
-  return (
+type Props = { label: string } & ({ href: Href; replace?: boolean; onPress?: never } | { onPress: () => void; href?: never; replace?: never });
+
+/** Link text in the tint colour with a 44 pt tap target: navigates to `href`, or runs `onPress` (a button). */
+export function TextLink({ href, label, replace, onPress }: Props) {
+  const text = (
+    <Pressable accessibilityRole={href ? 'link' : 'button'} onPress={onPress} style={styles.target} hitSlop={space.xs}>
+      <Text variant="subheadline" color="tint">
+        {label}
+      </Text>
+    </Pressable>
+  );
+  return href ? (
     <Link href={href} replace={replace} asChild>
-      <Pressable accessibilityRole="link" style={styles.target} hitSlop={space.xs}>
-        <Text variant="subheadline" color="tint">
-          {label}
-        </Text>
-      </Pressable>
+      {text}
     </Link>
+  ) : (
+    text
   );
 }
 

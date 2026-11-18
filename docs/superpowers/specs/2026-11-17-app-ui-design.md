@@ -82,6 +82,8 @@ The contrast figures are WCAG ratios against `surface`, computed rather than eye
 - **Radii:** thumbnails 14, cards and inset groups 22, buttons capsule.
 - **Tap targets:** at least 44×44 pt; icon buttons are padded up to it.
 
+- **Primary action:** screens with one (Continue, Check, Done) put it in `BottomBar`, pinned above the bottom safe area with the content scrolling above it. Sheets keep Done in the header (iOS convention). Welcome content such as the Plants empty-state "Add a pot" stays in the page.
+
 ### SF Symbols
 
 | Symbol | Meaning |

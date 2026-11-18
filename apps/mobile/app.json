@@ -26,6 +26,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Plant Care uses the camera to photograph your plants.",
+          "photosPermission": "Plant Care uses your photos so you can choose a photo of your plant."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#F4F1EB",

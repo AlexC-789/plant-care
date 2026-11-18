@@ -409,6 +409,12 @@ BEFORE_USER_CREATED_HOOK_SECRET = "v1,whsec_FGWOwkjOm48kj0VfyRS/UCGhY4WsYU7BQ2fM
 [functions.before-user-created]
 verify_jwt = false
 
+[functions.identify-plant]
+verify_jwt = true
+
+[functions.check-health]
+verify_jwt = true
+
 [analytics]
 enabled = true
 port = 54327
@@ -436,3 +442,6 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+[functions.search-plants]
+verify_jwt = true

@@ -12,6 +12,7 @@ export {
 } from './appearance';
 export { colors, type ColorScheme, type ColorToken, type Palette } from './colors';
 export { contrastRatio } from './contrast';
+export { motion } from './motion';
 export { radius, space } from './spacing';
 export { serifFamily, typography, type TextStyleName } from './typography';
 
