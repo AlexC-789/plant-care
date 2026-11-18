@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { usePlants } from '@/plants/queries';
@@ -180,6 +181,17 @@ test('does not ask for another page when there is none', async () => {
   await openHome();
   await act(async () => screen.getByTestId('plants-list').props.onEndReached());
   expect(fetchNextPage).not.toHaveBeenCalled();
+});
+
+test('refetches when Home regains focus, not on first open', async () => {
+  loaded([plant('a', 'Fern')]);
+  await openHome();
+  expect(refetch).not.toHaveBeenCalled();
+  await act(async () => router.push('/add/photo'));
+  expect(screen).toHavePathname('/add/photo');
+  await act(async () => router.back());
+  expect(screen).toHavePathname('/');
+  await waitFor(() => expect(refetch).toHaveBeenCalled());
 });
 
 test('pull to refresh refetches', async () => {

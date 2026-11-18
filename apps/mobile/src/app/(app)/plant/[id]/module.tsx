@@ -2,6 +2,8 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
+import { useQueryClient } from '@tanstack/react-query';
+
 import { useCreateClaim, useDevice } from '@/devices/queries';
 import { timeLabel } from '@/devices/status';
 import { space } from '@/theme';
@@ -11,6 +13,7 @@ import { BottomBar, Button, FadeIn, InsetGroup, LoadingGroup, Row, SkeletonRow, 
 export default function ModuleSetup() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const claim = useCreateClaim(id);
   const { mutate: makeClaim } = claim;
   const device = useDevice(id, 5000);
@@ -25,12 +28,15 @@ export default function ModuleSetup() {
   }, []);
 
   useEffect(() => {
-    if (hasModule) router.replace(`/plant/${id}/tank`);
+    if (hasModule) {
+      void queryClient.invalidateQueries({ queryKey: ['plants'] }); // Home must not keep saying setup is unfinished
+      router.replace(`/plant/${id}/tank`);
+    }
     else if (device.isSuccess && !started.current) {
       started.current = true;
       makeClaim();
     }
-  }, [hasModule, device.isSuccess, id, router, makeClaim]);
+  }, [hasModule, device.isSuccess, id, router, makeClaim, queryClient]);
 
   const code = claim.data?.code;
   const expired = !!claim.data && now > new Date(claim.data.expires_at).getTime();

@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(44);
+select plan(50);
 
 create function pg_temp.new_user(uid uuid, mail text) returns void language sql as $$
   insert into auth.users (id, email, aud, role, instance_id)
@@ -76,8 +76,15 @@ select throws_ok($$ insert into public.device_commands (device_id, type) values 
 
 select throws_ok($$ select public.claim_device('X', 'h', 'v') $$, '42501', null, 'A cannot call claim_device');
 
+select throws_ok($$ insert into public.device_claims (plant_id, code) values ('aaaaaaaa-0000-0000-0000-000000000002', 'AAAAAAAAAAAA') $$, '42501', null, 'A cannot choose a claim code');
+select throws_ok($$ insert into public.device_claims (plant_id, expires_at) values ('aaaaaaaa-0000-0000-0000-000000000002', now() + interval '1 year') $$, '42501', null, 'A cannot choose a claim expiry');
+select throws_ok($$ insert into public.device_commands (device_id, type, acked_at) values ('dddddddd-0000-0000-0000-00000000000a', 'clear_fault', now()) $$, '42501', null, 'A cannot pre-ack a command');
+select ok(has_function_privilege('authenticated', 'public.new_claim_code()', 'execute'), 'authenticated can execute new_claim_code');
+select is_empty($$ with d as (delete from public.devices where id = 'dddddddd-0000-0000-0000-00000000000b' returning 1) select * from d $$, 'A deletes none of B''s devices');
+
 select lives_ok($$ delete from public.devices where id = 'dddddddd-0000-0000-0000-00000000000a' $$, 'A can delete own device');
 reset role;
+select is((select count(*)::int from public.devices where id = 'dddddddd-0000-0000-0000-00000000000b'), 1, 'B''s device is still there');
 select is((select count(*)::int from public.readings where device_id = 'dddddddd-0000-0000-0000-00000000000a'), 0, 'readings cascade');
 select is((select count(*)::int from public.device_events where device_id = 'dddddddd-0000-0000-0000-00000000000a'), 0, 'events cascade');
 select is((select count(*)::int from public.device_commands where device_id = 'dddddddd-0000-0000-0000-00000000000a'), 0, 'commands cascade');

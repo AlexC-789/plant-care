@@ -138,6 +138,7 @@ describe('timeLabel', () => {
 describe('labels', () => {
   it('soilLabel by band', () => {
     expect(soilLabel(28)).toBe('Dry · 28 %');
+    expect(soilLabel(52.9)).toBe('Damp · 53 %');
     expect(soilLabel(35)).toBe('Damp · 35 %');
     expect(soilLabel(55)).toBe('Damp · 55 %');
     expect(soilLabel(70)).toBe('Very wet · 70 %');

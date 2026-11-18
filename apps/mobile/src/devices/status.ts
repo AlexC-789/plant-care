@@ -26,7 +26,7 @@ export function timeLabel(iso: string, now: Date): string {
 export function soilLabel(pct: number | null): string {
   if (pct === null) return '—';
   const word = pct < BAND.minPct ? 'Dry' : pct > BAND.maxPct ? 'Very wet' : 'Damp';
-  return `${word} · ${pct} %`;
+  return `${word} · ${Math.round(pct)} %`;
 }
 
 export function waterLabel(d: Device): string {

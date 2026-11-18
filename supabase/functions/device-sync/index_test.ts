@@ -58,7 +58,8 @@ function world(opts: { device?: Row | null; fail?: boolean } = {}) {
         return new Response(null, { status: 204 });
       }
       if (table === 'device_commands') {
-        return Response.json(w.commands.filter((c) => c.acked_at === null).map(({ id, type }) => ({ id, type })));
+        const lim = Number(u.searchParams.get('limit') ?? Infinity);
+        return Response.json(w.commands.filter((c) => c.acked_at === null).slice(0, lim).map(({ id, type }) => ({ id, type })));
       }
       return new Response('unexpected', { status: 500 });
     },
@@ -165,6 +166,12 @@ Deno.test('acks commands and returns only unacked ones oldest first', async () =
   const res = await sync(base({ acked: [CMD1] }), x);
   assertEquals((await res.json()).commands, [{ id: CMD2, type: 'clear_fault' }]);
   assert(x.w.urls.some((u) => u.includes('order=created_at')));
+});
+
+Deno.test('returns at most 20 commands so the ack list stays within its cap', async () => {
+  const x = world();
+  x.w.commands = Array.from({ length: 25 }, (_, i) => ({ id: `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`, type: 'clear_fault', acked_at: null }));
+  assertEquals((await (await sync(base(), x)).json()).commands.length, 20);
 });
 
 Deno.test('an older buffer never overwrites newer latest values', async () => {

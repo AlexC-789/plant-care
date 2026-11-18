@@ -61,7 +61,7 @@ if (args.has('claim')) {
   console.log(`Claimed device ${saved.device_id} as "${name}".`);
 } else {
   try { saved = JSON.parse(readFileSync(file, 'utf8')); } catch { die(`No saved module "${name}"; use --claim <code>.`); }
-  simNow = args.has('from') ? Date.now() - fromMs : saved!.simNow ?? Date.now();
+  simNow = Date.now() - fromMs; // a real module's clock is now; doses older than 24 h expire from the budget
   world = saved!.world ?? initialWorld(scenario);
   // Lost or unreadable state: assume the daily budget is used up.
   state = saved!.state?.instructions ? saved!.state : freshState(simNow);
@@ -114,6 +114,7 @@ async function sync(): Promise<void> {
     for (const c of json.commands ?? []) {
       if (c.type === 'clear_fault') state = clearFault(state);
       acked.push(c.id);
+      syncNow = true; // report the cleared fault at the next wake, not a full interval later
     }
     state = afterSync(state, true, json.instructions ?? undefined);
   } else state = afterSync(state, false);
@@ -135,8 +136,9 @@ while (!quit) {
   console.log(`${reading.ts} wake soil ${reading.soil_raw} tank ${reading.tank_raw}${reading.float_low ? ' (low)' : ''} ${reading.battery_mv} mV` +
     (out.pumpMs ? ` PUMP ${out.pumpMs} ms` : '') + (state.fault ? ` FAULT ${state.fault}` : ''));
 
-  if (syncNow || out.syncNow || simNow - lastSync >= nextSyncDelayS(state) * 1000) await sync();
+  const due = syncNow || out.syncNow || simNow - lastSync >= nextSyncDelayS(state) * 1000;
   syncNow = false;
+  if (due) await sync();
   save();
 
   // Sleep one read interval: fast while catching up, real time afterwards; a key press cuts it short.

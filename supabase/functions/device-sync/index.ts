@@ -109,7 +109,7 @@ export async function handler(req: Request, deps: Deps, now: () => number = Date
       }),
     });
 
-    const commands = await (await rest(deps, `device_commands?device_id=eq.${dev.id}&acked_at=is.null&order=created_at&select=id,type`)).json();
+    const commands = await (await rest(deps, `device_commands?device_id=eq.${dev.id}&acked_at=is.null&order=created_at&limit=20&select=id,type`)).json();
     return respond(json({ instructions, commands }), 'ok');
   } catch {
     return respond(jsonError(500, 'Something went wrong.'), 'error');

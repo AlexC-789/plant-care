@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { radius, space, useTheme } from '@/theme';
@@ -21,10 +22,11 @@ export function StatusBanner({ status, device, plantId }: { status: Status; devi
   const router = useRouter();
   const { colors } = useTheme();
   const resume = useResumeWatering(plantId);
+  const [now] = useState(() => Date.now());
   if (!status.banner && status.key !== 'setup') return null;
   const bg = status.level === 'now' ? colors.nowFill : status.level === 'soon' ? colors.soonFill : colors.surface;
   const canResume = status.key === 'fault' && device?.fault_code === 'no_moisture_rise';
-  const next = device && new Date(new Date(device.last_seen_at ?? device.created_at).getTime() + device.sync_interval_s * 1000);
+  const next = device && new Date(Math.max(now, new Date(device.last_seen_at ?? device.created_at).getTime() + device.sync_interval_s * 1000));
   return (
     <View style={[styles.banner, { backgroundColor: bg }]}>
       <Text variant="headline">{HEADLINE[status.key]}</Text>

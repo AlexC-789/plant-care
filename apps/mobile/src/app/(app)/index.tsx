@@ -1,4 +1,5 @@
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useRef } from 'react';
 import { SectionList, StyleSheet, View } from 'react-native';
 
 import { deviceStatus, needsYou } from '@/devices/status';
@@ -19,6 +20,14 @@ export default function Plants() {
     refetch,
     fetchNextPage,
   } = usePlants();
+  // Refetch when returning to Home (it stays mounted under the stack); the first focus is covered by the mount fetch.
+  const focused = useRef(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (focused.current) void refetch();
+      focused.current = true;
+    }, [refetch]),
+  );
   const plants = data?.pages.flatMap((p) => p.plants) ?? [];
   const photoUrls = Object.assign({}, ...(data?.pages.map((p) => p.photoUrls) ?? []));
   const now = new Date();
