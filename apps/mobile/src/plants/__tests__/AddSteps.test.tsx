@@ -33,11 +33,16 @@ jest.mock('expo-image-picker', () => ({
 
 // Steps 2-5 don't exist yet: record pushes, then pass them through.
 const mockPush = jest.fn();
+const mockReplace = jest.fn();
 jest.mock('expo-router', () => ({
   ...jest.requireActual('expo-router'),
   useRouter: () => {
     const r = jest.requireActual('expo-router').useRouter();
-    return { ...r, push: (href: string) => (mockPush(href), r.push(href)) };
+    return {
+      ...r,
+      push: (href: string) => (mockPush(href), r.push(href)),
+      replace: (href: string) => (mockReplace(href), r.replace(href)),
+    };
   },
 }));
 
@@ -210,6 +215,7 @@ describe('step 2: what is it', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: /Goeppertia ornata/ })).toBeTruthy());
     await press(/Goeppertia ornata/);
     await waitFor(() => expect(screen.getByText("It's a Goeppertia ornata.")).toBeTruthy());
+    expect(screen.queryByText('Goeppertia ornata')).toBeNull(); // no duplicate scientific line
   });
 
   test('a custom type reads "It\'s a {type}." with no scientific line', async () => {
@@ -236,11 +242,149 @@ describe('step 2: what is it', () => {
     expect(continueBtn().props.accessibilityState?.disabled).toBeFalsy();
   });
 
+  test('Cancel deletes every upload and closes', async () => {
+    await toIdentify();
+    await fireEvent.press(screen.getByText('Cancel'));
+    expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']);
+    await waitFor(() => expect(screen.queryByText('What kind of plant is it?')).toBeNull());
+  });
+
   test('Skip says it can be set later; Continue goes to step 3', async () => {
     await toIdentify();
     await press('Skip');
     expect(screen.getByText('Not sure? You can set it later.')).toBeTruthy();
     await fireEvent.press(continueBtn());
     expect(mockPush).toHaveBeenCalledWith('/add/where');
+  });
+});
+
+const plant = { id: 'p1', name: 'x' };
+const toWhere = async (opts: { identify?: boolean; extra?: number[] } = {}) => {
+  await open();
+  await takeWhole(); // u/1
+  for (const card of opts.extra ?? []) {
+    await press('Take photo', card);
+  }
+  await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalledTimes(1 + (opts.extra?.length ?? 0)));
+  await fireEvent.press(continueBtn());
+  await waitFor(() => expect(screen.getByText('What kind of plant is it?')).toBeTruthy());
+  if (opts.identify) {
+    await press('Identify from my photo');
+    await waitFor(() => expect(screen.getByText("It's a Moth orchid.")).toBeTruthy());
+  }
+  await fireEvent.press(continueBtn());
+  await waitFor(() => expect(screen.getByText('Where does it live?')).toBeTruthy());
+};
+const lastSaved = () => mocked(api.createPlant).mock.calls[0][0];
+
+describe('step 3: where', () => {
+  beforeEach(() => mocked(api.createPlant).mockResolvedValue(plant as never));
+
+  test('fields, limits and keyboard props', async () => {
+    await toWhere();
+    expect(screen.getByRole('progressbar', { name: 'Step 3 of 4' })).toBeTruthy();
+    expect(screen.getByLabelText('Room').props.placeholder).toBe('Optional');
+    expect(screen.getByLabelText('Room').props.maxLength).toBe(40);
+    expect(screen.getByLabelText('Nickname').props.placeholder).toBe('Required');
+    expect(screen.getByLabelText('Nickname').props.maxLength).toBe(60);
+    let scroll = screen.getByLabelText('Room').parent;
+    while (scroll && scroll.props.automaticallyAdjustKeyboardInsets === undefined) scroll = scroll.parent;
+    expect(scroll?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+    expect(scroll?.props.keyboardShouldPersistTaps).toBe('handled');
+  });
+
+  test('with no type, Continue needs a nickname', async () => {
+    await toWhere();
+    expect(continueBtn().props.accessibilityState?.disabled).toBe(true);
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    expect(continueBtn().props.accessibilityState?.disabled).toBeFalsy();
+  });
+
+  test('with a type, the placeholder is the type and Continue saves under its name', async () => {
+    mocked(api.identifyPlant).mockResolvedValue(result([sugg('very_likely', 's1', 'Moth orchid')]));
+    await toWhere({ identify: true });
+    expect(screen.getByLabelText('Nickname').props.placeholder).toBe('Moth orchid');
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(api.createPlant).toHaveBeenCalledTimes(1));
+    expect(lastSaved()).toEqual({
+      name: 'Moth orchid',
+      room: undefined,
+      speciesId: 's1',
+      customType: undefined,
+      photoPath: 'u/1.jpg',
+      scanId: 'scan1',
+    });
+    await waitFor(() => expect(screen.getByText('Moth orchid is saved.')).toBeTruthy());
+  });
+
+  test('a nickname wins; the room shows in the success line; then step 4 replaces this screen', async () => {
+    jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
+    try {
+      await toWhere();
+      await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+      await fireEvent.changeText(screen.getByLabelText('Room'), ' Kitchen ');
+      await fireEvent.press(continueBtn());
+      await waitFor(() => expect(screen.getByText('Fern is in the Kitchen.')).toBeTruthy());
+      expect(lastSaved()).toMatchObject({ name: 'Fern', room: 'Kitchen' });
+      expect(mockReplace).not.toHaveBeenCalled();
+      await act(async () => jest.advanceTimersByTime(800));
+      expect(mockReplace).toHaveBeenCalledWith('/add/health');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  test('a double tap creates one plant', async () => {
+    await toWhere();
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    const btn = continueBtn();
+    await fireEvent.press(btn);
+    await fireEvent.press(btn);
+    await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+    expect(api.createPlant).toHaveBeenCalledTimes(1);
+  });
+
+  test('leaf and flower photos are deleted when never identified; the problem photo stays', async () => {
+    await toWhere({ extra: [1, 2, 3] }); // leaf u/2, flower u/3, problem u/4
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+    expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg', 'u/3.jpg']);
+    expect(photos.deletePhotos).toHaveBeenCalledTimes(1);
+  });
+
+  test('leaf and flower photos are kept when an identify scan exists', async () => {
+    mocked(api.identifyPlant).mockResolvedValue(result([sugg('very_likely', 's1', 'Moth orchid')]));
+    await toWhere({ extra: [1], identify: true });
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(screen.getByText('Moth orchid is saved.')).toBeTruthy());
+    expect(photos.deletePhotos).not.toHaveBeenCalled();
+  });
+
+  test('a failed save shows the error and can be retried', async () => {
+    mocked(api.createPlant).mockRejectedValueOnce(new Error('boom'));
+    await toWhere();
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(screen.getByText("Couldn't save your plant. Try again.")).toBeTruthy());
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+  });
+
+  test('a 60-character emoji nickname saves whole', async () => {
+    const long = '🌿'.repeat(30); // 60 UTF-16 units
+    await toWhere();
+    await fireEvent.changeText(screen.getByLabelText('Nickname'), long);
+    await fireEvent.press(continueBtn());
+    await waitFor(() => expect(screen.getByText(`${long} is saved.`)).toBeTruthy());
+    expect(lastSaved().name).toBe(long);
+  });
+
+  test('Cancel before saving deletes every upload and closes', async () => {
+    await toWhere();
+    await fireEvent.press(screen.getByText('Cancel'));
+    expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']);
+    expect(api.createPlant).not.toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByText('Where does it live?')).toBeNull());
   });
 });

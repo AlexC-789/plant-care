@@ -1,4 +1,4 @@
-import { Stack, useRouter, type Href } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
@@ -23,7 +23,8 @@ export default function IdentifyStep() {
 
   const { species } = draft;
   const type = typeName(draft);
-  const scientific = species && 'id' in species ? species.scientific : undefined;
+  // A names-only pick has no common name, so its title already is the scientific name.
+  const scientific = species && 'id' in species && species.scientific !== type ? species.scientific : undefined;
   const hasWhole = draft.photos.some((p) => p.kind === 'whole');
 
   const apply = (s: { speciesId: string; commonName: string; scientificName: string }) =>
@@ -98,8 +99,7 @@ export default function IdentifyStep() {
         )}
       </ScrollView>
       <BottomBar>
-        {/* shortcut: /add/where is created in Task 4; drop the cast then. */}
-        <Button label="Continue" onPress={() => router.push('/add/where' as Href)} />
+        <Button label="Continue" onPress={() => router.push('/add/where')} />
       </BottomBar>
     </View>
   );
