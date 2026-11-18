@@ -140,6 +140,7 @@ export default function PlantStep() {
           {draft.suggestions?.length ? (
             <Suggestions
               suggestions={draft.suggestions}
+              selected={draft.species && 'id' in draft.species ? draft.species.id : undefined}
               onSearch={() => router.push('/add/search')}
               onPick={apply}
             />

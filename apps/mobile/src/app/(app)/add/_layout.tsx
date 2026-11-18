@@ -18,6 +18,7 @@ export default function AddLayout() {
         }}>
         {/* shortcut: no step count until the device steps (module, Wi-Fi, pot, stake, tank) exist; then "Plant · 1 of 6" returns. */}
         <Stack.Screen name="photo" options={{ title: 'Add a plant', headerBackVisible: false, gestureEnabled: false }} />
+        <Stack.Screen name="identify" options={{ title: 'Add a plant' }} />
         <Stack.Screen name="plant" options={{ title: 'Add a plant', headerBackVisible: false, gestureEnabled: false }} />
         <Stack.Screen name="capture" options={{ title: 'Add photos' }} />
         <Stack.Screen name="search" options={{ title: 'Plant type' }} />

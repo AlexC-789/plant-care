@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { Stack, useRouter, type Href } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { useAddDraft } from '@/plants/addDraft';
@@ -40,8 +40,7 @@ export default function PhotoStep() {
         />
       </ScrollView>
       <BottomBar>
-        {/* shortcut: /add/identify is created in Task 3; drop the cast then. */}
-        <Button label="Continue" disabled={!whole} onPress={() => router.push('/add/identify' as Href)} />
+        <Button label="Continue" disabled={!whole} onPress={() => router.push('/add/identify')} />
       </BottomBar>
     </View>
   );

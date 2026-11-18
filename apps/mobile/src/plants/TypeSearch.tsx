@@ -25,7 +25,7 @@ export function TypeSearch({ onPick: choose }: { onPick: (species: Species) => v
 
   const pickMore = async (commonName: string, scientificName: string) => {
     try {
-      choose({ id: await pickSpecies(scientificName), name: commonName });
+      choose({ id: await pickSpecies(scientificName), name: commonName, scientific: scientificName });
     } catch {
       setFailed(true);
     }
@@ -36,7 +36,7 @@ export function TypeSearch({ onPick: choose }: { onPick: (species: Species) => v
   const items: Item[] = [
     ...local.map((s) => {
       const name = s.common_names?.[0] ?? s.scientific_name;
-      return { key: s.id, label: `${name} — ${s.scientific_name}`, onPress: () => choose({ id: s.id, name }) };
+      return { key: s.id, label: `${name} — ${s.scientific_name}`, onPress: () => choose({ id: s.id, name, scientific: s.scientific_name }) };
     }),
     ...(more.length ? [{ key: 'more', header: 'More plants' }] : []),
     ...more.map((h) => ({
