@@ -11,11 +11,9 @@ T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when neede
 - Account-wide: disconnect unused connectors at claude.ai/customize/connectors (this repo already
   blocks them locally).
 
-## M3 — Photo timeline + rescan (P1, PR open from `m3-photo-timeline`)
+## M3 — Photo timeline + rescan (merged, PR #7)
 
-Tasks 1–6 are built and verified (`docs/CURRENT_STATE.md`). Left:
-1. **Owner:** review and merge the M3 PR; phone check in Expo Go (strip, add a photo + health offer,
-   viewer swipe / What is it? / delete, light + dark).
+1. **Owner:** revoke the Supabase access token and reset the hosted DB password (both were in a chat).
 2. Deferred minors (fix when touching that code, test first):
    - Trigger tested only as superuser (run the `photo_path` update as user A too).
    - `backfill_plant_photos()` stays a security-definer function (execute revoked from clients).
