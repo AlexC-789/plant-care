@@ -33,7 +33,9 @@ export interface ModuleState {
 
 const DAY_MS = 24 * 3_600_000;
 
-// Non-finite (NaN, Infinity) falls to the safe low bound.
+// Non-finite (NaN, Infinity) falls to the low bound (pump 0, shortest interval).
+// Non-finite min minutes (null/NaN/Infinity from JSON) must not mean "no wait": use the default.
+const minMinutes = (x: number) => (Number.isFinite(x) ? Math.max(x, 0) : DEFAULT_INSTRUCTIONS.min_minutes_between_doses);
 const clamp = (x: number, lo: number, hi: number) => (Number.isFinite(x) ? Math.min(Math.max(x, lo), hi) : lo);
 
 export function newState(): ModuleState {
@@ -49,7 +51,7 @@ export function clampInstructions(i: Instructions): Instructions {
   return {
     water_when_soil_raw_above: i.water_when_soil_raw_above,
     pump_ms: Math.floor(clamp(i.pump_ms, 0, LIMITS.maxDosePumpMs)),
-    min_minutes_between_doses: clamp(i.min_minutes_between_doses, 0, Infinity),
+    min_minutes_between_doses: minMinutes(i.min_minutes_between_doses),
     read_interval_s: clamp(i.read_interval_s, LIMITS.readS[0], LIMITS.readS[1]),
     sync_interval_s: clamp(i.sync_interval_s, LIMITS.syncS[0], LIMITS.syncS[1]),
   };
@@ -65,15 +67,15 @@ export function wake(
     events.push({ ts: r.ts, type: 'fault', code });
   };
 
-  // (1) did the last dose raise moisture?
+  const inRange = r.soil_raw >= LIMITS.soilRawMin && r.soil_raw <= LIMITS.soilRawMax;
+  // (1) did the last dose raise moisture? An out-of-range reading (glitch) is never a rise.
   if (s.pendingRise) {
-    s.noRiseCount = r.soil_raw <= s.pendingRise.soilRawBefore - LIMITS.minRiseRaw ? 0 : s.noRiseCount + 1;
+    s.noRiseCount = inRange && r.soil_raw <= s.pendingRise.soilRawBefore - LIMITS.minRiseRaw ? 0 : s.noRiseCount + 1;
     s.pendingRise = null;
     if (s.noRiseCount >= 2 && s.fault !== 'no_moisture_rise') raise('no_moisture_rise');
   }
 
   // (2) sensor range; an existing no_moisture_rise fault is kept
-  const inRange = r.soil_raw >= LIMITS.soilRawMin && r.soil_raw <= LIMITS.soilRawMax;
   if (!inRange && s.fault === null) raise('sensor_out_of_range');
   else if (inRange && s.fault === 'sensor_out_of_range') s.fault = null;
 
@@ -91,8 +93,8 @@ export function wake(
   const i = s.instructions;
   const lastDose = s.doses.reduce((m, d) => Math.max(m, d.at), -Infinity);
   const used = s.doses.reduce((sum, d) => sum + d.pump_ms, 0);
-  const allowed = s.fault === null && !r.float_low && r.soil_raw > i.water_when_soil_raw_above &&
-    now - lastDose >= i.min_minutes_between_doses * 60_000;
+  const allowed = s.fault === null && r.float_low === false && r.soil_raw > i.water_when_soil_raw_above &&
+    now - lastDose >= minMinutes(i.min_minutes_between_doses) * 60_000;
   if (allowed) {
     pumpMs = Math.floor(Math.min(clamp(i.pump_ms, 0, LIMITS.maxDosePumpMs), LIMITS.maxDayPumpMs - used));
     if (pumpMs > 0) {

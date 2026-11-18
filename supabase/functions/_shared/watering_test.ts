@@ -140,13 +140,39 @@ Deno.test('freshState treats the 24 h budget as used up', () => {
 });
 
 Deno.test('a restored state keeps budget and fault', () => {
-  const dosed = wake(withInstr(newState(), { pump_ms: 10_000 }), reading(), T0).state;
-  const restored: ModuleState = JSON.parse(JSON.stringify(dosed));
-  assertEquals(restored, dosed);
-  const faulted: ModuleState = JSON.parse(JSON.stringify({ ...newState(), fault: 'no_moisture_rise' }));
-  assertEquals(wake(faulted, reading(), T0).pumpMs, 0);
-  const used: ModuleState = JSON.parse(JSON.stringify(freshState(T0)));
-  assertEquals(wake(used, reading(), T0 + H).pumpMs, 0);
+  const rt = (st: ModuleState): ModuleState => JSON.parse(JSON.stringify(st));
+  const dosed = (ms: number) => rt({ ...newState(), doses: [{ at: T0 - 3 * H, pump_ms: ms }] });
+  assertEquals(wake(dosed(LIMITS.maxDayPumpMs), reading(), T0).pumpMs, 0);
+  assertEquals(wake(dosed(30_000), reading(), T0).pumpMs, 5000);
+  assertEquals(wake(dosed(35_000), reading(), T0).pumpMs, 2500);
+  assertEquals(wake(rt({ ...newState(), fault: 'no_moisture_rise' }), reading(), T0).pumpMs, 0);
+  assertEquals(wake(rt(freshState(T0)), reading(), T0 + H).pumpMs, 0);
+  // a state saved right after a real dose still enforces the budget
+  const after = rt(wake(withInstr(newState(), { pump_ms: 10_000 }), reading(), T0).state);
+  assertEquals(after.doses.length, 1);
+  assertEquals(wake(after, reading({ soil_raw: 2900 }, T0 + 3 * H), T0 + 3 * H).pumpMs, 10_000);
+});
+
+Deno.test('an out-of-range glitch reading is not a moisture rise', () => {
+  const w = (s: ModuleState, i: number, soil: number) => wake(s, reading({ soil_raw: soil }, T0 + i * 2 * H), T0 + i * 2 * H);
+  let s = w(newState(), 0, 3000).state;
+  s = w(s, 1, 3000).state; // no rise: count 1, doses again
+  const g = w(s, 2, 0); // probe glitch at the rise check
+  assertEquals(g.state.noRiseCount, 2);
+  assertEquals(g.state.fault, 'no_moisture_rise');
+  assertEquals(g.pumpMs, 0);
+});
+
+Deno.test('a missing float_low reading never pumps', () => {
+  const r = wake(newState(), { ...reading(), float_low: undefined as unknown as boolean }, T0);
+  assertEquals(r.pumpMs, 0);
+});
+
+Deno.test('non-finite min_minutes_between_doses falls back to the default', () => {
+  assertEquals(clampInstructions({ ...DEFAULT_INSTRUCTIONS, min_minutes_between_doses: NaN }).min_minutes_between_doses, 120);
+  const s = withInstr(newState(), { min_minutes_between_doses: null as unknown as number });
+  const a = wake(s, reading(), T0);
+  assertEquals(wake(a.state, reading({ soil_raw: 2900 }, T0 + MIN), T0 + MIN).pumpMs, 0);
 });
 
 Deno.test('clampInstructions keeps intervals inside compiled bounds', () => {
