@@ -5,6 +5,7 @@ import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testi
 
 import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
+import * as devices from '@/devices/api';
 import * as api from '@/plants/api';
 import * as photos from '@/plants/photos';
 import { fakeSession } from '@/test-utils/supabaseMock';
@@ -19,6 +20,12 @@ jest.mock('@/plants/api', () => ({
   checkHealth: jest.fn(),
   fetchPlantPhotos: jest.fn(),
   addPlantPhoto: jest.fn(),
+}));
+jest.mock('@/devices/api', () => ({
+  ...jest.requireActual('@/devices/api'),
+  fetchDevice: jest.fn(),
+  resumeWatering: jest.fn(),
+  removeDevice: jest.fn(),
 }));
 jest.mock('@/plants/photos', () => ({
   preparePhoto: jest.fn(),
@@ -65,6 +72,9 @@ beforeEach(() => {
   mocked(api.fetchSpecies).mockResolvedValue(monstera);
   mocked(api.fetchLatestHealth).mockResolvedValue(null);
   mocked(api.fetchPlantPhotos).mockResolvedValue({ photos: [], photoUrls: {} });
+  mocked(devices.fetchDevice).mockResolvedValue(null);
+  mocked(devices.resumeWatering).mockResolvedValue(undefined);
+  mocked(devices.removeDevice).mockResolvedValue(undefined);
   mocked(photos.signPhotoUrls).mockResolvedValue({ 'u/p.jpg': 'https://signed/p.jpg' });
   mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: true });
   mocked(ImagePicker.launchCameraAsync).mockResolvedValue({ canceled: false, assets: [{ uri: 'file:///raw.jpg' }] });
@@ -97,10 +107,116 @@ test('without a photo it draws the pot; subtitle omits missing parts cleanly', a
   expect(screen.queryByLabelText('Fernando photo')).toBeNull();
 });
 
-test('shows the setup banner without a button', async () => {
+const minsAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const dev = (over: object = {}) => ({
+  id: 'd1',
+  plant_id: 'p1',
+  created_at: minsAgo(1000),
+  last_seen_at: minsAgo(10) as string | null,
+  sync_interval_s: 3600,
+  reading_ts: minsAgo(10) as string | null,
+  soil_pct: 41 as number | null,
+  water_left_ml: 500 as number | null,
+  float_low: false,
+  battery_pct: 78 as number | null,
+  charging: false,
+  fault_code: null as string | null,
+  tank_full_ml: 705,
+  resumePending: false,
+  ...over,
+});
+
+test('no module shows the setup banner with Add its module', async () => {
   await open();
   await screen.findByText("Setup isn't finished");
-  expect(screen.getByText('The module steps arrive in the next build.')).toBeTruthy();
+  await press('Add its module');
+  expect(mockPush).toHaveBeenCalledWith('/plant/p1/module');
+});
+
+test('module group shows water, soil, battery, check-in', async () => {
+  const d = dev({ charging: true });
+  mocked(devices.fetchDevice).mockResolvedValue(d);
+  await open();
+  await screen.findByText('About 500 ml left');
+  expect(screen.getByText('Module')).toBeTruthy();
+  expect(screen.getByText('Damp · 41 %')).toBeTruthy();
+  expect(screen.getByText('78 % · Charging')).toBeTruthy();
+  expect(screen.getByText(time(d.last_seen_at!))).toBeTruthy();
+  expect(screen.queryByText("Setup isn't finished")).toBeNull();
+});
+
+test('unknown values show a dash', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(
+    dev({ soil_pct: null, water_left_ml: null, battery_pct: null, last_seen_at: null, reading_ts: null }),
+  );
+  await open();
+  await screen.findByText('Module');
+  expect(screen.getAllByText('—')).toHaveLength(4);
+});
+
+test('a failed device load with no cache shows dashes, not the setup banner', async () => {
+  mocked(devices.fetchDevice).mockRejectedValue(new Error('x'));
+  await open();
+  await screen.findByText('Module', undefined, { timeout: 5000 });
+  expect(screen.getAllByText('—')).toHaveLength(4);
+  expect(screen.queryByText("Setup isn't finished")).toBeNull();
+});
+
+test('fault banner offers Resume watering, which inserts clear_fault and then shows the next check-in time', async () => {
+  const d = dev({ fault_code: 'no_moisture_rise' });
+  mocked(devices.fetchDevice).mockResolvedValue(d);
+  await open();
+  await screen.findByText('Watering stopped');
+  mocked(devices.fetchDevice).mockResolvedValue({ ...d, resumePending: true });
+  await press('Resume watering');
+  expect(mocked(devices.resumeWatering).mock.calls[0][0]).toBe('d1');
+  const by = time(new Date(new Date(d.last_seen_at!).getTime() + 3600 * 1000).toISOString());
+  await screen.findByText(`Resumes at the next check-in, by about ${by}`);
+  expect(screen.queryByRole('button', { name: 'Resume watering' })).toBeNull();
+});
+
+test('a second press while resuming does not insert again', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ fault_code: 'no_moisture_rise' }));
+  mocked(devices.resumeWatering).mockReturnValue(new Promise(() => {}));
+  await open();
+  await screen.findByText('Watering stopped');
+  const button = screen.getByRole('button', { name: 'Resume watering' });
+  await fireEvent.press(button);
+  await fireEvent.press(button);
+  expect(devices.resumeWatering).toHaveBeenCalledTimes(1);
+});
+
+test('sensor fault has no Resume button', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ fault_code: 'sensor_fault' }));
+  await open();
+  await screen.findByText('Watering stopped');
+  expect(screen.queryByRole('button', { name: 'Resume watering' })).toBeNull();
+});
+
+test('tank low banner text', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ float_low: true }));
+  await open();
+  await screen.findByText("The tank needs refilling. Watering is paused until it's filled.");
+});
+
+test('Remove module asks first, then deletes the device and invalidates', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev());
+  await open();
+  await screen.findByText('Module');
+  await press('More options');
+  await press('Remove module');
+  expect(
+    screen.getByText('Remove the module? Its history is deleted. The module forgets this account at its next check-in.'),
+  ).toBeTruthy();
+  await press('Cancel');
+  expect(devices.removeDevice).not.toHaveBeenCalled();
+  await press('Remove module');
+  mocked(devices.fetchDevice).mockResolvedValue(null);
+  await press('Remove');
+  await waitFor(() => expect(devices.removeDevice).toHaveBeenCalled());
+  expect(mocked(devices.removeDevice).mock.calls[0][0]).toBe('d1');
+  await screen.findByText("Setup isn't finished");
 });
 
 test('About shows description, light and watering; More expands', async () => {

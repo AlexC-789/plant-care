@@ -121,7 +121,7 @@ function EditForm({ plant }: { plant: Plant }) {
 
         {confirming ? (
           <View style={styles.stack}>
-            <Text>{`Delete ${plant.name}? Its photos are deleted too. This can't be undone.`}</Text>
+            <Text>{`Delete ${plant.name}? Its photos and module are removed too. This can't be undone.`}</Text>
             <Button label="Delete" destructive busy={remove.isPending} onPress={() => void doDelete()} />
             <Button label="Cancel" variant="plain" onPress={() => setConfirming(false)} />
           </View>

@@ -31,6 +31,8 @@ jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
 }));
 
+// The first render loads every route module (expo-router require.context); cold under a parallel full run.
+jest.setTimeout(20_000);
 const mocked = <T,>(f: T) => f as unknown as jest.Mock;
 const auth = supabase.auth as unknown as Record<string, jest.Mock>;
 const monstera = { id: 's1', common_names: ['Monstera'], scientific_name: 'Monstera deliciosa', description: null, light: null, watering: null };
@@ -119,9 +121,9 @@ test('Delete asks first (copy, Cancel keeps it), then deletes row + all photos a
   });
   await open();
   await press('Delete plant');
-  expect(screen.getByText("Delete Fernando? Its photos are deleted too. This can't be undone.")).toBeTruthy();
+  expect(screen.getByText("Delete Fernando? Its photos and module are removed too. This can't be undone.")).toBeTruthy();
   await press('Cancel');
-  expect(screen.queryByText(/Its photos are deleted too/)).toBeNull();
+  expect(screen.queryByText(/Its photos and module are removed too/)).toBeNull();
   await press('Delete plant');
   await press('Delete');
   await waitFor(() =>
