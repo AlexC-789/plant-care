@@ -4,29 +4,18 @@ _Last updated: 2026-11-18._ Open work only; finished work moves to `docs/CURRENT
 Requirements come from the specs (`docs/superpowers/specs/`) and plans; this list never changes
 them. Priority: P1 now, P2 next, P3 later.
 
-## T0 — Local dev setup (P1, owner; no dependencies)
+## Optional setup (P3, owner)
 
-Handoff §7 has the full list. Still open on this PC:
-1. Node 22: `winget install CoreyButler.NVMforWindows`, open a new terminal, `nvm install 22`,
-   `nvm use 22` (or install Node 22 LTS directly). `node --version` → `v22.x`.
-2. Git Bash for npm scripts (one-time):
-   `npm config set script-shell "C:\Program Files\Git\bin\bash.exe"`
-3. Repo root: `npm ci` (installs `deno` 2.9.6 and `supabase` 3.2.0).
-4. Check: `npx deno --version`, `npx supabase --version`.
-5. Env files from handoff §5.3 (`apps/mobile/.env.local` exists; `supabase/functions/.env` exists).
-6. GitHub CLI for PRs: `winget install GitHub.cli`, new terminal, `gh auth login`.
-7. Optional: Playwright for the e2e script (handoff §5.5).
-8. Optional, account-wide: disconnect unused connectors at claude.ai/customize/connectors
-   (this repo already blocks them locally).
-
-**Done when** `npm test`, `npm run typecheck`, `npm run lint`, `npm run fn:test` and
-`npm run db:test` all run locally.
+T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when needed:
+- Playwright for the e2e security script (handoff §5.5).
+- Account-wide: disconnect unused connectors at claude.ai/customize/connectors (this repo already
+  blocks them locally).
 
 ## M3 — Photo timeline + rescan (P1, in progress on `m3-photo-timeline`)
 
 Spec `docs/superpowers/specs/2026-11-18-m3-photo-timeline-design.md`; plan
 `docs/superpowers/plans/2026-11-18-m3-photo-timeline.md`; ledger summary in handoff §2.5.
-Depends on T0 (Docker + `db:test`). First: merge `main` into the branch.
+First: merge `main` into the branch.
 
 1. **Task 1 fixes** (P1, backend, Opus re-review: RLS + migration):
    - Backfill keeps `scan_id` when a health-scan photo is also the plant's main photo

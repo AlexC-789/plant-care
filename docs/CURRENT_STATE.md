@@ -38,18 +38,15 @@ handoff §2.4. Jest prints a worker-exit warning at the end (pre-existing; `-- -
 
 ## Local environment (Windows, checked 2026-11-18)
 
-- Node 24.11.1 installed; project and CI use Node 22 (`.nvmrc`). No version manager yet.
-- Root `node_modules` is stale: `deno` and `supabase` dev dependencies are missing, so
-  `npm run fn:test` and `npm run db:*` fail until `npm ci`. npm `script-shell` is unset (cmd.exe),
-  which breaks `fn:test`'s POSIX loop. Fix: `docs/TASKS.md` T0.
-- Passing on this branch: lint, typecheck, Jest (261 tests), pgTAP via `npx supabase test db`
-  (71 tests on `main`'s schema). `fn:test` not run yet.
+- T0 done: Node 22.23.5 via nvm-windows (`C:\nvm4w\nodejs`), npm 10.9.9, npm `script-shell` =
+  Git Bash, `npm ci` (deno 2.9.6, supabase 3.2.0), `gh` signed in as AlexC-789, Docker running.
+  A Claude Code session started before nvm was installed has a stale PATH: restart it.
+- All five checks run locally: `fn:test` 69 tests and `db:test` 71 tests pass (on `main`'s schema).
 - Plugins (user scope, installed 2026-11-18): `superpowers@claude-plugins-official` 7.0.2,
   `ponytail@ponytail` 5.3.3 (its task board writes a local CSV under `~/.config/ponytail/band/`;
   webhook off). `unslop` arrives synced from claude.ai. Project plugin: `expo` (`apps/mobile/.claude`).
 - MCP: `.claude/settings.json` blocks the unrelated claude.ai connectors (Expedia, Kiwi.com,
   lastminute.com, Gmail, Google Calendar) in this project; Claude Docs and Google Drive remain.
-- `gh` CLI is not installed (needed for `gh pr create`; see `docs/TASKS.md` T0).
 
 ## Open decisions (owner)
 
@@ -59,5 +56,5 @@ handoff §2.4. Jest prints a worker-exit warning at the end (pre-existing; `-- -
 
 ## Next recommended task
 
-Finish T0 (local setup), merge `main` into `m3-photo-timeline`, then fix M3 Task 1's two Important
+Merge `main` into `m3-photo-timeline`, then fix M3 Task 1's two Important
 findings test-first with an Opus re-review (`docs/TASKS.md` M3).
