@@ -1,5 +1,5 @@
 import { act, render, screen } from '@testing-library/react-native';
-import { AccessibilityInfo, StyleSheet } from 'react-native';
+import { AccessibilityInfo, Platform, StyleSheet } from 'react-native';
 
 import { StepDone, StepProgress, Text } from '@/ui';
 
@@ -47,10 +47,14 @@ test('StepDone enters with opacity only under Reduce Motion', async () => {
   expect(screen.getAllByTestId('done-icon').every((n) => !StyleSheet.flatten(n.props.style).transform)).toBe(true);
 });
 
-test('StepDone announces its title once on mount', async () => {
+test('StepDone announces its title once on mount, on iOS only', async () => {
   const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
   announce.mockClear(); // the jest setup mock also counts earlier tests' StepDones
   await render(<StepDone title="Got it." />);
   expect(announce).toHaveBeenCalledTimes(1);
   expect(announce).toHaveBeenCalledWith('Got it.');
+  announce.mockClear();
+  jest.replaceProperty(Platform, 'OS', 'android'); // the polite live region speaks there
+  await render(<StepDone title="Got it." />);
+  expect(announce).not.toHaveBeenCalled();
 });

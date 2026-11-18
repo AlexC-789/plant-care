@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { AccessibilityInfo, Animated, View } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, View } from 'react-native';
 
 import { motion, space, useReduceMotion, useTheme } from '@/theme';
 import { Icon } from './Icon';
@@ -40,8 +40,10 @@ function Enter({ delay, testID, children }: { delay: number; testID?: string; ch
 /** The success moment: a check in a good-status circle, the title, then any content. */
 export function StepDone({ title, children }: { title: string; children?: ReactNode }) {
   const { colors } = useTheme();
-  // iOS ignores accessibilityLiveRegion, so announce explicitly (once per mount).
-  useEffect(() => AccessibilityInfo.announceForAccessibility(title), []); // eslint-disable-line react-hooks/exhaustive-deps
+  // iOS ignores accessibilityLiveRegion, so announce explicitly (once per mount); Android speaks the live region.
+  useEffect(() => {
+    if (Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(title);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <View accessibilityLiveRegion="polite" style={{ alignItems: 'center', gap: space.l }}>
       <Enter delay={0} testID="done-icon">
