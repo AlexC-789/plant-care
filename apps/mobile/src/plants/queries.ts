@@ -11,6 +11,7 @@ import { useSession } from '@/auth/AuthProvider';
 
 import * as api from './api';
 import type { NewPlant, PlantPatch, PlantsPage } from './api';
+import type { PreparedPhoto } from './photos';
 
 const useUserId = () => useSession().session?.user.id ?? null;
 
@@ -99,7 +100,8 @@ export function useCheckHealth() {
     mutationKey: ['check-health'],
     mutationFn: ({ plantId, photoPaths }: { plantId: string; photoPaths: string[] }) =>
       api.checkHealth(plantId, photoPaths),
-    onSuccess: (_result, { plantId }) => queryClient.invalidateQueries({ queryKey: ['health', plantId] }),
+    onSuccess: (_result, { plantId }) =>
+      Promise.all([['health', plantId], plantPhotosKey(plantId)].map((queryKey) => queryClient.invalidateQueries({ queryKey }))),
   });
 }
 
@@ -109,3 +111,43 @@ export const useHealthCheckStatus = (plantId: string) =>
     filters: { mutationKey: ['check-health'], predicate: (m) => (m.state.variables as { plantId: string }).plantId === plantId },
     select: (m) => m.state,
   }).at(-1);
+
+export const plantPhotosKey = (plantId: string) => ['plant-photos', plantId] as const;
+
+/** A plant's timeline, 20 per page, newest first; each page carries its signed photo URLs. */
+export const usePlantPhotos = (plantId: string) =>
+  useInfiniteQuery({
+    queryKey: plantPhotosKey(plantId),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => api.fetchPlantPhotos(plantId, pageParam),
+    getNextPageParam: (last, _all, page) => (last.photos.length === api.PAGE_SIZE ? page + 1 : undefined),
+  });
+
+/** After a timeline change: the timeline, the plant (main photo) and the list (thumbnail) are stale. */
+function useInvalidateTimeline() {
+  const userId = useUserId();
+  const queryClient = useQueryClient();
+  return (plantId: string) =>
+    Promise.all([plantPhotosKey(plantId), ['plant', plantId], plantsKey(userId)].map((queryKey) =>
+      queryClient.invalidateQueries({ queryKey }),
+    ));
+}
+
+export function useAddPlantPhoto() {
+  const userId = useUserId();
+  const invalidate = useInvalidateTimeline();
+  return useMutation({
+    mutationFn: ({ plantId, photo }: { plantId: string; photo: PreparedPhoto }) =>
+      api.addPlantPhoto(userId!, plantId, photo),
+    onSuccess: (_path, { plantId }) => invalidate(plantId),
+  });
+}
+
+export function useDeletePlantPhoto() {
+  const invalidate = useInvalidateTimeline();
+  return useMutation({
+    mutationFn: ({ plantId, photo }: { plantId: string; photo: { id: string; path: string } }) =>
+      api.deletePlantPhoto(plantId, photo),
+    onSuccess: (_void, { plantId }) => invalidate(plantId),
+  });
+}
