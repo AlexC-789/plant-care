@@ -1,6 +1,6 @@
 import { Redirect, Stack, useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { BackHandler, ScrollView, StyleSheet, View } from 'react-native';
+import { BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import type { HealthResult as Result } from '@/plants/api';
 import { useAddDraft } from '@/plants/addDraft';
@@ -45,6 +45,7 @@ export default function HealthStep() {
     router.push(`/plant/${plantId}`);
   };
   useEffect(() => {
+    if (Platform.OS === 'web') return; // react-native-web's BackHandler throws
     const sub = BackHandler.addEventListener('hardwareBackPress', () => (done(), true));
     return () => sub.remove();
   });

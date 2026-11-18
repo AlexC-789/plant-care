@@ -80,6 +80,7 @@ sharing plants; editing species facts.
 - Pull to refresh. Tapping a row pushes Plant detail.
 
 ### 5.2 Add a pot — step 1 "Your plant" (canvas 1 / 1b)
+Superseded 2026-11-18: the single form below is now four step screens, see `docs/superpowers/specs/2026-11-18-add-plant-steps-design.md`; kept for the identify and copy rules.
 Full-screen cover, title "Plant · 1 of 6", Cancel top-right.
 Owner change 2026-11-18: title is "Add a plant" until the device steps exist (then the step count returns); Cancel is a plain tint text button. Under the heading a large photo tile (**Add photos**; thumbnails and Identify replace it once photos exist), then a form group of Name ("Required"), Plant type, Room ("Optional") with the hint as its footnote; Continue is in the bottom bar.
 1. Heading "Which plant is this for?". Fields: **Add photo**, **Name**, **Plant type** (opens a
@@ -218,7 +219,7 @@ allow a user to read/write/delete only under their own `user_id/` prefix (tested
 
 ## 8. App structure
 - Routes: `(app)/index` (library), `(app)/plant/[id]` (detail), `(app)/plant/[id]/edit` (sheet),
-  `(app)/add/plant` (cover), `(app)/add/search` (type search), `(app)/add/capture` (guided capture).
+  `(app)/add/{photo,identify,where,health}` (the four steps), `(app)/add/search` (type search).
 - Data via TanStack Query: `['plants', userId]` infinite query (20/page, `created_at desc`);
   `['plant', id]`; `['species', id]`. Mutations update the cache; delete removes from it.
 - Photos: `expo-image-manipulator` → longest side 1600 px (≤ 2 MP, Kindwise's recommended 1–2 MP

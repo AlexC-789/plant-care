@@ -63,15 +63,13 @@ async function main() {
   const browser = await chromium.launch();
   const page = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
   try {
-    // (a) add a plant with the GPS-tagged fixture through the real add flow
+    // (a) add a plant with the GPS-tagged fixture through the real add steps (photo, skip identify, where, skip health)
     check('fixture contains the EXIF GPS tag', hasExifGps(readFileSync(FIXTURE)));
     await page.goto(APP);
     await page.getByLabel('Email').fill(email);
     await page.getByLabel('Password').fill(password);
     await page.getByRole('button', { name: 'Sign in' }).click();
     await page.getByRole('button', { name: 'Add a pot' }).first().click();
-    await page.getByLabel('Name').fill('E2E Fern');
-    await page.getByText('Add photo').first().click();
     const chooser = page.waitForEvent('filechooser');
     await page.getByRole('button', { name: 'Choose from library' }).first().click();
     await (await chooser).setFiles(FIXTURE);
@@ -82,10 +80,16 @@ async function main() {
     check('stored photo has no EXIF GPS tag', !hasExifGps(bytes), `${bytes.length} bytes`);
 
     // (b) delete a plant that has a photo and scan photos; no objects may remain
-    await page.getByRole('button', { name: 'Done' }).click();
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // Earlier steps stay mounted (hidden) in the stack, so click the visible Continue.
+    const next = () => page.locator('role=button[name="Continue"] >> visible=true').click();
+    await next(); // step 1 -> 2
+    await page.getByText('What kind of plant is it?').waitFor(); // else the next click can hit step 1 mid-transition
+    await next(); // step 2 (no identify) -> 3
+    await page.getByLabel('Nickname').fill('E2E Fern');
+    await next(); // saves, then step 4
+    await page.getByRole('button', { name: 'Skip for now' }).click();
     await page.getByRole('button', { name: 'More options' }).waitFor();
-    const plant = (await (await call('/rest/v1/plants?select=id,photo_path', { headers: { accept: 'application/json' } })).json())[0];
+    const plant = (await (await call(`/rest/v1/plants?select=id,photo_path&user_id=eq.${uid}`, { headers: { accept: 'application/json' } })).json())[0];
     const scanPaths = [`${uid}/${randomUUID()}.jpg`, `${uid}/${randomUUID()}.jpg`];
     for (const p of scanPaths) {
       await call(`/storage/v1/object/plant-photos/${p}`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: readFileSync(FIXTURE) });

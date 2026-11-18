@@ -94,6 +94,7 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
     Deleting a plant removes its scans and every stored photo.
   - Security proofs (GPS-free upload, no objects left after delete, PNG / >3 MB rejected):
     `node apps/mobile/e2e/m2-security.mjs` (Playwright, local Supabase + `expo start --web --port 8081`).
+- Add flow = four step screens in `src/app/(app)/add/` (photo, identify, where, health) with `StepProgress` / `StepDone`; motion tokens in `src/theme/motion.ts`.
 - Press handlers stay synchronous (`void doAsync()`); RNTL awaits async handlers.
 - Watering safety limits (≤ 40 ml/dose, ≤ 150 ml/24 h, never pump when float switch is low,
   stop after 2 doses with no moisture rise) live in firmware and the shared watering module.
