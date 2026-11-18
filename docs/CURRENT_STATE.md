@@ -24,6 +24,11 @@ file is the short, current summary.
   - Verified 2026-11-18: Jest 284, typecheck, lint, `fn:test` 72, `db:test` 103, e2e security script
     10/10 (Playwright installed outside the repo), web screenshots light + dark. Owner phone check owed.
   - Web dev server: `CI=1 npx expo start --web` does not watch files; restart it after edits.
+  - Owner phone test on hosted (iPhone + a friend's Android, 2026-11-18) found and fixed, all on the PR:
+    service_role grants (hosted grants nothing), execute on `species_search_text`, Android uploads were
+    0 bytes (`fetch(file://).arrayBuffer()`; now base64 from the encoder, empty upload refused), health
+    copy (cause named from 0.2; healthy < 0.5 with no cause → "cause unclear"). Owner: "everything works".
+    Checks after: Jest 285, typecheck, lint, `fn:test`, `db:test` 110. e2e script not re-run.
 
 ## Completed (merged to `main`)
 
