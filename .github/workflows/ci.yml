@@ -19,6 +19,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run fn:test
+      - run: npm run sim:test
 
   db:
     runs-on: ubuntu-latest

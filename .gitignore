@@ -15,3 +15,6 @@ supabase/.branches/
 supabase/functions/.env
 supabase/functions/**/.env
 supabase/.env
+
+# Simulator device secrets
+sim/.devices/
