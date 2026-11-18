@@ -48,11 +48,16 @@ export default function Health() {
   };
   const run = () => {
     setError(null);
+    // Kept from the start: leaving mid-check must not delete photos the check is putting on the timeline
+    // (mutate callbacks don't run after unmount). shortcut: a check that then fails leaves orphan objects.
+    kept.current = true;
     check.mutate(
       { plantId: id, photoPaths: photos.map((p) => p.path) },
       {
-        onSuccess: () => (kept.current = true),
-        onError: (e) => setError(e.message === LIMIT ? LIMIT : "Couldn't check right now. Try again."),
+        onError: (e) => {
+          kept.current = false;
+          setError(e.message === LIMIT ? LIMIT : "Couldn't check right now. Try again.");
+        },
       },
     );
   };

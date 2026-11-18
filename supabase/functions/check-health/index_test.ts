@@ -20,11 +20,12 @@ interface World {
   deps: CheckHealthDeps;
   calls: { url: URL; init?: RequestInit }[];
   scans: Record<string, unknown>[];
+  timeline: { url: URL; init?: RequestInit }[];
 }
 
 /** Routes Auth / PostgREST / Storage / Plant.id URLs to in-memory fakes. The caller owns PLANT only. */
-function world(o: { recent?: number; plantId?: () => Response } = {}): World {
-  const w: World = { calls: [], scans: [], deps: undefined as never };
+function world(o: { recent?: number; plantId?: () => Response; timelineStatus?: number } = {}): World {
+  const w: World = { calls: [], scans: [], timeline: [], deps: undefined as never };
   w.deps = {
     supabaseUrl: 'http://sb',
     serviceRoleKey: 'srk',
@@ -46,6 +47,10 @@ function world(o: { recent?: number; plantId?: () => Response } = {}): World {
       if (u.pathname === '/rest/v1/scans' && method === 'POST') {
         w.scans.push(JSON.parse(String(init?.body)));
         return Promise.resolve(Response.json([{ id: 'scan-1' }], { status: 201 }));
+      }
+      if (u.pathname === '/rest/v1/plant_photos' && method === 'POST') {
+        w.timeline.push({ url: u, init });
+        return Promise.resolve(new Response(null, { status: o.timelineStatus ?? 201 }));
       }
       return Promise.resolve(new Response('unexpected', { status: 500 }));
     },
@@ -119,7 +124,7 @@ Deno.test('healthy >= 0.8: healthy copy; request carries all images; scan linked
   }]);
 });
 
-Deno.test('top issue >= 0.3 and mapped: plain-words note and advice (recorded fixture)', async () => {
+Deno.test('top issue >= 0.2 and mapped: plain-words note and advice (recorded fixture)', async () => {
   const w = world();
   const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
   assertEquals(body, {
@@ -136,13 +141,16 @@ Deno.test('top issue >= 0.3 and mapped: plain-words note and advice (recorded fi
   assertFalse(JSON.stringify(body).includes('water excess'));
 });
 
-Deno.test('top issue < 0.3, or unmapped: unsure copy, never the provider name', async () => {
-  for (const s of [[{ name: 'fungi', probability: 0.29 }], [{ name: 'Phytophthora obscura', probability: 0.9 }], []]) {
-    const w = world({ plantId: health(0.3, s) });
-    const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
-    assertEquals(body, { scanId: 'scan-1', ...UNSURE }, JSON.stringify(s));
-    assertEquals(w.scans[0].status, 'ok');
-    assertFalse(JSON.stringify(body).includes('Phytophthora'));
+Deno.test('top issue < 0.2, or unmapped: unclear (healthy < 0.5) or unsure copy, never the provider name', async () => {
+  const UNCLEAR = { healthy: false, note: "It doesn't look fully healthy, but the cause isn't clear from this photo.", advice: null };
+  for (const s of [[{ name: 'fungi', probability: 0.19 }], [{ name: 'Phytophthora obscura', probability: 0.9 }], []]) {
+    for (const [isHealthy, expected] of [[0.3, UNCLEAR], [0.6, UNSURE]] as const) {
+      const w = world({ plantId: health(isHealthy, s) });
+      const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).json();
+      assertEquals(body, { scanId: 'scan-1', ...expected }, JSON.stringify([isHealthy, s]));
+      assertEquals(w.scans[0].status, 'ok');
+      assertFalse(JSON.stringify(body).includes('Phytophthora'));
+    }
   }
 });
 
@@ -192,4 +200,32 @@ Deno.test('missing PLANT_ID_API_KEY is a uniform 500 before any download or scan
   assertEquals(w.scans, []);
   assertEquals(errors.length, 1);
   assertEquals(JSON.parse(errors[0]).outcome, 'misconfigured');
+});
+
+Deno.test('ok and not_plant checks upsert every checked photo onto the timeline with the scan id', async () => {
+  for (const isPlant of [1, 0.2]) {
+    const w = world({ plantId: health(0.8, [], isPlant) });
+    const body = await (await handler(req({ plantId: PLANT, photoPaths: [P1, P2] }), w.deps)).json();
+    assertEquals(Object.keys(body).sort(), ['advice', 'healthy', 'note', 'scanId']);
+    assertEquals(w.timeline.length, 1);
+    const [{ url, init }] = w.timeline;
+    assertEquals(url.searchParams.get('on_conflict'), 'plant_id,path');
+    assertEquals((init?.headers as Record<string, string>).prefer, 'resolution=merge-duplicates');
+    assertEquals(JSON.parse(String(init?.body)), [P1, P2].map((path) => ({ user_id: U, plant_id: PLANT, path, scan_id: 'scan-1' })));
+  }
+});
+
+Deno.test('provider error: no timeline rows', async () => {
+  const w = world({ plantId: () => new Response('boom', { status: 500 }) });
+  assertEquals((await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps)).status, 502);
+  assertEquals(w.timeline.length, 0);
+});
+
+Deno.test('a failed timeline upsert does not fail the check; outcome is logged', async () => {
+  logs.length = 0;
+  const w = world({ plantId: health(0.8), timelineStatus: 500 });
+  const res = await handler(req({ plantId: PLANT, photoPaths: [P1] }), w.deps);
+  assertEquals(res.status, 200);
+  assertEquals((await res.json()).healthy, true);
+  assert(logs.join('\n').includes('ok_timeline_failed'));
 });

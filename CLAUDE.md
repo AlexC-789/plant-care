@@ -48,6 +48,10 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
 - Every user-owned table: RLS on, owner-only policies, pgTAP tests proving it (incl. a
   cross-user test). Server-controlled columns (e.g. `subscription_status`) are never
   writable by `authenticated` — use column-level grants.
+- Edge Functions use `service_role`, which hosted projects grant nothing by default (local grants all):
+  a table a function touches gets explicit grants in a migration, asserted in
+  `supabase/tests/database/service_role_grants.test.sql` (incl. execute on functions that generated
+  columns call). Local grants these anyway, so local tests can't catch a miss: verify on hosted.
 - Schema changes only via `supabase/migrations/`; then `npm run db:types`.
 - Gate paid features only through `useEntitlement()`.
 - Sign-up email check: `before-user-created` auth hook (Edge Function). It must fail open on
@@ -97,6 +101,10 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
   - Photos: private bucket `plant-photos`, 3 MB, JPEG only, path `{uid}/{uuid}.jpg`. The app always re-encodes
     (`preparePhoto`: longest side ≤ 1600 px, JPEG 0.7) so no EXIF/GPS is uploaded; show via 1 h signed URLs.
     Deleting a plant removes its scans and every stored photo.
+  - Photo timeline (M3): `plant_photos`, owner-only, fed by a trigger on `plants.photo_path`, by `check-health`
+    (only writer of `scan_id`) and a one-time backfill; `plants.photo_path` = newest photo. Delete a photo only via
+    the `delete_plant_photo` RPC (locks the plant, promotes the next newest), then remove the object. Photos are
+    managed on the timeline (strip + `plant/[id]/photos` viewer), not in Edit.
   - Security proofs (GPS-free upload, no objects left after delete, PNG / >3 MB rejected):
     `node apps/mobile/e2e/m2-security.mjs` (Playwright, local Supabase + `expo start --web --port 8081`).
 - Add flow = four step screens in `src/app/(app)/add/` (photo, identify, where, health) with `StepProgress` / `StepDone`; motion tokens in `src/theme/motion.ts`.

@@ -23,6 +23,49 @@ export type Database = {
   };
   public: {
     Tables: {
+      plant_photos: {
+        Row: {
+          id: string;
+          path: string;
+          plant_id: string;
+          scan_id: string | null;
+          taken_at: string;
+          user_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          id?: string;
+          path: string;
+          plant_id: string;
+          scan_id?: string | null;
+          taken_at?: string;
+          user_id?: string;
+        };
+        Update: {
+          id?: string;
+          path?: string;
+          plant_id?: string;
+          scan_id?: string | null;
+          taken_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "plant_photos_plant_id_fkey";
+            columns: ["plant_id"];
+            isOneToOne: false;
+            referencedRelation: "plants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "plant_photos_scan_id_fkey";
+            columns: ["scan_id"];
+            isOneToOne: false;
+            referencedRelation: "scans";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       plants: {
         Row: {
           created_at: string;
@@ -226,6 +269,8 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      backfill_plant_photos: { Args: Record<PropertyKey, never>; Returns: undefined };
+      delete_plant_photo: { Args: { photo_id: string }; Returns: string };
       species_search_text: {
         Args: { common_names: string[]; scientific_name: string };
         Returns: string;

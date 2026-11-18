@@ -2,7 +2,7 @@ import { assert, assertEquals, assertInstanceOf, assertRejects } from '@std/asse
 
 import { requireUser, type Deps } from './auth.ts';
 import { json, jsonError, readJsonBody } from './http.ts';
-import { healthNote, HEALTHY_NOTE, UNSURE_NOTE } from './health_notes.ts';
+import { healthNote, HEALTHY_NOTE, UNCLEAR_NOTE, UNSURE_NOTE } from './health_notes.ts';
 import { countRecentPlantIdCalls, PLANT_ID_DAILY_LIMIT, searchAllowed } from './limits.ts';
 import { confidenceWord, PlantIdClient, ProviderError } from './plantid.ts';
 import { validatePhotoPaths } from './validate.ts';
@@ -212,7 +212,7 @@ Deno.test('health: issues sorted by probability desc, non-finite dropped; missin
   assertEquals(h.isPlantProbability, 0);
 });
 
-Deno.test('healthNote: healthy >= 0.8, mapped top issue >= 0.3, otherwise unsure; never a raw name', () => {
+Deno.test('healthNote: healthy >= 0.8, mapped top issue >= 0.2, else healthy < 0.5 unclear, otherwise unsure; never a raw name', () => {
   const r = (isHealthyProbability: number, issues: { name: string; probability: number }[] = []) =>
     ({ isPlantProbability: 1, isHealthyProbability, issues });
   assertEquals(HEALTHY_NOTE, 'It looks healthy in this photo.');
@@ -226,10 +226,22 @@ Deno.test('healthNote: healthy >= 0.8, mapped top issue >= 0.3, otherwise unsure
   // case-insensitive on the provider name
   assertEquals(healthNote(r(0.1, [{ name: 'Water Deficiency', probability: 0.9 }])).healthy, false);
   const unsure = { healthy: null, note: UNSURE_NOTE, advice: null };
-  assertEquals(healthNote(r(0.1, [{ name: 'fungi', probability: 0.29 }])), unsure);
+  const unclear = { healthy: false, note: UNCLEAR_NOTE, advice: null };
+  assertEquals(UNCLEAR_NOTE, "It doesn't look fully healthy, but the cause isn't clear from this photo.");
+  // healthy < 0.5 (Plant.id's own yes/no line) with no confident cause: not healthy, cause unclear
+  assertEquals(healthNote(r(0.1, [{ name: 'fungi', probability: 0.19 }])), unclear);
+  // live orchid on hosted (yellow leaf): healthy 0.526, top issue 0.2997 -> named, not "couldn't tell"
+  assertEquals(healthNote(r(0.526, [{ name: 'nutrient deficiency', probability: 0.2997 }])), {
+    healthy: false,
+    note: 'Some leaves look pale or yellow. It may need feeding.',
+    advice: 'Feed with a diluted houseplant fertiliser during the growing season.',
+  });
+  assertEquals(healthNote(r(0.5, [{ name: 'fungi', probability: 0.2 }])).healthy, false);
+  assertEquals(healthNote(r(0.5, [{ name: 'fungi', probability: 0.19 }])), unsure);
   // live orchid case: healthy 0.032, top "nutrient deficiency" just under 0.5
-  assertEquals(healthNote(r(0.032, [{ name: 'nutrient deficiency', probability: 0.4999 }])).note, 'The leaves look pale. It may need feeding.');
-  assertEquals(healthNote(r(0.1, [{ name: 'Some Obscure Pathogen', probability: 0.9 }])), unsure);
-  assertEquals(healthNote(r(0.1, [{ name: 'constructor', probability: 0.9 }])), unsure);
-  assertEquals(healthNote(r(0.1)), unsure);
+  assertEquals(healthNote(r(0.032, [{ name: 'nutrient deficiency', probability: 0.4999 }])).note, 'Some leaves look pale or yellow. It may need feeding.');
+  assertEquals(healthNote(r(0.1, [{ name: 'Some Obscure Pathogen', probability: 0.9 }])), unclear);
+  assertEquals(healthNote(r(0.1, [{ name: 'constructor', probability: 0.9 }])), unclear);
+  assertEquals(healthNote(r(0.1)), unclear);
+  assertEquals(healthNote(r(0.6)), unsure);
 });

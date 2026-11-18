@@ -1,7 +1,7 @@
 import type { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
-import { deletePhotos, signPhotoUrls } from './photos';
+import { deletePhotos, type PreparedPhoto, signPhotoUrls, uploadPhoto } from './photos';
 
 export type Plant = Database['public']['Tables']['plants']['Row'];
 export type Species = Database['public']['Tables']['species']['Row'];
@@ -17,6 +17,12 @@ export type NewPlant = {
 };
 export type PlantPatch = Partial<Pick<Plant, 'name' | 'room' | 'species_id' | 'custom_type' | 'photo_path'>>;
 export type Confidence = 'very_likely' | 'likely' | 'possibly';
+/** Attach an identify scan to a plant (the owner may set `scans.plant_id` once). */
+export async function linkScan(scanId: string, plantId: string): Promise<void> {
+  const { error } = await supabase.from('scans').update({ plant_id: plantId }).eq('id', scanId);
+  if (error) throw error;
+}
+
 export type IdentifyResult = {
   scanId?: string;
   isPlant: boolean;
@@ -24,6 +30,8 @@ export type IdentifyResult = {
 };
 export type HealthResult = { healthy: boolean | null; note: string; advice: string | null };
 export type SpeciesHit = { commonName: string; scientificName: string };
+export type PlantPhoto = { id: string; path: string; taken_at: string; scan_id: string | null; health: HealthResult | null };
+export type PlantPhotosPage = { photos: PlantPhoto[]; photoUrls: Record<string, string> };
 
 export const PAGE_SIZE = 20;
 
@@ -121,16 +129,57 @@ export async function updatePlant(id: string, patch: PlantPatch): Promise<Plant>
   return data;
 }
 
-/** Row first (scans cascade), photos after: a failure never leaves a row pointing at deleted photos. */
+/** Row first (scans and timeline rows cascade), photos after: a failure never leaves a row pointing at deleted photos. */
 export async function deletePlant(id: string): Promise<void> {
-  const [{ data: plant, error: e1 }, { data: scans, error: e2 }] = await Promise.all([
+  const [{ data: plant, error: e1 }, { data: scans, error: e2 }, { data: photos, error: e3 }] = await Promise.all([
     supabase.from('plants').select('photo_path').eq('id', id).single(),
     supabase.from('scans').select('photo_paths').eq('plant_id', id),
+    supabase.from('plant_photos').select('path').eq('plant_id', id),
   ]);
-  if (e1 || e2) throw e1 ?? e2;
+  if (e1 || e2 || e3) throw e1 ?? e2 ?? e3;
   const { error } = await supabase.from('plants').delete().eq('id', id);
   if (error) throw error;
-  const paths = [plant.photo_path, ...scans.flatMap((s) => s.photo_paths)].filter((p): p is string => !!p);
+  const all = [plant.photo_path, ...scans.flatMap((s) => s.photo_paths), ...photos.map((p) => p.path)];
+  const paths = [...new Set(all.filter((p): p is string => !!p))];
   // shortcut: orphaned objects are accepted if removal fails, a cleanup job comes at store readiness.
   await deletePhotos(paths).catch(() => {});
+}
+
+/** One page of a plant's timeline, newest first, with the health result of a linked check. */
+export async function fetchPlantPhotos(plantId: string, page: number): Promise<PlantPhotosPage> {
+  const { data, error } = await supabase
+    .from('plant_photos')
+    .select('id, path, taken_at, scan_id, scans(health)')
+    .eq('plant_id', plantId)
+    .order('taken_at', { ascending: false })
+    .order('id', { ascending: false })
+    .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+  if (error) throw error;
+  const photos = data.map(({ scans, ...p }) => {
+    const h = scans?.health as HealthResult | null | undefined;
+    return { ...p, health: h ? { healthy: h.healthy, note: h.note, advice: h.advice } : null };
+  });
+  return { photos, photoUrls: await signPhotoUrls(photos.map((p) => p.path)) };
+}
+
+/** Upload, then make it the main photo; the `plants_photo_to_timeline` trigger adds the timeline row. */
+export async function addPlantPhoto(userId: string, plantId: string, photo: PreparedPhoto): Promise<string> {
+  const path = await uploadPhoto(userId, photo);
+  const { error } = await supabase.from('plants').update({ photo_path: path }).eq('id', plantId).select('id').single();
+  if (error) {
+    await deletePhotos([path]).catch(() => {});
+    throw error;
+  }
+  return path;
+}
+
+/**
+ * One atomic server call deletes the row and moves the main photo to the next newest (none → null,
+ * pot drawing); the stored object goes last, so nothing ever points at a deleted object.
+ */
+export async function deletePlantPhoto(photo: { id: string }): Promise<void> {
+  const { data: path, error } = await supabase.rpc('delete_plant_photo', { photo_id: photo.id });
+  if (error) throw error;
+  // shortcut: orphaned object if removal fails, a cleanup job comes at store readiness.
+  if (path) await deletePhotos([path]).catch(() => {});
 }

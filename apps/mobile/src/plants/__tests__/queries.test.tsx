@@ -2,11 +2,15 @@ import { act, renderHook, waitFor } from '@testing-library/react-native';
 
 import { useSession } from '@/auth/AuthProvider';
 import { supabase } from '@/lib/supabase';
+import { linkScan } from '@/plants/api';
 import {
   useCheckHealth,
   useCreatePlant,
   useDeletePlant,
+  useAddPlantPhoto,
+  useDeletePlantPhoto,
   useIdentify,
+  usePlantPhotos,
   usePlants,
   useSpeciesSearch,
 } from '@/plants/queries';
@@ -17,7 +21,7 @@ jest.mock('@/lib/supabase', () => require('@/test-utils/supabaseMock'));
 jest.mock('@/auth/AuthProvider', () => ({ useSession: jest.fn() }));
 
 const USER_ID = '11111111-1111-1111-1111-111111111111';
-const bucket = { remove: jest.fn(), createSignedUrls: jest.fn() };
+const bucket = { remove: jest.fn(), createSignedUrls: jest.fn(), upload: jest.fn() };
 
 type Result = { data?: unknown; error?: unknown };
 /** Chainable, awaitable stand-in for supabase.from(table); every call is recorded in `calls`. */
@@ -52,6 +56,7 @@ beforeEach(() => {
   (useSession as jest.Mock).mockReturnValue({ session: { user: { id: USER_ID } }, isLoading: false });
   (supabase.storage.from as jest.Mock).mockReturnValue(bucket);
   bucket.remove.mockResolvedValue({ error: null });
+  bucket.upload.mockResolvedValue({ error: null });
   bucket.createSignedUrls.mockResolvedValue({ data: [], error: null });
 });
 
@@ -115,12 +120,14 @@ describe('useCreatePlant', () => {
 });
 
 describe('useDeletePlant', () => {
-  it('deletes the row, then removes the plant photo and every scan photo', async () => {
+  it('deletes the row, then removes the plant photo, every scan photo and every timeline photo, once each', async () => {
     const calls = mockTables({
       plants: [{ data: { photo_path: 'u/main.jpg' }, error: null }, { error: null }],
       scans: { data: [{ photo_paths: ['u/s1.jpg', 'u/s2.jpg'] }, { photo_paths: ['u/s3.jpg'] }], error: null },
+      plant_photos: { data: [{ path: 'u/main.jpg' }, { path: 'u/s1.jpg' }, { path: 'u/t1.jpg' }], error: null },
     });
     client.setQueryData(['plant', 'p1'], { id: 'p1' });
+    client.setQueryData(['plant-photos', 'p1'], { pages: [], pageParams: [] });
     client.setQueryData(['plants', USER_ID], {
       pages: [{ plants: [{ id: 'p1' }, { id: 'p2' }], photoUrls: {} }],
       pageParams: [0],
@@ -130,8 +137,9 @@ describe('useDeletePlant', () => {
       await result.current.mutateAsync('p1');
     });
     expect(calls.map((c) => `${c.table}.${c.method}`)).toContain('plants.delete');
-    expect(bucket.remove).toHaveBeenCalledWith(['u/main.jpg', 'u/s1.jpg', 'u/s2.jpg', 'u/s3.jpg']);
+    expect(bucket.remove).toHaveBeenCalledWith(['u/main.jpg', 'u/s1.jpg', 'u/s2.jpg', 'u/s3.jpg', 'u/t1.jpg']);
     expect(client.getQueryData(['plant', 'p1'])).toBeUndefined();
+    expect(client.getQueryData(['plant-photos', 'p1'])).toBeUndefined();
     expect(
       (client.getQueryData(['plants', USER_ID]) as { pages: { plants: { id: string }[] }[] }).pages[0].plants,
     ).toEqual([{ id: 'p2' }]);
@@ -141,6 +149,7 @@ describe('useDeletePlant', () => {
     mockTables({
       plants: [{ data: { photo_path: 'u/main.jpg' }, error: null }, { error: { message: 'denied' } }],
       scans: { data: [], error: null },
+      plant_photos: { data: [], error: null },
     });
     const { result } = await renderHook(() => useDeletePlant(), { wrapper });
     await act(async () => {
@@ -230,5 +239,103 @@ describe('edge functions', () => {
     expect(supabase.functions.invoke).toHaveBeenCalledWith('check-health', {
       body: { plantId: 'p1', photoPaths: ['u/a.jpg'] },
     });
+  });
+});
+
+describe('usePlantPhotos', () => {
+  it('pages 20 photos newest first with their health, signing the page in one call', async () => {
+    const rows = [
+      { id: 'f2', path: 'u/b.jpg', taken_at: '2026-11-18', scan_id: 's1', scans: { health: { healthy: true, note: 'ok', advice: null, top_issue: null } } },
+      { id: 'f1', path: 'u/a.jpg', taken_at: '2026-11-01', scan_id: null, scans: null },
+    ];
+    const calls = mockTables({ plant_photos: { data: rows, error: null } });
+    bucket.createSignedUrls.mockResolvedValue({ data: [{ path: 'u/b.jpg', signedUrl: 'https://s/b' }], error: null });
+    const { result } = await renderHook(() => usePlantPhotos('p1'), { wrapper });
+    await waitFor(() => expect(result.current.data).toBeDefined());
+    expect(result.current.data?.pages[0]).toEqual({
+      photos: [
+        { id: 'f2', path: 'u/b.jpg', taken_at: '2026-11-18', scan_id: 's1', health: { healthy: true, note: 'ok', advice: null } },
+        { id: 'f1', path: 'u/a.jpg', taken_at: '2026-11-01', scan_id: null, health: null },
+      ],
+      photoUrls: { 'u/b.jpg': 'https://s/b' },
+    });
+    expect(calls).toContainEqual({ table: 'plant_photos', method: 'eq', args: ['plant_id', 'p1'] });
+    expect(calls).toContainEqual({ table: 'plant_photos', method: 'order', args: ['taken_at', { ascending: false }] });
+    expect(calls).toContainEqual({ table: 'plant_photos', method: 'order', args: ['id', { ascending: false }] });
+    expect(calls).toContainEqual({ table: 'plant_photos', method: 'range', args: [0, 19] });
+    expect(bucket.createSignedUrls).toHaveBeenCalledTimes(1);
+    expect(bucket.createSignedUrls).toHaveBeenCalledWith(['u/b.jpg', 'u/a.jpg'], 3600);
+    expect(result.current.hasNextPage).toBe(false);
+  });
+});
+
+describe('useAddPlantPhoto', () => {
+  beforeEach(() => {
+    globalThis.fetch = jest.fn(async () => ({ arrayBuffer: async () => new ArrayBuffer(1) })) as unknown as typeof fetch;
+  });
+
+  it('uploads under the user folder, then makes it the main photo (the trigger adds the timeline row)', async () => {
+    const calls = mockTables({ plants: { data: { id: 'p1' }, error: null } });
+    const { result } = await renderHook(() => useAddPlantPhoto(), { wrapper });
+    let path = '';
+    await act(async () => {
+      path = await result.current.mutateAsync({ plantId: 'p1', photo: { uri: 'file://x.jpg', width: 1, height: 1, base64: 'AQID' } });
+    });
+    expect(path).toMatch(new RegExp(`^${USER_ID}/[0-9a-f-]{36}\.jpg$`));
+    expect(bucket.upload).toHaveBeenCalledWith(path, expect.anything(), { contentType: 'image/jpeg' });
+    expect(calls).toContainEqual({ table: 'plants', method: 'update', args: [{ photo_path: path }] });
+    expect(calls).toContainEqual({ table: 'plants', method: 'select', args: ['id'] }); // 0 rows (plant gone) → error
+    expect(calls).toContainEqual({ table: 'plants', method: 'eq', args: ['id', 'p1'] });
+  });
+
+  it('removes the upload again when the plant update fails', async () => {
+    mockTables({ plants: { data: null, error: { message: 'denied' } } });
+    const { result } = await renderHook(() => useAddPlantPhoto(), { wrapper });
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ plantId: 'p1', photo: { uri: 'file://x.jpg', width: 1, height: 1, base64: 'AQID' } }),
+      ).rejects.toBeTruthy();
+    });
+    expect(bucket.remove).toHaveBeenCalledWith([bucket.upload.mock.calls[0][0]]);
+  });
+});
+
+describe('useDeletePlantPhoto', () => {
+  it('deletes through one atomic call (row + main-photo promotion), then removes the returned object', async () => {
+    (supabase.rpc as jest.Mock).mockResolvedValue({ data: 'u/main.jpg', error: null });
+    client.setQueryData(['plant-photos', 'p1'], { pages: [], pageParams: [] });
+    const { result } = await renderHook(() => useDeletePlantPhoto(), { wrapper });
+    await act(async () => {
+      await result.current.mutateAsync({ plantId: 'p1', photo: { id: 'f1', path: 'u/main.jpg' } });
+    });
+    expect(supabase.rpc).toHaveBeenCalledWith('delete_plant_photo', { photo_id: 'f1' });
+    expect(bucket.remove).toHaveBeenCalledWith(['u/main.jpg']);
+    expect(client.getQueryState(['plant-photos', 'p1'])?.isInvalidated).toBe(true);
+  });
+
+  it('removes nothing when the call fails or the photo was already gone', async () => {
+    for (const r of [{ data: null, error: { message: 'offline' } }, { data: null, error: null }]) {
+      bucket.remove.mockClear();
+      (supabase.rpc as jest.Mock).mockResolvedValue(r);
+      const { result } = await renderHook(() => useDeletePlantPhoto(), { wrapper });
+      await act(async () => {
+        await result.current.mutateAsync({ plantId: 'p1', photo: { id: 'f1', path: 'u/x.jpg' } }).catch(() => {});
+      });
+      expect(bucket.remove).not.toHaveBeenCalled();
+    }
+  });
+});
+
+describe('linkScan', () => {
+  it('sets scans.plant_id on the scan', async () => {
+    const calls = mockTables({ scans: { error: null } });
+    await linkScan('scan1', 'p1');
+    expect(calls).toContainEqual({ table: 'scans', method: 'update', args: [{ plant_id: 'p1' }] });
+    expect(calls).toContainEqual({ table: 'scans', method: 'eq', args: ['id', 'scan1'] });
+  });
+
+  it('throws when the update fails', async () => {
+    mockTables({ scans: { error: { message: 'denied' } } });
+    await expect(linkScan('scan1', 'p1')).rejects.toBeTruthy();
   });
 });
