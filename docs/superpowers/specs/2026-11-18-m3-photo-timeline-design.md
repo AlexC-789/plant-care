@@ -1,7 +1,7 @@
 # Milestone 3: photo timeline and rescan — design
 
 Date: 2026-11-18
-Status: Draft for owner approval
+Status: Approved by owner 2026-11-18
 Builds on: product spec `2026-11-16-plant-care-design.md` §7 (plant detail: "photo timeline from past
 scans, rescan button"), §8 ★ Photo timeline ("each rescan is saved so you can see the plant grow and how
 its health changed"), §11 milestone 3. M2 design `2026-11-17-m2-plant-library-design.md` (§6 data, §8a
