@@ -67,8 +67,12 @@ export default function Plants() {
       keyExtractor={(r) => r.plant.id}
       stickySectionHeadersEnabled={false}
       renderSectionHeader={({ section }) =>
-        need.length && well.length ? (
-          <Text variant="footnote" color="secondaryLabel" style={styles.header}>
+        need.length ? (
+          <Text
+            variant="footnote"
+            color="secondaryLabel"
+            accessibilityRole="header"
+            style={styles.header}>
             {section.title}
           </Text>
         ) : null

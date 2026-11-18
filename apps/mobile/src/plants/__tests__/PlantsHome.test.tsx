@@ -138,6 +138,20 @@ test('plants without a module are under Needs you', async () => {
   expect(screen.getByText('Needs you')).toBeTruthy();
 });
 
+test('headers show when every row needs you', async () => {
+  loaded([plant('a', 'Fern'), plant('b', 'Aloe')]);
+  await openHome();
+  expect(screen.getByText('Needs you')).toBeTruthy();
+});
+
+test('the dot colour follows the level', async () => {
+  loaded([plant('a', 'Fern', null, module({ float_low: true })), plant('b', 'Aloe', null, module())]);
+  await openHome();
+  const [now, fine] = screen.getAllByTestId('status-dot');
+  expect(now).toHaveStyle({ backgroundColor: colors.light.statusNow });
+  expect(fine).toHaveStyle({ backgroundColor: colors.light.statusFine });
+});
+
 test('the status marker is a solid dot (the Material font has no filled circle)', async () => {
   loaded([plant('a', 'Fern')]);
   await openHome();
