@@ -343,3 +343,14 @@ describe('plant type search', () => {
     );
   });
 });
+
+test('Continue sits in the bottom bar and the form scrolls clear of the keyboard', async () => {
+  await open();
+  expect(screen.getByTestId('bottom-bar')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Continue' })).toBeTruthy();
+  // The screen's scroll view is the nearest ancestor of the Room field that sets the prop.
+  let scroll = screen.getByLabelText('Room').parent;
+  while (scroll && scroll.props.automaticallyAdjustKeyboardInsets === undefined) scroll = scroll.parent;
+  expect(scroll?.props.automaticallyAdjustKeyboardInsets).toBe(true);
+  expect(scroll?.props.keyboardShouldPersistTaps).toBe('handled');
+});

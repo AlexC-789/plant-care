@@ -97,6 +97,7 @@ export default function PlantStep() {
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={styles.content}>
         <Text variant="title" accessibilityRole="header">
           Which plant is this for?

@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
 
 import type { Species } from '@/plants/addDraft';
 import type { Plant } from '@/plants/api';
@@ -104,13 +104,13 @@ function EditForm({ plant }: { plant: Plant }) {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <>
       <Stack.Screen
         options={{
           headerRight: () => <Button label="Done" variant="plain" busy={update.isPending} onPress={() => void saveRef.current()} />,
         }}
       />
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+      <ScrollView keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets contentContainerStyle={styles.content}>
         {oldPath && !removed && !fresh.length ? (
           <View style={styles.stack}>
             {photoUrl ? (
@@ -167,7 +167,7 @@ function EditForm({ plant }: { plant: Plant }) {
           <Button label="Delete plant" variant="plain" destructive onPress={() => setConfirming(true)} />
         )}
       </ScrollView>
-    </KeyboardAvoidingView>
+    </>
   );
 }
 
@@ -187,7 +187,6 @@ export default function EditPlant() {
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   content: { padding: space.l, gap: space.l, paddingBottom: space.xxxl },
   stack: { gap: space.s },
   thumb: { height: 160, borderRadius: radius.thumb },
