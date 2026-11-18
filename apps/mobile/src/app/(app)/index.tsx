@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { SectionList, StyleSheet, View } from 'react-native';
 
+import { deviceStatus, needsYou } from '@/devices/status';
 import { PlantRow } from '@/plants/PlantRow';
 import { usePlants } from '@/plants/queries';
 import { space } from '@/theme';
@@ -20,6 +21,17 @@ export default function Plants() {
   } = usePlants();
   const plants = data?.pages.flatMap((p) => p.plants) ?? [];
   const photoUrls = Object.assign({}, ...(data?.pages.map((p) => p.photoUrls) ?? []));
+  const now = new Date();
+  const rows = plants.map((p) => ({ plant: p, status: deviceStatus(p.device, now) }));
+  const need = rows.filter((r) => needsYou(r.status));
+  const well = rows.filter((r) => !needsYou(r.status));
+  const sections = [
+    { title: 'Needs you', data: need },
+    { title: 'Doing well', data: well },
+  ].filter((s) => s.data.length);
+  const summary = [need.length && `${need.length} need you`, well.length && `${well.length} doing well`]
+    .filter(Boolean)
+    .join(' · ');
   const add = () => router.push('/add/photo');
 
   // Shown in place of rows: skeleton while loading, the error with no cache, or the empty state.
@@ -49,16 +61,25 @@ export default function Plants() {
   ) : null;
 
   return (
-    <FlatList
+    <SectionList
       testID="plants-list"
-      data={plants}
-      keyExtractor={(p) => p.id}
+      sections={sections}
+      keyExtractor={(r) => r.plant.id}
+      stickySectionHeadersEnabled={false}
+      renderSectionHeader={({ section }) =>
+        need.length && well.length ? (
+          <Text variant="footnote" color="secondaryLabel" style={styles.header}>
+            {section.title}
+          </Text>
+        ) : null
+      }
       renderItem={({ item }) => (
         <FadeIn>
           <PlantRow
-            plant={item}
-            photoUrl={photoUrls[item.photo_path ?? '']}
-            onPress={() => router.push(`/plant/${item.id}`)}
+            plant={item.plant}
+            status={item.status}
+            photoUrl={photoUrls[item.plant.photo_path ?? '']}
+            onPress={() => router.push(`/plant/${item.plant.id}`)}
           />
         </FadeIn>
       )}
@@ -66,7 +87,7 @@ export default function Plants() {
       ListHeaderComponent={
         plants.length ? (
           <Text variant="subheadline" color="secondaryLabel" style={styles.summary}>
-            {plants.length} need you
+            {summary}
           </Text>
         ) : undefined
       }
@@ -85,6 +106,7 @@ export default function Plants() {
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: space.l },
   summary: { marginBottom: space.m },
+  header: { marginTop: space.s, marginBottom: space.s },
   empty: {
     flex: 1,
     alignItems: 'center',

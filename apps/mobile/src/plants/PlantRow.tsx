@@ -1,28 +1,36 @@
 import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import type { Status } from '@/devices/status';
 import type { Plant } from '@/plants/api';
 import { radius, space, useTheme } from '@/theme';
 import { PotDrawing, Text } from '@/ui';
 
 const PHOTO = 60;
+const STATUS_COLOR = {
+  now: 'statusNow',
+  soon: 'statusSoon',
+  quiet: 'statusQuiet',
+  fine: 'statusFine',
+} as const;
 
-/** One plant on Home. In M2 every plant is still waiting for its module. */
+/** One plant on Home with its module's status line. */
 export function PlantRow({
   plant,
   photoUrl,
+  status,
   onPress,
 }: {
   plant: Plant;
   photoUrl?: string;
+  status: Status;
   onPress: () => void;
 }) {
   const { colors } = useTheme();
-  const status = "Setup isn't finished · Add its module";
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${plant.name}, ${status}`}
+      accessibilityLabel={`${plant.name}, ${status.line}`}
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
@@ -39,9 +47,9 @@ export function PlantRow({
       <View style={styles.text}>
         <Text variant="title3">{plant.name}</Text>
         <View style={styles.status}>
-          <View testID="status-dot" style={[styles.dot, { backgroundColor: colors.statusQuiet }]} />
+          <View testID="status-dot" style={[styles.dot, { backgroundColor: colors[STATUS_COLOR[status.level]] }]} />
           <Text variant="subheadline" style={styles.statusText}>
-            {status}
+            {status.line}
           </Text>
         </View>
       </View>
