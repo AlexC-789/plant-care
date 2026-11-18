@@ -5,7 +5,6 @@ import { BackHandler, ScrollView, StyleSheet, View } from 'react-native';
 import type { HealthResult as Result } from '@/plants/api';
 import { useAddDraft } from '@/plants/addDraft';
 import { HealthResult } from '@/plants/HealthResult';
-import { deletePhotos } from '@/plants/photos';
 import { useCheckHealth, useHealthCheckStatus } from '@/plants/queries';
 import { space } from '@/theme';
 import { BottomBar, Button, StepProgress, Text, TextLink } from '@/ui';
@@ -25,24 +24,21 @@ export default function HealthStep() {
   const problem = draft.photos.find((p) => p.kind === 'problem');
   // The ref guards re-runs of the effect; the draft flag survives a remount. One check, one credit.
   const started = useRef(!!draft.healthStarted);
+  const busy = useRef(false); // two taps in one frame start one check
   const run = () => {
+    if (busy.current) return;
+    busy.current = true;
     started.current = true;
     set({ healthStarted: true });
-    check.mutate({ plantId, photoPaths: [whole, problem].flatMap((p) => (p ? [p.path] : [])) });
+    check.mutate(
+      { plantId, photoPaths: [whole, problem].flatMap((p) => (p ? [p.path] : [])) },
+      { onSettled: () => (busy.current = false) },
+    );
   };
   useEffect(() => {
     if (plantId && problem && !started.current) run();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- starts once on mount
   }, []);
-
-  // The problem photo only lives on as part of a check; leaving before one started deletes it.
-  const unused = useRef(problem?.path);
-  useEffect(
-    () => () => {
-      if (!started.current && unused.current) void deletePhotos([unused.current]).catch(() => {});
-    },
-    [],
-  );
 
   const done = () => {
     router.dismissTo('/');

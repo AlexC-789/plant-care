@@ -222,6 +222,18 @@ describe('step 2: what is it', () => {
     expect(screen.queryByText('Goeppertia ornata')).toBeNull(); // no duplicate scientific line
   });
 
+  test('few local matches add More plants; picking one stores it first', async () => {
+    mocked(api.searchPlantNames).mockResolvedValue([{ commonName: 'Calathea', scientificName: 'Goeppertia ornata' }]);
+    mocked(api.pickSpecies).mockResolvedValue('new-species');
+    await toIdentify();
+    await press('I know it — search');
+    await fireEvent.changeText(await screen.findByLabelText('Search plants'), 'cal');
+    await waitFor(() => expect(screen.getByText('More plants')).toBeTruthy());
+    await press(/Calathea — Goeppertia ornata/);
+    await waitFor(() => expect(api.pickSpecies).toHaveBeenCalledWith('Goeppertia ornata'));
+    await waitFor(() => expect(screen.getByText("It's a Calathea.")).toBeTruthy());
+  });
+
   test('a custom type reads "It\'s a {type}." with no scientific line', async () => {
     await toIdentify();
     await press('I know it — search');
@@ -503,6 +515,28 @@ describe('step 4: health', () => {
     await arrive([3]);
     await screen.findByText("Couldn't check right now.");
     expect(screen.getByRole('button', { name: 'Skip for now' })).toBeTruthy();
+    await press('Try again');
+    await screen.findByText('Brown tips.');
+    expect(api.checkHealth).toHaveBeenCalledTimes(2);
+  });
+
+  test('two taps in one frame on Check its health now start one check', async () => {
+    mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
+    await arrive();
+    const btn = screen.getByRole('button', { name: 'Check its health now' });
+    const click = () => btn.props.onClick({ stopPropagation() {}, nativeEvent: {} });
+    await act(async () => {
+      click();
+      click();
+    });
+    expect(api.checkHealth).toHaveBeenCalledTimes(1);
+  });
+
+  test('a failed check can be retried after the guard releases', async () => {
+    mocked(api.checkHealth).mockRejectedValueOnce(new Error('boom'));
+    await arrive();
+    await press('Check its health now');
+    await screen.findByText("Couldn't check right now.");
     await press('Try again');
     await screen.findByText('Brown tips.');
     expect(api.checkHealth).toHaveBeenCalledTimes(2);
