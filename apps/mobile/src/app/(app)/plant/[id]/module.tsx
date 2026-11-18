@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
@@ -12,6 +12,7 @@ export default function ModuleSetup() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const claim = useCreateClaim(id);
+  const { mutate: makeClaim } = claim;
   const device = useDevice(id, 5000);
   const [now, setNow] = useState(() => Date.now());
   // Survives StrictMode's double effect and re-renders: one claim per visit.
@@ -27,25 +28,26 @@ export default function ModuleSetup() {
     if (hasModule) router.replace(`/plant/${id}/tank`);
     else if (device.isSuccess && !started.current) {
       started.current = true;
-      claim.mutate();
+      makeClaim();
     }
-  }, [hasModule, device.isSuccess, id, router, claim]);
+  }, [hasModule, device.isSuccess, id, router, makeClaim]);
 
   const code = claim.data?.code;
   const expired = !!claim.data && now > new Date(claim.data.expires_at).getTime();
 
   return (
     <>
+      <Stack.Screen options={{ title: '' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <Text variant="title" accessibilityRole="header">
           Add its module
         </Text>
-        {claim.isError ? (
+        {claim.isError || (device.isError && !device.data) ? (
           <>
             <Text color="statusNow" accessibilityRole="alert">
               {"Couldn't make a code. Try again."}
             </Text>
-            <Button label="Try again" onPress={() => claim.mutate()} />
+            <Button label="Try again" onPress={() => (claim.isError ? makeClaim() : void device.refetch())} />
           </>
         ) : expired ? (
           <>

@@ -69,6 +69,30 @@ describe('module step', () => {
     await waitFor(() => expect(insert).toHaveBeenCalledTimes(2));
   });
 
+  test('a plant that already has a module goes straight to the tank step', async () => {
+    mocked(devices.fetchDevice).mockResolvedValue(device);
+    await open('/plant/p1/module');
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/plant/p1/tank'));
+    expect(insert).not.toHaveBeenCalled();
+  });
+
+  test('a claim error offers Try again, which makes another claim', async () => {
+    single.mockResolvedValueOnce({ data: null, error: { message: 'x' } });
+    await open('/plant/p1/module');
+    await waitFor(() => expect(screen.getByText("Couldn't make a code. Try again.")).toBeTruthy());
+    await fireEvent.press(screen.getByText('Try again'));
+    await waitFor(() => expect(screen.getByText('ABCD 2345 EFGH')).toBeTruthy());
+    expect(insert).toHaveBeenCalledTimes(2);
+  });
+
+  test('a failed device load offers Try again, which refetches', async () => {
+    mocked(devices.fetchDevice).mockRejectedValueOnce(new Error('x')).mockRejectedValueOnce(new Error('x'));
+    await open('/plant/p1/module');
+    await waitFor(() => expect(screen.getByText("Couldn't make a code. Try again.")).toBeTruthy());
+    await fireEvent.press(screen.getByText('Try again'));
+    await waitFor(() => expect(screen.getByText('ABCD 2345 EFGH')).toBeTruthy());
+  });
+
   test('only one claim is created on mount', async () => {
     await open('/plant/p1/module');
     await waitFor(() => expect(screen.getByText('ABCD 2345 EFGH')).toBeTruthy());

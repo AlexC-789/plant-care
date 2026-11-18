@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
@@ -27,6 +27,7 @@ export default function TankSetup() {
 
   return (
     <>
+      <Stack.Screen options={{ title: '' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         {full ? (
           <StepDone title="The tank is full." />
