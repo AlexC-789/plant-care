@@ -50,10 +50,14 @@ language sql security definer set search_path = '' as $$
   select user_id, id, photo_path, created_at from public.plants where photo_path is not null
   on conflict do nothing;
   insert into public.plant_photos (user_id, plant_id, path, taken_at, scan_id)
-  select s.user_id, s.plant_id, p, s.created_at, case when s.kind = 'health' then s.id end
+  -- one row per photo (a path can sit in several scans; ON CONFLICT may touch a row only once): earliest health scan wins
+  select distinct on (s.plant_id, p) s.user_id, s.plant_id, p, s.created_at, case when s.kind = 'health' then s.id end
   from public.scans s, unnest(s.photo_paths) p
   where s.plant_id is not null
-  on conflict do nothing;
+  order by s.plant_id, p, s.kind = 'health' desc, s.created_at
+  -- the main photo is usually also a health-scan photo: attach the scan to the row the plants pass made
+  on conflict (plant_id, path) do update set scan_id = excluded.scan_id
+    where excluded.scan_id is not null and public.plant_photos.scan_id is null;
 $$;
 revoke execute on function public.backfill_plant_photos() from public, anon, authenticated;
 

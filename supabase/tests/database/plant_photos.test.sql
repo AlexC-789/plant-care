@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(21);
+select plan(23);
 
 create function pg_temp.new_user(uid uuid, mail text) returns void language sql as $$
   insert into auth.users (id, email, aud, role, instance_id)
@@ -24,9 +24,16 @@ insert into public.scans (id, user_id, plant_id, kind, status, photo_paths, crea
   ('aaaaaaaa-0000-0000-0000-000000000051', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0000-0000-0000-000000000001', 'health', 'ok',
    '{11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a2.jpg}', '2026-02-02T10:00:00Z'),
   ('aaaaaaaa-0000-0000-0000-000000000052', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0000-0000-0000-000000000001', 'identify', 'ok',
-   '{11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a3.jpg}', '2026-03-03T10:00:00Z'),
+   -- also holds a1, as the add flow's identify scan does: one path in two scans of the same plant
+   '{11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a3.jpg,11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a1.jpg}', '2026-03-03T10:00:00Z'),
   ('aaaaaaaa-0000-0000-0000-000000000053', '11111111-1111-1111-1111-111111111111', null, 'identify', 'ok',
-   '{11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a4.jpg}', now());
+   '{11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a4.jpg}', now()),
+  -- add-flow health check: its photo is also the plant's main photo
+  ('aaaaaaaa-0000-0000-0000-000000000054', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0000-0000-0000-000000000001', 'health', 'ok',
+   '{11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a1.jpg}', '2026-01-01T10:05:00Z'),
+  -- a later health check of the same photo: the earliest check keeps the row
+  ('aaaaaaaa-0000-0000-0000-000000000055', '11111111-1111-1111-1111-111111111111', 'aaaaaaaa-0000-0000-0000-000000000001', 'health', 'ok',
+   '{11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000a2.jpg}', '2026-04-04T10:00:00Z');
 -- the plant insert above ran the trigger; clear so the backfill is tested from scratch
 delete from public.plant_photos;
 
@@ -39,6 +46,7 @@ select is((select taken_at from public.plant_photos where path like '%a1.jpg'), 
 select is((select taken_at from public.plant_photos where path like '%a2.jpg'), '2026-02-02T10:00:00Z'::timestamptz, 'backfill: scan photo taken_at = scan created_at');
 select is((select scan_id from public.plant_photos where path like '%a2.jpg'), 'aaaaaaaa-0000-0000-0000-000000000051'::uuid, 'backfill: health scan sets scan_id');
 select is((select scan_id from public.plant_photos where path like '%a3.jpg'), null, 'backfill: identify scan leaves scan_id null');
+select is((select scan_id from public.plant_photos where path like '%a1.jpg'), 'aaaaaaaa-0000-0000-0000-000000000054'::uuid, 'backfill: main photo keeps its health scan_id');
 select lives_ok($$ select public.backfill_plant_photos() $$, 'backfill is idempotent');
 select is((select count(*)::int from public.plant_photos), 3, 'backfill: no duplicates on re-run');
 
@@ -75,6 +83,7 @@ select throws_ok($$ select count(*) from public.plant_photos $$, '42501', null, 
 
 -- trigger + cascade (superuser)
 reset role;
+select is((select count(*)::int from public.plant_photos where path like '%b1.jpg'), 1, 'A''s delete left B''s row in place');
 update public.plants set photo_path = '11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000c1.jpg'
   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 update public.plants set photo_path = '11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000c1.jpg', name = 'again'
