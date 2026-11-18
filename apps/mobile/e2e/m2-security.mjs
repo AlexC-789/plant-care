@@ -85,13 +85,14 @@ async function main() {
     await next(); // step 1 -> 2
     await page.getByText('What kind of plant is it?').waitFor(); // else the next click can hit step 1 mid-transition
     await next(); // step 2 (no identify) -> 3
-    await page.getByLabel('Nickname').fill('E2E Fern');
+    await page.getByLabel('Name', { exact: true }).fill('E2E Fern'); // 'Nickname' only once a type is chosen
     await next(); // saves, then step 4
     await page.getByRole('button', { name: 'Skip for now' }).click();
     await page.getByRole('button', { name: 'More options' }).waitFor();
     const plant = (await (await call(`/rest/v1/plants?select=id,photo_path&user_id=eq.${uid}`, { headers: { accept: 'application/json' } })).json())[0];
     const scanPaths = [`${uid}/${randomUUID()}.jpg`, `${uid}/${randomUUID()}.jpg`];
-    for (const p of scanPaths) {
+    const timelinePath = `${uid}/${randomUUID()}.jpg`; // M3: a photo only on the timeline
+    for (const p of [...scanPaths, timelinePath]) {
       await call(`/storage/v1/object/plant-photos/${p}`, { method: 'POST', headers: { 'content-type': 'image/jpeg' }, body: readFileSync(FIXTURE) });
     }
     await call('/rest/v1/scans', {
@@ -102,7 +103,12 @@ async function main() {
         { user_id: uid, plant_id: plant.id, kind: 'identify', status: 'ok', photo_paths: [scanPaths[1]] },
       ]),
     });
-    check('seeded 3 objects before delete', (await listObjects(uid)).length === 3);
+    await call('/rest/v1/plant_photos', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ user_id: uid, plant_id: plant.id, path: timelinePath }),
+    });
+    check('seeded 4 objects before delete', (await listObjects(uid)).length === 4);
     await page.getByRole('button', { name: 'More options' }).click();
     await page.getByRole('button', { name: 'Edit plant' }).click();
     await page.getByRole('button', { name: 'Delete plant' }).click();
@@ -110,9 +116,11 @@ async function main() {
     await page.getByText('No plants yet').waitFor();
     await page.waitForTimeout(1000);
     const left = await listObjects(uid);
-    check('delete removed plant photo and scan photos', left.length === 0, left.join(',') || 'none left');
+    check('delete removed plant, scan and timeline photos', left.length === 0, left.join(',') || 'none left');
     const rows = await (await call(`/rest/v1/scans?select=id&user_id=eq.${uid}`)).json();
     check('delete removed scan rows', rows.length === 0);
+    const timeline = await (await call(`/rest/v1/plant_photos?select=id&user_id=eq.${uid}`)).json();
+    check('delete removed timeline rows', timeline.length === 0);
 
     // (c) bucket rejects PNG and > 3 MB for an authenticated user
     const { access_token } = await (await call('/auth/v1/token?grant_type=password', {

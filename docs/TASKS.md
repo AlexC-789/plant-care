@@ -11,28 +11,18 @@ T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when neede
 - Account-wide: disconnect unused connectors at claude.ai/customize/connectors (this repo already
   blocks them locally).
 
-## M3 — Photo timeline + rescan (P1, in progress on `m3-photo-timeline`)
+## M3 — Photo timeline + rescan (P1, PR open from `m3-photo-timeline`)
 
-Spec `docs/superpowers/specs/2026-11-18-m3-photo-timeline-design.md`; plan
-`docs/superpowers/plans/2026-11-18-m3-photo-timeline.md`; ledger summary in handoff §2.5.
-First: merge `main` into the branch.
-
-1. **Task 1 fixes** (P1, backend, Opus re-review: RLS + migration):
-   - Backfill keeps `scan_id` when a health-scan photo is also the plant's main photo
-     (`on conflict (plant_id, path) do update … where … scan_id is null`) + pgTAP fixture asserting it.
-   - Cross-user delete test must assert something (B's row still exists after A's delete).
-   - _Done when_ both have failing-then-passing pgTAP tests and the re-review passes.
-   - Deferred minors: trigger tested as user A too; `backfill_plant_photos()` stays security definer.
-2. **Task 2** `check-health` upserts timeline rows with `scan_id`. Depends on 1.
-3. **Task 3** app data layer: fetch / add / delete photo; `deletePlant` gathers timeline paths
-   (Opus review: deletion). Depends on 1.
-4. **Task 4** timeline strip + Add a photo (inline health check offer, ruling R1) + Edit loses
-   photo controls. Depends on 3.
-5. **Task 5** full-screen viewer `plant/[id]/photos` with What is it? and Delete. Depends on 3.
-6. **Task 6** e2e, docs, verification, screenshots. Depends on 2–5.
-7. **Finish:** final whole-branch review (Opus), `security-review`, PR to `main`; owner merges.
-
-Tasks 4 and 5 touch different routes and could run in parallel once 3 is in (check shared files first).
+Tasks 1–6 are built and verified (`docs/CURRENT_STATE.md`). Left:
+1. **Owner:** review and merge the M3 PR; phone check in Expo Go (strip, add a photo + health offer,
+   viewer swipe / What is it? / delete, light + dark).
+2. Deferred minors (fix when touching that code, test first):
+   - Trigger tested only as superuser (run the `photo_path` update as user A too).
+   - `backfill_plant_photos()` stays a security-definer function (execute revoked from clients).
+   - A photo deleted while its health check runs comes back as a row without an object (shortcut in
+     `check-health`); a direct REST delete on `plant_photos` skips the RPC's lock (own data only).
+   - Viewer duplicates the identify step's `COULDNT` / `LIMIT` copy (`add/identify.tsx`).
+   - "What is it?" guards double taps with `isPending` only (the strip uses refs).
 
 ## Later milestones (P3; product spec §11, in order)
 

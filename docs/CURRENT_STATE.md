@@ -1,19 +1,28 @@
 # Current state
 
-_Last updated: 2026-11-18 (local Windows setup; Claude Code workflow on `chore/claude-code-workflow`)._
+_Last updated: 2026-11-18 (M3 built on `m3-photo-timeline`, PR to `main` open)._
 Update this file at the end of every substantial task. Detail and history live in
 `docs/LOCAL_MIGRATION_HANDOFF.md` (cloud → local handoff, 2026-11-18) and the specs/plans; this
 file is the short, current summary.
 
 ## Status
 
-- `main` = `fc3e7b4` (PR #5 = M2, plus the migration handoff doc). M1 and M2 are done.
-- **M3 photo timeline + rescan is in progress** on `m3-photo-timeline` (head `53de807`, no PR yet).
-  - Spec: `docs/superpowers/specs/2026-11-18-m3-photo-timeline-design.md` (approved).
-  - Plan: `docs/superpowers/plans/2026-11-18-m3-photo-timeline.md` (6 tasks).
-  - Task 1 (`plant_photos` table, RLS, trigger, backfill) is committed, but its Opus security review
-    returned **Needs fixes**: 2 Important findings are open (handoff §2.5, `docs/TASKS.md`).
-  - That branch predates the handoff and this workflow setup: merge `main` into it before continuing.
+- `main` = `917e4e8` (PR #6 = Claude Code workflow). M1 and M2 are done.
+- **M3 photo timeline + rescan is built** on `m3-photo-timeline` (`main` merged in); PR to `main`
+  awaits the owner. Spec `docs/superpowers/specs/2026-11-18-m3-photo-timeline-design.md`, plan
+  `docs/superpowers/plans/2026-11-18-m3-photo-timeline.md`.
+  - DB: `plant_photos` (owner-only RLS, insert grant on plant_id/path/taken_at only), trigger from
+    `plants.photo_path`, backfill (keeps health `scan_id`, dedupes paths shared by several scans),
+    `delete_plant_photo` RPC (locks the plant, promotes the next newest main photo).
+  - `check-health` upserts its photos onto the timeline with `scan_id` (failure non-fatal).
+  - App: timeline strip + Add a photo with an inline health-check offer on plant detail; full-screen
+    viewer `plant/[id]/photos` (swipe, health result, What is it?, Delete); Edit has no photo controls;
+    deleting a plant removes timeline photos too.
+  - Reviews (Opus): Task 1 fixes approved; Tasks 2–3 found a two-device delete race → fixed with the
+    RPC, re-review approved. Final whole-branch review: see the PR.
+  - Verified 2026-11-18: Jest 281, typecheck, lint, `fn:test` 72, `db:test` 103, e2e security script
+    10/10 (Playwright installed outside the repo), web screenshots light + dark. Owner phone check owed.
+  - Web dev server: `CI=1 npx expo start --web` does not watch files; restart it after edits.
 
 ## Completed (merged to `main`)
 
@@ -56,5 +65,5 @@ handoff §2.4. Jest prints a worker-exit warning at the end (pre-existing; `-- -
 
 ## Next recommended task
 
-Merge `main` into `m3-photo-timeline`, then fix M3 Task 1's two Important
-findings test-first with an Opus re-review (`docs/TASKS.md` M3).
+Owner: review/merge the M3 PR and do the phone check. Then M4 Devices (simulated) needs a
+brainstorm → design → plan (product spec §11; `docs/TASKS.md` "Later milestones").

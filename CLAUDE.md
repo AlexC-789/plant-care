@@ -97,6 +97,10 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
   - Photos: private bucket `plant-photos`, 3 MB, JPEG only, path `{uid}/{uuid}.jpg`. The app always re-encodes
     (`preparePhoto`: longest side ≤ 1600 px, JPEG 0.7) so no EXIF/GPS is uploaded; show via 1 h signed URLs.
     Deleting a plant removes its scans and every stored photo.
+  - Photo timeline (M3): `plant_photos`, owner-only, fed by a trigger on `plants.photo_path`, by `check-health`
+    (only writer of `scan_id`) and a one-time backfill; `plants.photo_path` = newest photo. Delete a photo only via
+    the `delete_plant_photo` RPC (locks the plant, promotes the next newest), then remove the object. Photos are
+    managed on the timeline (strip + `plant/[id]/photos` viewer), not in Edit.
   - Security proofs (GPS-free upload, no objects left after delete, PNG / >3 MB rejected):
     `node apps/mobile/e2e/m2-security.mjs` (Playwright, local Supabase + `expo start --web --port 8081`).
 - Add flow = four step screens in `src/app/(app)/add/` (photo, identify, where, health) with `StepProgress` / `StepDone`; motion tokens in `src/theme/motion.ts`.
