@@ -46,6 +46,20 @@ unconfirmed health-issue names, 92 unchecked species, count-then-call limit race
 `docs/superpowers/handoff/2026-11-17-m2-handoff.md` (end). Device checks still owed by the owner:
 handoff §2.4. Jest prints a worker-exit warning at the end (pre-existing; `-- --forceExit` if it hangs).
 
+## Hosted Supabase (set up 2026-11-18, ahead of M4)
+
+- Project "AlexC-789's Project", ref `qbbkzxbyxzogebaethpp`, eu-west-1, free plan; repo linked
+  (`npx supabase link`). Schema = all migrations up to M3 (`20261118110000`), pushed from the M3 branch.
+- Functions deployed: `identify-plant`, `check-health`, `search-plants`, `before-user-created`
+  (`--no-verify-jwt`). Secrets: `PLANT_ID_API_KEY`, `BEFORE_USER_CREATED_HOOK_SECRET` (from the
+  dashboard hook, not the local one in `config.toml`). Hook enabled and verified (mailinator rejected).
+- Auth: email confirmation on, password min 8, built-in mailer (2 emails/h). `site_url` is still the
+  default `http://localhost:3000`, so confirmation links land on a dead page after confirming;
+  set a real site URL / redirect when there is one.
+- `apps/mobile/.env.local` points at hosted; the local values are kept there as comments.
+- Changing auth settings through the Management API needs `project_admin_write`; do them in the dashboard.
+- Phone testing away from the LAN: `npx expo start --tunnel` (`@expo/ngrok` installed globally).
+
 ## Local environment (Windows, checked 2026-11-18)
 
 - T0 done: Node 22.23.5 via nvm-windows (`C:\nvm4w\nodejs`), npm 10.9.9, npm `script-shell` =
