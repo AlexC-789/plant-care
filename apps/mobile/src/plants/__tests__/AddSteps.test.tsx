@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { BackHandler } from 'react-native';
+import { BackHandler, Linking } from 'react-native';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
@@ -101,6 +101,34 @@ describe('step 1: photo', () => {
     expect(screen.getAllByRole('header').map((h) => h.props.children).flat()).toEqual(
       expect.arrayContaining(['Whole plant', 'One leaf', 'Flower', 'Problem spot']),
     );
+  });
+
+  test('the photo is re-encoded before upload; Remove deletes the upload and the thumbnail', async () => {
+    await open();
+    await takeWhole();
+    expect(photos.preparePhoto).toHaveBeenCalledWith('file:///raw.jpg');
+    expect(screen.getByLabelText('Whole plant photo')).toBeTruthy();
+    await press('Remove');
+    await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']));
+    expect(screen.queryByLabelText('Whole plant photo')).toBeNull();
+  });
+
+  test('retaking deletes the replaced upload', async () => {
+    await open();
+    await takeWhole();
+    await press('Take photo', 0);
+    await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']));
+  });
+
+  test('denied camera permission shows an Open Settings row and never opens the camera', async () => {
+    mocked(ImagePicker.requestCameraPermissionsAsync).mockResolvedValue({ granted: false });
+    const settings = jest.spyOn(Linking, 'openSettings').mockResolvedValue();
+    await open();
+    await press('Take photo', 0);
+    await press('Open Settings');
+    expect(settings).toHaveBeenCalled();
+    expect(ImagePicker.launchCameraAsync).not.toHaveBeenCalled();
+    settings.mockRestore();
   });
 
   test('Continue goes to step 2', async () => {
