@@ -1,12 +1,14 @@
 import { Redirect, Stack, useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { useEffect, useRef } from 'react';
-import { BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, BackHandler, Platform, ScrollView, StyleSheet, View } from 'react-native';
 
 import type { HealthResult as Result } from '@/plants/api';
-import { useAddDraft } from '@/plants/addDraft';
+import { plantName, useAddDraft } from '@/plants/addDraft';
 import { HealthResult } from '@/plants/HealthResult';
+import { deletePhotos } from '@/plants/photos';
 import { useCheckHealth, useHealthCheckStatus } from '@/plants/queries';
-import { space } from '@/theme';
+import { radius, space } from '@/theme';
 import { BottomBar, Button, StepProgress, Text, TextLink } from '@/ui';
 
 // The server's own message for a 429; any other failure reads as "couldn't check".
@@ -41,6 +43,8 @@ export default function HealthStep() {
   }, []);
 
   const done = () => {
+    // A failed check counts as no check: its problem-spot photo is not kept.
+    if (status?.status === 'error' && problem) void deletePhotos([problem.path]).catch(() => {});
     router.dismissTo('/');
     router.push(`/plant/${plantId}`);
   };
@@ -50,13 +54,23 @@ export default function HealthStep() {
     return () => sub.remove();
   });
 
-  if (!plantId) return <Redirect href="/add/photo" />;
-
   const failed = status?.status === 'error';
   const result = status?.status === 'success' ? (status.data as Result) : undefined;
+  const error = failed ? (status.error?.message === LIMIT ? LIMIT : "Couldn't check right now.") : null;
+  // iOS ignores accessibilityLiveRegion, so announce the outcome explicitly (as StepDone does).
+  const spoken = result?.note ?? error;
+  useEffect(() => {
+    if (spoken && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(spoken);
+  }, [spoken]);
+
+  if (!plantId) return <Redirect href="/add/photo" />;
+
   // With a problem photo the check is about to start (or running); otherwise offer it.
   const offer = !result && status?.status !== 'pending' && (failed || !problem || draft.healthStarted);
-  const error = failed ? (status.error?.message === LIMIT ? LIMIT : "Couldn't check right now.") : null;
+
+  const photo = (
+    <Image accessibilityLabel="Your plant" source={{ uri: (problem ?? whole)?.localUri }} style={styles.photo} />
+  );
 
   return (
     <View style={styles.flex}>
@@ -67,8 +81,12 @@ export default function HealthStep() {
           <HealthResult result={result} photoUri={(problem ?? whole)?.localUri} />
         ) : offer ? (
           <>
+            {photo}
             <Text variant="title" accessibilityRole="header">
-              Want a quick health check?
+              {`Want a quick health check for ${plantName(draft)}?`}
+            </Text>
+            <Text variant="footnote" color="secondaryLabel">
+              {"We'll look at your photo for signs of pests, disease or stress. It takes a few seconds."}
             </Text>
             {error ? (
               <Text variant="footnote" color="statusNow" accessibilityRole="alert">
@@ -77,9 +95,12 @@ export default function HealthStep() {
             ) : null}
           </>
         ) : (
-          <Text variant="title" accessibilityLiveRegion="polite">
-            Looking at your plant…
-          </Text>
+          <>
+            {photo}
+            <Text variant="title" accessibilityLiveRegion="polite">
+              Looking at your plant…
+            </Text>
+          </>
         )}
       </ScrollView>
       <BottomBar>
@@ -88,9 +109,9 @@ export default function HealthStep() {
             <Button label={failed ? 'Try again' : 'Check its health now'} onPress={run} />
             <Button label="Skip for now" variant="plain" onPress={done} />
           </>
-        ) : (
+        ) : result ? (
           <Button label="Done" onPress={done} />
-        )}
+        ) : null}
       </BottomBar>
     </View>
   );
@@ -99,4 +120,5 @@ export default function HealthStep() {
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { padding: space.l, gap: space.l },
+  photo: { aspectRatio: 4 / 3, borderRadius: radius.thumb },
 });

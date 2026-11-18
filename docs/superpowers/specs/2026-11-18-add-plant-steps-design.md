@@ -123,6 +123,7 @@ Step 4  Health         with a Problem spot photo: runs automatically → "Lookin
    and falls back to the offer: **Try again** / **Skip for now**.
 3. **Leaving step 4** (Done, Skip, Cancel, swipe-down — handled in one unmount cleanup): the plant and its
    whole-plant photo are kept; the problem-spot photo is deleted only if no check was started.
+   A failed check counts as no check: its problem-spot photo is deleted on leaving (owner informed 2026-11-18).
 4. **Step 1:** Whole plant has no Skip (required); the other three cards can be skipped. When the
    whole-plant photo is uploaded, "✓ Got it." with that photo large appears above the cards (cards stay
    for adding more). Going back to step 1 and changing photos clears the identify result

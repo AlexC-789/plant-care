@@ -1,5 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
-import { BackHandler, Linking } from 'react-native';
+import { AccessibilityInfo, BackHandler, Linking, Platform, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
@@ -187,6 +187,13 @@ describe('step 2: what is it', () => {
     expect(continueBtn().props.accessibilityState?.disabled).toBeFalsy();
   });
 
+  test('Continue is disabled while identify is pending', async () => {
+    mocked(api.identifyPlant).mockReturnValue(new Promise(() => {}));
+    await toIdentify();
+    await press('Identify from my photo');
+    await waitFor(() => expect(continueBtn().props.accessibilityState?.disabled).toBe(true));
+  });
+
   test('identify sends whole, leaf and flower but never the problem photo', async () => {
     mocked(api.identifyPlant).mockResolvedValue(result([sugg('likely')]));
     await open();
@@ -329,19 +336,39 @@ describe('step 3: where', () => {
     expect(screen.getByRole('progressbar', { name: 'Step 3 of 4' })).toBeTruthy();
     expect(screen.getByLabelText('Room').props.placeholder).toBe('Optional');
     expect(screen.getByLabelText('Room').props.maxLength).toBe(40);
-    expect(screen.getByLabelText('Nickname').props.placeholder).toBe('Required');
-    expect(screen.getByLabelText('Nickname').props.maxLength).toBe(60);
+    expect(screen.getByLabelText('Name').props.placeholder).toBe('Required');
+    expect(screen.getByLabelText('Name').props.maxLength).toBe(60);
     let scroll = screen.getByLabelText('Room').parent;
     while (scroll && scroll.props.automaticallyAdjustKeyboardInsets === undefined) scroll = scroll.parent;
     expect(scroll?.props.automaticallyAdjustKeyboardInsets).toBe(true);
     expect(scroll?.props.keyboardShouldPersistTaps).toBe('handled');
   });
 
+  test('the root avoids the keyboard on iOS so Continue stays visible', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'ios';
+    try {
+      await toWhere();
+      // KeyboardAvoidingView's host View is the only one here that gets a paddingBottom, and only with behavior 'padding'.
+      let n = screen.getByLabelText('Room').parent;
+      while (n && n.type !== 'RCTScrollView') n = n.parent;
+      expect(StyleSheet.flatten(n?.parent?.props.style)).toHaveProperty('paddingBottom', 0);
+    } finally {
+      Platform.OS = os;
+    }
+  });
+
   test('with no type, Continue needs a nickname', async () => {
     await toWhere();
     expect(continueBtn().props.accessibilityState?.disabled).toBe(true);
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
     expect(continueBtn().props.accessibilityState?.disabled).toBeFalsy();
+  });
+
+  test('with no type the field is Name, with a type it is Nickname', async () => {
+    await toWhere();
+    expect(screen.getByText('Name')).toBeTruthy();
+    expect(screen.queryByText('Nickname')).toBeNull();
   });
 
   test('with a type, the placeholder is the type and Continue saves under its name', async () => {
@@ -365,7 +392,7 @@ describe('step 3: where', () => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     try {
       await toWhere();
-      await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+      await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
       await fireEvent.changeText(screen.getByLabelText('Room'), ' Kitchen ');
       await fireEvent.press(continueBtn());
       await waitFor(() => expect(screen.getByText('Fern is in the Kitchen.')).toBeTruthy());
@@ -380,7 +407,7 @@ describe('step 3: where', () => {
 
   test('a double tap creates one plant', async () => {
     await toWhere();
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
     const btn = continueBtn();
     await fireEvent.press(btn);
     await fireEvent.press(btn);
@@ -390,7 +417,7 @@ describe('step 3: where', () => {
 
   test('leaf and flower photos are deleted when never identified; the problem photo stays', async () => {
     await toWhere({ extra: [1, 2, 3] }); // leaf u/2, flower u/3, problem u/4
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
     await fireEvent.press(continueBtn());
     await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
     expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg', 'u/3.jpg']);
@@ -408,7 +435,7 @@ describe('step 3: where', () => {
   test('a failed save shows the error and can be retried', async () => {
     mocked(api.createPlant).mockRejectedValueOnce(new Error('boom'));
     await toWhere();
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
     await fireEvent.press(continueBtn());
     await waitFor(() => expect(screen.getByText("Couldn't save your plant. Try again.")).toBeTruthy());
     await fireEvent.press(continueBtn());
@@ -418,7 +445,7 @@ describe('step 3: where', () => {
   test('a 60-character emoji nickname saves whole', async () => {
     const long = '🌿'.repeat(30); // 60 UTF-16 units
     await toWhere();
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), long);
+    await fireEvent.changeText(screen.getByLabelText('Name'), long);
     await fireEvent.press(continueBtn());
     await waitFor(() => expect(screen.getByText(`${long} is saved.`)).toBeTruthy());
     expect(lastSaved().name).toBe(long);
@@ -426,7 +453,7 @@ describe('step 3: where', () => {
 
   test('two synchronous taps create one plant (ref guard)', async () => {
     await toWhere();
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
     const btn = continueBtn();
     // Both presses land before React re-renders, so only the ref can stop the second.
     const click = () => btn.props.onClick({ stopPropagation() {}, nativeEvent: {} });
@@ -441,7 +468,7 @@ describe('step 3: where', () => {
   test('Cancel is hidden while the save is pending', async () => {
     mocked(api.createPlant).mockReturnValue(new Promise(() => {}));
     await toWhere();
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
     expect(screen.getByText('Cancel')).toBeTruthy();
     await fireEvent.press(continueBtn());
     await waitFor(() => expect(screen.queryByText('Cancel')).toBeNull());
@@ -452,11 +479,11 @@ describe('step 3: where', () => {
     jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate'] });
     try {
       await toWhere();
-      await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+      await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
       await fireEvent.press(continueBtn());
       await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
       await act(async () => router.back()); // leaves step 3 before the hand-off
-      await waitFor(() => expect(screen.getByText('Want a quick health check?')).toBeTruthy()); // identify redirected
+      await waitFor(() => expect(screen.getByText('Want a quick health check for Fern?')).toBeTruthy()); // identify redirected
       expect(screen.queryByText('Cancel')).toBeNull();
       await act(async () => jest.advanceTimersByTime(800));
       expect(mockReplace).not.toHaveBeenCalled(); // unmounted: the timer died with it
@@ -481,6 +508,8 @@ describe('step 3: where', () => {
   });
 });
 
+const FOOT = "We'll look at your photo for signs of pests, disease or stress. It takes a few seconds.";
+
 describe('step 4: health', () => {
   const OK = { healthy: false, note: 'Brown tips.', advice: 'Water less.' };
   beforeEach(() => {
@@ -490,7 +519,7 @@ describe('step 4: health', () => {
   // Saves the plant at step 3 and waits for the hand-off to step 4.
   const toHealth = async (extra: number[] = []) => {
     await toWhere({ extra });
-    await fireEvent.changeText(screen.getByLabelText('Nickname'), 'Fern');
+    await fireEvent.changeText(screen.getByLabelText('Name'), 'Fern');
     await fireEvent.press(continueBtn());
     await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy(), { timeout: 3000 });
   };
@@ -509,6 +538,68 @@ describe('step 4: health', () => {
     expect(screen.queryByText('Check its health now')).toBeNull();
   });
 
+  test('offer and running states show the plant photo; the footnote is only in the offer', async () => {
+    mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
+    await arrive([3]);
+    const photos1 = screen.getAllByLabelText('Your plant').length;
+    expect(screen.getByText('Looking at your plant…')).toBeTruthy();
+    expect(screen.queryByText(FOOT)).toBeNull();
+    await act(async () => router.replace('/add/where'));
+    await waitFor(() => expect(screen.getByText('Fern is saved.')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Looking at your plant…')).toBeTruthy(), { timeout: 3000 });
+    expect(photos1).toBeGreaterThan(0);
+  });
+
+  test('the offer shows the photo, the plant name and the footnote', async () => {
+    await arrive();
+    expect(screen.getByText('Want a quick health check for Fern?')).toBeTruthy();
+    expect(screen.getByText(FOOT)).toBeTruthy();
+    expect(screen.getAllByLabelText('Your plant').length).toBeGreaterThan(0);
+  });
+
+  test('a failed check then Skip deletes the problem photo; a successful one deletes nothing', async () => {
+    mocked(api.checkHealth).mockRejectedValueOnce(new Error('boom'));
+    await arrive([3]); // problem u/2
+    await screen.findByText("Couldn't check right now.");
+    await press('Skip for now');
+    expect(photos.deletePhotos).toHaveBeenCalledWith(['u/2.jpg']);
+  });
+
+  test('while the check runs only the header Done shows; a result announces its note on iOS', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'ios';
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    try {
+      let resolve!: (v: typeof OK) => void;
+      mocked(api.checkHealth).mockReturnValue(new Promise((r) => (resolve = r)));
+      await arrive([3]);
+      await waitFor(() => expect(screen.getByText('Looking at your plant…')).toBeTruthy());
+      expect(screen.getAllByRole('button', { name: 'Done' })).toHaveLength(1);
+      await act(async () => resolve(OK));
+      await screen.findByText('Brown tips.');
+      expect(announce).toHaveBeenCalledWith('Brown tips.');
+      expect(screen.getAllByRole('button', { name: 'Done' })).toHaveLength(2);
+    } finally {
+      Platform.OS = os;
+      announce.mockRestore();
+    }
+  });
+
+  test('a failure announces its error on iOS', async () => {
+    const os = Platform.OS;
+    Platform.OS = 'ios';
+    const announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => {});
+    try {
+      mocked(api.checkHealth).mockRejectedValueOnce(new Error('boom'));
+      await arrive([3]);
+      await screen.findByText("Couldn't check right now.");
+      expect(announce).toHaveBeenCalledWith("Couldn't check right now.");
+    } finally {
+      Platform.OS = os;
+      announce.mockRestore();
+    }
+  });
+
   test('a remount does not start a second check', async () => {
     await arrive([3]);
     await screen.findByText('Brown tips.');
@@ -520,7 +611,7 @@ describe('step 4: health', () => {
 
   test('without a problem photo it offers a check using the whole photo; Skip leaves it', async () => {
     await arrive();
-    expect(screen.getByText('Want a quick health check?')).toBeTruthy();
+    expect(screen.getByText('Want a quick health check for Fern?')).toBeTruthy();
     expect(api.checkHealth).not.toHaveBeenCalled();
     await press('Check its health now');
     await screen.findByText('Brown tips.');
@@ -605,10 +696,10 @@ describe('step 4: health', () => {
   test('after a save, steps 1 and 2 redirect to step 4', async () => {
     await arrive();
     await act(async () => router.push('/add/photo'));
-    await waitFor(() => expect(screen.getByText('Want a quick health check?')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Want a quick health check for Fern?')).toBeTruthy());
     expect(screen.queryByText('Take a photo of your plant')).toBeNull();
     await act(async () => router.push('/add/identify'));
-    await waitFor(() => expect(screen.getByText('Want a quick health check?')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('Want a quick health check for Fern?')).toBeTruthy());
     expect(screen.queryByText('What kind of plant is it?')).toBeNull();
   });
 });

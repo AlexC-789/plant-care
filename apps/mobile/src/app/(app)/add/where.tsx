@@ -1,6 +1,6 @@
 import { Stack, useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, TextInput } from 'react-native';
 
 import { plantName, typeName, useAddDraft } from '@/plants/addDraft';
 import { deletePhotos } from '@/plants/photos';
@@ -62,7 +62,7 @@ export default function WhereStep() {
   };
 
   return (
-    <View style={styles.flex}>
+    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen options={{ headerRight: saved || create.isPending ? undefined : () => <TextLink label="Cancel" onPress={cancel} /> }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
@@ -89,9 +89,9 @@ export default function WhereStep() {
                   maxLength={40}
                 />
               </Row>
-              <Row label="Nickname">
+              <Row label={type ? 'Nickname' : 'Name'}>
                 <TextInput
-                  accessibilityLabel="Nickname"
+                  accessibilityLabel={type ? 'Nickname' : 'Name'}
                   placeholder={type ?? 'Required'}
                   placeholderTextColor={colors.secondaryLabel}
                   style={[styles.input, typography.body, { color: colors.label }]}
@@ -112,7 +112,7 @@ export default function WhereStep() {
       <BottomBar>
         <Button label="Continue" busy={create.isPending} disabled={!name || create.isPending || saved} onPress={() => void save()} />
       </BottomBar>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

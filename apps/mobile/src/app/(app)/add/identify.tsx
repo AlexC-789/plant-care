@@ -102,7 +102,7 @@ export default function IdentifyStep() {
         )}
       </ScrollView>
       <BottomBar>
-        <Button label="Continue" onPress={() => router.push('/add/where')} />
+        <Button label="Continue" disabled={identify.isPending} onPress={() => router.push('/add/where')} />
       </BottomBar>
     </View>
   );
