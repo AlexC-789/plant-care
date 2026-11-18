@@ -31,8 +31,6 @@ jest.mock('expo-image-picker', () => ({
   launchImageLibraryAsync: jest.fn(),
 }));
 
-// The first render loads every route module (expo-router require.context); cold under a parallel full run.
-jest.setTimeout(20_000);
 const mocked = <T,>(f: T) => f as unknown as jest.Mock;
 const auth = supabase.auth as unknown as Record<string, jest.Mock>;
 const monstera = { id: 's1', common_names: ['Monstera'], scientific_name: 'Monstera deliciosa', description: null, light: null, watering: null };
