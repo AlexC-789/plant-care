@@ -75,6 +75,16 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
           </View>
         </LoadingGroup>
       ) : null}
+      {timeline.isError && !timeline.data ? (
+        <View style={styles.header}>
+          <Text variant="headline" accessibilityRole="header">
+            Timeline
+          </Text>
+          <Text color="secondaryLabel" accessibilityLabel="Timeline not loaded">
+            —
+          </Text>
+        </View>
+      ) : null}
       {photos.length ? (
         <>
           <View style={styles.header}>

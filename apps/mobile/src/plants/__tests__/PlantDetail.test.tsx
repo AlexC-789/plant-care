@@ -222,6 +222,20 @@ test('leaving the health screen before Check deletes the uploaded photos', async
   await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/h1.jpg']));
 });
 
+test('leaving while a check runs keeps the photos: the check puts them on the timeline', async () => {
+  mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
+  await open('/plant/p1');
+  await screen.findByText('Fernando');
+  await press('Check its health');
+  await screen.findByText('Whole plant');
+  await press('Take photo', 0);
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
+  await press('Check');
+  await act(async () => router.back());
+  await screen.findByText('Fernando');
+  expect(photos.deletePhotos).not.toHaveBeenCalled();
+});
+
 test('a camera that rejects shows the failure copy instead of an unhandled rejection', async () => {
   mocked(ImagePicker.launchCameraAsync).mockRejectedValue(new Error('no camera'));
   await open('/plant/p1/health');
@@ -331,6 +345,13 @@ test('Check and Done sit in the bottom bar', async () => {
 });
 
 describe('timeline', () => {
+  test('a failed load with nothing cached shows the section with "—", not an empty timeline', async () => {
+    mocked(api.fetchPlantPhotos).mockRejectedValue(new Error('offline'));
+    await open('/plant/p1');
+    expect(await screen.findByText('Timeline', undefined, { timeout: 5000 })).toBeTruthy(); // after one retry
+    expect(screen.getByLabelText('Timeline not loaded')).toBeTruthy();
+  });
+
   const ph = (i: number, health: object | null = null) => ({
     id: `ph${i}`,
     path: `u/t${i}.jpg`,

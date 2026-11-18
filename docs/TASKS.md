@@ -23,6 +23,8 @@ Tasks 1–6 are built and verified (`docs/CURRENT_STATE.md`). Left:
      `check-health`); a direct REST delete on `plant_photos` skips the RPC's lock (own data only).
    - Viewer duplicates the identify step's `COULDNT` / `LIMIT` copy (`add/identify.tsx`).
    - "What is it?" guards double taps with `isPending` only (the strip uses refs).
+   - A health check that fails after the user left the Health screen leaves orphan objects (shortcut).
+   - Spec §5.1 note: main photo = newest *added*; health-check photos never replace the hero (owner to confirm).
 
 ## Later milestones (P3; product spec §11, in order)
 

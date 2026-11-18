@@ -33,12 +33,12 @@ export default function PhotoViewer() {
   const photos = timeline.data?.pages.flatMap((p) => p.photos) ?? [];
   const urls = Object.assign({}, ...(timeline.data?.pages.map((p) => p.photoUrls) ?? []));
   const wanted = Number(start) || 0;
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = timeline;
+  const { hasNextPage, isFetchingNextPage, fetchNextPage, isFetchNextPageError: fetchFailed } = timeline;
 
   // A start index beyond the loaded pages: keep loading until it is there (or nothing is left).
   useEffect(() => {
-    if (wanted >= photos.length && hasNextPage && !isFetchingNextPage) void fetchNextPage();
-  }, [wanted, photos.length, hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (wanted >= photos.length && hasNextPage && !isFetchingNextPage && !fetchFailed) void fetchNextPage();
+  }, [wanted, photos.length, hasNextPage, isFetchingNextPage, fetchFailed, fetchNextPage]);
 
   if (timeline.isError && !timeline.data) {
     return (
@@ -47,7 +47,8 @@ export default function PhotoViewer() {
       </View>
     );
   }
-  if (!timeline.data || (wanted >= photos.length && hasNextPage)) {
+  // a page that failed to load: show the photos already here (current clamps to the last one)
+  if (!timeline.data || (wanted >= photos.length && hasNextPage && !fetchFailed)) {
     return (
       <LoadingGroup>
         <View style={styles.flex}>
@@ -89,7 +90,7 @@ export default function PhotoViewer() {
 
   const pick = (speciesId: string) =>
     update.mutate(
-      { id, patch: { species_id: speciesId } },
+      { id, patch: { species_id: speciesId, custom_type: null } },
       {
         onSuccess: () => {
           const scanId = suggestions?.scanId;

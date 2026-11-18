@@ -46,6 +46,9 @@ Timeline                                        See all ›
  [Add a photo]
 Health card · About card (unchanged)
 ```
+- Implementation note (2026-11-18, for owner confirmation): the main photo is the newest photo *added*
+  (add flow, Add a photo, or promotion after a delete). Photos taken for a health check from the Health
+  screen join the timeline but don't replace the hero, so a problem-spot close-up never becomes it.
 - Strip: horizontal `FlatList` of 72 pt thumbnails (radius token) with a short date under each; a small
   status dot (status token) on photos with a health result. Tap → viewer at that photo; "See all ›" →
   viewer at the newest. Empty (no photos) → strip hidden, only "Add a photo".

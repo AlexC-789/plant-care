@@ -19,8 +19,9 @@ file is the short, current summary.
     viewer `plant/[id]/photos` (swipe, health result, What is it?, Delete); Edit has no photo controls;
     deleting a plant removes timeline photos too.
   - Reviews (Opus): Task 1 fixes approved; Tasks 2–3 found a two-device delete race → fixed with the
-    RPC, re-review approved. Final whole-branch review: see the PR.
-  - Verified 2026-11-18: Jest 281, typecheck, lint, `fn:test` 72, `db:test` 103, e2e security script
+    RPC, re-review approved. Final whole-branch review: 1 Important (leaving the Health screen mid-check
+    deleted photos the check put on the timeline) + 3 Minors fixed test-first; security pass clean.
+  - Verified 2026-11-18: Jest 284, typecheck, lint, `fn:test` 72, `db:test` 103, e2e security script
     10/10 (Playwright installed outside the repo), web screenshots light + dark. Owner phone check owed.
   - Web dev server: `CI=1 npx expo start --web` does not watch files; restart it after edits.
 

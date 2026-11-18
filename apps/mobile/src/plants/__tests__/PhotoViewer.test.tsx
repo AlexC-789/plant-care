@@ -143,7 +143,7 @@ test('What is it? identifies once, then a pick sets the type and links the scan'
     }),
   );
   await fireEvent.press(await screen.findByRole('button', { name: /Monstera, Monstera deliciosa/ }));
-  await waitFor(() => expect(api.updatePlant).toHaveBeenCalledWith('p1', { species_id: 's1' }));
+  await waitFor(() => expect(api.updatePlant).toHaveBeenCalledWith('p1', { species_id: 's1', custom_type: null }));
   await waitFor(() => expect(api.linkScan).toHaveBeenCalledWith('scan1', 'p1'));
   expect(api.identifyPlant).toHaveBeenCalledTimes(1);
   expect(api.identifyPlant).toHaveBeenCalledWith(['u/0.jpg']);
@@ -159,4 +159,14 @@ test('shows the limit message and the "couldn\'t tell" copy', async () => {
   mocked(api.identifyPlant).mockResolvedValueOnce({ isPlant: false, suggestions: [] });
   await press('What is it?');
   expect(await screen.findByText(COULDNT)).toBeTruthy();
+});
+
+test('a start index whose page fails to load falls back to the photos already loaded', async () => {
+  mocked(api.fetchPlantPhotos).mockImplementation(async (_id: string, p: number) => {
+    if (p > 0) throw new Error('offline');
+    return page(Array.from({ length: PAGE }, (_, k) => photo(k)));
+  });
+  await open(PAGE + 3);
+  expect(await screen.findByText(fmt(day(28 - (PAGE - 1))), undefined, { timeout: 5000 })).toBeTruthy(); // after one retry
+  expect(mocked(api.fetchPlantPhotos).mock.calls.filter(([, p]) => p === 1).length).toBeLessThanOrEqual(2);
 });
