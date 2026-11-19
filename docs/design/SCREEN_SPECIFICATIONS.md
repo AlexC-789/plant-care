@@ -49,6 +49,8 @@ _Status: approved by the owner 2026-11-19. Visuals: [flow-e.html](flow-e.html), 
 
 **Output:** a capture. The photo is re-encoded with `preparePhoto` (≤ 1600 px, JPEG 0.7, no EXIF or GPS).
 
+**Camera permission:** asked when the person taps "Scan a plant", never at launch. The system prompt carries the reason: "Plant Care uses the camera to see your plant and identify it."
+
 ## 3. Result (change: `add/identify`)
 
 **Layout:**
@@ -107,6 +109,8 @@ _Status: approved by the owner 2026-11-19. Visuals: [flow-e.html](flow-e.html), 
 - Email confirmation stays on: "Check your inbox. We sent a link to {email}."
 - Resend has a 60 s cooldown, as built.
 - The guest becomes this account, keeping the same user id.
+
+**"Not now"** (plain button under the link, decided 2026-11-19): neutral wording, never loss-framed. The plant stays on this phone as a guest and the flow continues to Health. Setting up a module later opens this sheet first, with the subhead "Create an account to connect a module to {name}."
 
 **Close (✕ or swipe down):** returns to Name and place. Nothing is lost.
 
@@ -185,7 +189,7 @@ _Status: approved by the owner 2026-11-19. Visuals: [flow-e.html](flow-e.html), 
 
 **Primary:** "Allow notifications". It shows the system prompt.
 
-**Secondary (plain):** "Not now". The question isn't asked again; Settings shows a "Notifications are off" row with "Turn on".
+**Secondary (plain):** "Not now". The question isn't asked again; Settings shows a "Notifications are off" row with "Turn on". "Not now" never triggers the system prompt; only "Allow notifications" does.
 
 ## 11. Plants (Home) (change: `(app)/index`)
 
@@ -210,6 +214,8 @@ _Status: approved by the owner 2026-11-19. Visuals: [flow-e.html](flow-e.html), 
 
 **Paging:** a virtualised list (FlatList), fetched page by page. The counts come from the server, not from loaded pages (this fixes a known issue).
 
+**After adding a plant:** Home opens with the new plant already in the cache (written with `setQueryData` on save), so there is no skeleton or empty state.
+
 **Offline:** the line "Offline. Showing what was last loaded." under the title.
 
 ## 12. Plant page (change: `plant/[id]/index`)
@@ -226,6 +232,23 @@ _Status: approved by the owner 2026-11-19. Visuals: [flow-e.html](flow-e.html), 
    - "Battery": "{n} %"
    - **No module:** the rows are replaced by "Set up a module ›" and "Check its health ›".
 7. **Navigation row:** "Photos and watering history ›".
+
+**Why it isn't watering now.** One subhead line under the tank bar, shown only when the person might expect a drink:
+- "Not watering now: the soil is still damp."
+- "Today's limit is reached (150 ml). It drinks again tomorrow."
+- "Watering is paused until the tank is refilled."
+
+**How watering works ›** is a row above the history row. It opens a sheet in plain words:
+- "{name} gets at most 40 ml at a time and 150 ml a day."
+- "It never pumps when the tank is low."
+- "If two drinks don't make the soil wetter, it stops and asks you to check the stake."
+
+**Resume watering** (fault `no_moisture_rise`, M5). The plant page shows the primary "Resume watering". Tapping it goes through these states:
+1. "Sending…"
+2. "Waiting for the module…" (until its next check-in)
+3. "Watering resumed", once the module confirms.
+
+The plant then leaves Needs you by itself, and the headline reads "Back to normal" until the next status change.
 
 **More (⋯) menu:**
 - "Edit"
@@ -257,7 +280,7 @@ Virtualised and paged. Tapping a photo opens the viewer (exists, M3).
 | Photo viewer | Ink on black, frosted buttons; copy unchanged |
 | Health check (plant) | Uses `CaptureView`, then the Health result layout from screen 6 |
 | Edit | Name, room chips, light choices, species ("Change species" opens search); no photo controls (as built) |
-| Settings | Groups: Account (email, "Sign out", "Delete account"), Appearance (Light / Dark), Notifications. Guests see "Keep your plants" (opens the account sheet) at the top |
+| Settings | Groups: Account (email, "Sign out", "Delete account"), Appearance (Light / Dark), Notifications. Guests see "Keep your plants" (opens the account sheet) at the top; Home shows the same quiet row under the title for guests |
 | Sign in | Large title "Welcome back"; email, password; "Forgot password?"; Apple / Google buttons when enabled |
 | Sign up (email) | Reached only from the account sheet |
 | Email confirmed | Large title "Email confirmed"; body "You can go back to Plant Care now." |

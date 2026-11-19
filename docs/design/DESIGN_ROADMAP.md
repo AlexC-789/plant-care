@@ -57,8 +57,9 @@ These are listed for the owner to decide. None has been changed in code or in th
 | 10 | Add flow order | photo → identify → where → health, all after sign-up | capture → result → name and place → **account** → health → module offer | Model A; health results must be saved to an account |
 | 11 | Plant detail | Photo strip, health card, module rows | Hero, status, tank bar, three rows, history row | Planta-style hierarchy without its chores |
 | 12 | `add/photo` route name | photo | capture | A 3D scan is coming |
+| 13 | CLAUDE.md "Launch" rule and `src/launch` | Draw 0.7 s, rest 0.5 s, fade; about 1.45 s, taps blocked | Draw, then fade when ready; tap to skip; no rest (decided 2026-11-19) | Android guidance is 1 s or less and skippable; QA satisfaction report. Update CLAUDE.md when it's built |
 
-**Recommendation:** approve 1–4, 7–12 with this package. For 5 and 6, wait until M4 is merged, then make them a small follow-up so the M4 session isn't disrupted.
+**Recommendation:** approve 1–4 and 7–13 with this package. For 5 and 6, wait until M4 is merged, then make them a small follow-up so the M4 session isn't disrupted.
 
 ## 4. Open decisions
 
