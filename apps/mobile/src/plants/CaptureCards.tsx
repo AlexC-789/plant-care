@@ -12,13 +12,6 @@ import { DENIED, pickPhoto, type PhotoSource } from './pickPhoto';
 export type Photo = { kind: string; localUri: string; path: string };
 export type CaptureCard = { kind: string; title: string; hint: string; optional?: boolean };
 
-export const ADD_CARDS: CaptureCard[] = [
-  { kind: 'whole', title: 'Whole plant', hint: 'Step back so the whole plant and pot fit' },
-  { kind: 'leaf', title: 'One leaf', hint: 'Fill the frame with one healthy leaf', optional: true },
-  { kind: 'flower', title: 'Flower', hint: "If it's flowering", optional: true },
-  { kind: 'problem', title: 'Problem spot', hint: 'If something looks wrong', optional: true },
-];
-
 /**
  * One card per `cards` entry. A photo is resized and uploaded as soon as it is taken or chosen;
  * replacing or removing one deletes its upload. `onChange` gets the new full list.

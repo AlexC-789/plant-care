@@ -35,10 +35,12 @@ test('colour values match the Direction E table (DESIGN_SYSTEM §1)', () => {
     background: '#F5F5F3', surface: '#FFFFFF', label: '#1F1F1F', secondaryLabel: '#66655F',
     separator: '#E3E3E0', waterFill: '#D9D8D4', water: '#5FAEE3', statusNow: '#D0213B',
     tint: '#1F1F1F', onTint: '#FFFFFF', skeleton: '#ECEBE8', skeletonHighlight: '#F5F5F3',
+    camera: '#000000', onCamera: '#FFFFFF',
   });
   expect(colors.dark).toEqual({
     background: '#161616', surface: '#222221', label: '#F2F2F0', secondaryLabel: '#A3A29C',
     separator: '#2E2E2C', waterFill: '#3A3A38', water: '#7CC0EE', statusNow: '#FF5C70',
     tint: '#F2F2F0', onTint: '#161616', skeleton: '#262625', skeletonHighlight: '#2E2E2C',
+    camera: '#000000', onCamera: '#FFFFFF',
   });
 });

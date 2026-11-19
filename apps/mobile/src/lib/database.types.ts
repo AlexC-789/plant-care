@@ -131,14 +131,14 @@ isOneToOne: false
                   ]
                 },"plants": {
                   Row: {
-                    "created_at": string,"custom_type": string | null,"id": string,"name": string,"photo_path": string | null,"room": string | null,"setup_step": number,"species_id": string | null,"updated_at": string,"user_id": string
+                    "created_at": string,"custom_type": string | null,"id": string,"light": string | null,"name": string,"photo_path": string | null,"room": string | null,"setup_step": number,"species_id": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"custom_type"?: string | null,"id"?: string,"name": string,"photo_path"?: string | null,"room"?: string | null,"setup_step"?: number,"species_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"custom_type"?: string | null,"id"?: string,"light"?: string | null,"name": string,"photo_path"?: string | null,"room"?: string | null,"setup_step"?: number,"species_id"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "created_at"?: string,"custom_type"?: string | null,"id"?: string,"name"?: string,"photo_path"?: string | null,"room"?: string | null,"setup_step"?: number,"species_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "created_at"?: string,"custom_type"?: string | null,"id"?: string,"light"?: string | null,"name"?: string,"photo_path"?: string | null,"room"?: string | null,"setup_step"?: number,"species_id"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {

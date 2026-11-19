@@ -67,7 +67,7 @@ These are listed for the owner to decide. None has been changed in code or in th
 2. **Apple and Google sign-in.** Decided 2026-11-19: deferred to M8. Launch is email only, so the account sheet shows "Continue with email" alone until then.
 3. **A guest plant when signing in to an existing account.** Decided 2026-11-19: add it. After sign-in the app saves the pending plant (re-uploading its photo from the phone) to the existing account. Guest leftovers on the server are cleaned up. The account sheet gets an "I already have an account" link.
 4. **Font asset.** Decided 2026-11-19: Archivo is approved "for now" (static TTFs).
-5. **Light per plant.** Is there a column for it already (product spec §8)? If not, it's a small migration.
+5. **Light per plant.** Decided 2026-11-19: `plants.light` added in Phase 3 (same values as `species.light`).
 6. **Analytics.** The success measures in PRODUCT_VISION §5 can't be tracked today. Add analytics, or drop the targets?
 7. **Paid features.** Which features `useEntitlement()` will gate. The design assumes safety messages and the plant itself are always free.
 8. **The older UI spec.** Mark `2026-11-17-app-ui-design.md` as superseded for visuals once this package is approved. I haven't edited it.

@@ -23,7 +23,8 @@ const STOPS = [
   [1, 0],
 ] as const;
 
-function Frosted({ label, icon, onPress }: { label: string; icon: IconName; onPress: () => void }) {
+/** 44 pt frosted round button for use over photos and the camera. */
+export function Frosted({ label, icon, onPress }: { label: string; icon: IconName; onPress: () => void }) {
   const { scheme } = useTheme();
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.frosted}>
@@ -45,6 +46,7 @@ export function HeroPhoto({
   pills,
   onBack,
   onMore,
+  height = HERO_HEIGHT,
   children,
 }: {
   uri?: string;
@@ -54,6 +56,7 @@ export function HeroPhoto({
   pills: { text: string; red?: boolean }[];
   onBack: () => void;
   onMore?: () => void;
+  height?: number;
   /** Shown when there is no photo (the pot drawing). */
   children?: ReactNode;
 }) {
@@ -62,7 +65,7 @@ export function HeroPhoto({
   const alpha = (a: number) => colors.background + Math.round(a * 255).toString(16).padStart(2, '0');
   const fade = STOPS.map(([, a]) => alpha(a)) as unknown as readonly [string, string, ...string[]];
   return (
-    <View testID="plant-hero" style={[styles.hero, { backgroundColor: loading ? colors.skeleton : colors.surface }]}>
+    <View testID="plant-hero" style={[styles.hero, { height, backgroundColor: loading ? colors.skeleton : colors.surface }]}>
       {uri ? (
         <Image accessibilityLabel={label} source={{ uri, cacheKey }} contentFit="cover" style={StyleSheet.absoluteFill} />
       ) : (
@@ -89,7 +92,7 @@ export function HeroPhoto({
 }
 
 const styles = StyleSheet.create({
-  hero: { height: HERO_HEIGHT, width: '100%', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
+  hero: { width: '100%', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' },
   fade: { position: 'absolute', top: 0, left: 0, right: 0, height: FADE_HEIGHT },
   buttons: { position: 'absolute', left: space.xl, right: space.xl, flexDirection: 'row', justifyContent: 'space-between' },
   frosted: {

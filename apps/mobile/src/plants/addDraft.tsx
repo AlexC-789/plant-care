@@ -1,23 +1,24 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 
-import type { IdentifyResult } from './api';
-import type { Photo } from './CaptureCards';
+import type { IdentifyResult, Light } from './api';
 
 // `scientific` is for names-only hits that have no common name.
 export type Species = { id: string; name: string; scientific?: string } | { custom: string };
+/** What Capture hands on (DESIGN_SYSTEM §8): today one re-encoded JPEG, already uploaded. */
+export type Capture = { localUri: string; path: string };
 export type Draft = {
-  photos: Photo[];
+  capture?: Capture;
   scanId?: string;
   suggestions?: IdentifyResult['suggestions'];
   species?: Species;
-  /** Only what the user typed; the saved name comes from `plantName`. */
-  nickname: string;
+  /** What the user typed; undefined until they touch the field, so it follows the type. */
+  nickname?: string;
   room: string;
+  light: Light;
   plantId?: string;
-  healthStarted?: boolean;
 };
 
-const empty: Draft = { photos: [], nickname: '', room: '' };
+const empty: Draft = { room: '', light: 'medium' };
 const Ctx = createContext<{ draft: Draft; set: (patch: Partial<Draft>) => void } | null>(null);
 
 /** In-memory state of the add flow (a killed app loses it; uploaded orphans are accepted). */
@@ -37,5 +38,8 @@ export function useAddDraft() {
 export const typeName = ({ species }: Draft) =>
   !species ? undefined : 'custom' in species ? species.custom : species.name || species.scientific || undefined;
 
-/** What the plant is saved as: nickname, else the type's name. Undefined when step 3 must ask. */
-export const plantName = (d: Draft) => d.nickname.trim() || typeName(d);
+/** What the name field shows: the typed text, else the type's name. */
+export const nameField = (d: Draft) => d.nickname ?? typeName(d) ?? '';
+
+/** What the plant is saved as; undefined when the name is empty. */
+export const plantName = (d: Draft) => nameField(d).trim() || undefined;

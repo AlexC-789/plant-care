@@ -11,6 +11,8 @@ const SYMBOLS = {
   back: { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' },
   more: { ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' },
   plus: { ios: 'plus', android: 'add', web: 'add' },
+  close: { ios: 'xmark', android: 'close', web: 'close' },
+  help: { ios: 'questionmark', android: 'question_mark', web: 'question_mark' },
   light: { ios: 'sun.max', android: 'light_mode', web: 'light_mode' },
   water: { ios: 'drop', android: 'water_drop', web: 'water_drop' },
   healthy: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },
