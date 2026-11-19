@@ -159,6 +159,55 @@ describe('capture', () => {
     await waitFor(() => expect(screen.queryByText('Fit the whole plant in the frame')).toBeNull());
   });
 
+  // Live Android back listeners (ours and the navigator's), newest first, as Android calls them.
+  const fakeBack = () => {
+    const live: (() => boolean)[] = [];
+    const spy = jest.spyOn(BackHandler, 'addEventListener').mockImplementation((_e, h) => {
+      live.unshift(h as () => boolean);
+      return { remove: () => void live.splice(live.indexOf(h as () => boolean), 1) };
+    });
+    return { spy, press: () => act(async () => void live.find((h) => h())) };
+  };
+
+  test('Android back on the camera deletes the upload like Close', async () => {
+    const back = fakeBack();
+    try {
+      await open();
+      await shoot();
+      await press('Back');
+      await waitFor(() => expect(screen.getByText('Fit the whole plant in the frame')).toBeTruthy());
+      await back.press();
+      expect(photos.deletePhotos).toHaveBeenCalledWith(['u/1.jpg']);
+    } finally {
+      back.spy.mockRestore();
+    }
+  });
+
+  test("Android back on Result never deletes the photo (the camera's listener is off when unfocused)", async () => {
+    const back = fakeBack();
+    try {
+      await open();
+      await shoot();
+      await back.press();
+      expect(photos.deletePhotos).not.toHaveBeenCalled();
+    } finally {
+      back.spy.mockRestore();
+    }
+  });
+
+  test('Close during an upload deletes that upload when it lands and stays closed', async () => {
+    let land!: (p: string) => void;
+    mocked(photos.uploadPhoto).mockReturnValueOnce(new Promise((r) => (land = r)));
+    await open();
+    await press('Take photo');
+    await waitFor(() => expect(photos.uploadPhoto).toHaveBeenCalled());
+    await press('Close');
+    await act(async () => land('u/late.jpg'));
+    await waitFor(() => expect(photos.deletePhotos).toHaveBeenCalledWith(['u/late.jpg']));
+    expect(mockPush).not.toHaveBeenCalledWith('/add/identify');
+    expect(api.identifyPlant).not.toHaveBeenCalled();
+  });
+
   test('Close with nothing taken deletes nothing', async () => {
     await open();
     await press('Close');

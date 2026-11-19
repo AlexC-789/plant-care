@@ -77,7 +77,15 @@ export default function ResultStep() {
                     {latin}
                   </Text>
                 ) : null}
-                {care.data?.description ? <Text style={styles.care}>{care.data.description}</Text> : null}
+                {care.isLoading ? (
+                  <LoadingGroup>
+                    <SkeletonText width="90%" />
+                  </LoadingGroup>
+                ) : care.data?.description ? (
+                  <FadeIn>
+                    <Text style={styles.care}>{care.data.description}</Text>
+                  </FadeIn>
+                ) : null}
               </View>
             </FadeIn>
           ) : message ? (

@@ -100,7 +100,14 @@ export default function WhereStep() {
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Stack.Screen options={{ headerRight: saved || create.isPending ? undefined : () => <TextLink label="Cancel" onPress={cancel} /> }} />
+      {/* While saving, no way back: a Close on Capture then would delete the photo the new plant points at. */}
+      <Stack.Screen
+        options={{
+          gestureEnabled: !create.isPending,
+          headerBackVisible: !create.isPending,
+          headerRight: saved || create.isPending ? undefined : () => <TextLink label="Cancel" onPress={cancel} />,
+        }}
+      />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
