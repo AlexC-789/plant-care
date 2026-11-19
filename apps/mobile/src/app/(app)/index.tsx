@@ -54,7 +54,7 @@ export default function Plants() {
       ? [{ key: 'well', title: need.length ? `${well.length} doing well` : `All ${well.length} doing well`, red: false, data: grid }]
       : []),
   ];
-  const add = () => router.push('/add/photo');
+  const add = () => router.push('/add/capture');
   const open = (r: Item) => () => router.push(`/plant/${r.plant.id}`);
   const props = (r: Item) => ({ plant: r.plant, status: r.status, photoUrl: photoUrls[r.plant.photo_path ?? ''], onPress: open(r) });
 

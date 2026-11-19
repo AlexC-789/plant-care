@@ -10,9 +10,12 @@ export type Scan = Database['public']['Tables']['scans']['Row'];
 /** A Home row: the plant, its module and its species' common names (for "{type}, {room}"). */
 export type PlantWithDevice = Plant & { device: Device | null; species?: { common_names: string[] } | null };
 export type PlantsPage = { plants: PlantWithDevice[]; photoUrls: Record<string, string> };
+/** Light where the plant stands; same values as `species.light` (the add flow offers three). */
+export type Light = 'bright_indirect' | 'medium' | 'low' | 'direct';
 export type NewPlant = {
   name: string;
   room?: string;
+  light?: Light;
   speciesId?: string;
   customType?: string;
   photoPath?: string;
@@ -96,6 +99,7 @@ export async function createPlant(p: NewPlant): Promise<Plant> {
     .insert({
       name: p.name,
       room: p.room,
+      light: p.light,
       species_id: p.speciesId,
       custom_type: p.customType,
       photo_path: p.photoPath,

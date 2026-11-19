@@ -1,108 +1,118 @@
-import { Redirect, Stack, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { Redirect, useRouter } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
-import { deletePhotos } from '@/plants/photos';
-import { typeName, useAddDraft } from '@/plants/addDraft';
-import { useIdentify } from '@/plants/queries';
-import { Suggestions } from '@/plants/Suggestions';
-import { space } from '@/theme';
-import { BottomBar, Button, StepDone, StepProgress, Text, TextLink } from '@/ui';
+import { type Species, useAddDraft } from '@/plants/addDraft';
+import { useIdentify, useSpecies } from '@/plants/queries';
+import { Suggestions, WORDS } from '@/plants/Suggestions';
+import { fonts, space } from '@/theme';
+import { BottomBar, Button, FadeIn, HeroPhoto, LoadingGroup, SkeletonText, Text } from '@/ui';
 
-const COULDNT = "Couldn't tell from this photo. Try one with a whole leaf in view, or search.";
-// The server's own message for a 429; any other failure reads as "couldn't tell".
-const LIMIT = "You've reached the identification limit for now. Search for the plant type, or try again later.";
+const COULDNT = "Couldn't tell what this is.";
+// The server's message for a 429. The limit counts identify and health calls over 24 h, so the copy says no number.
+const SERVER_LIMIT = "You've reached the identification limit for now. Search for the plant type, or try again later.";
+const LIMIT = "You've reached today's limit for identifying plants. Try again tomorrow, or search by name.";
 
-/** Step 2 of 4: what kind of plant. Never blocks Continue. */
-export default function IdentifyStep() {
+/** Result: identifies the capture once, shows the best match large, "This is my plant" or "It's something else". */
+export default function ResultStep() {
   const router = useRouter();
   const { draft, set } = useAddDraft();
   const identify = useIdentify();
   const [message, setMessage] = useState<string | null>(null);
-  const [skipped, setSkipped] = useState(false);
+  const [others, setOthers] = useState(false);
+  const started = useRef(false); // one identify per capture: a remount comes with a new capture
 
-  const { species } = draft;
-  const type = typeName(draft);
-  // A names-only pick has no common name, so its title already is the scientific name.
-  const scientific = species && 'id' in species && species.scientific !== type ? species.scientific : undefined;
-  const hasWhole = draft.photos.some((p) => p.kind === 'whole');
+  const { capture, suggestions } = draft;
+  useEffect(() => {
+    if (!capture || suggestions || started.current) return;
+    started.current = true;
+    identify.mutate([capture.path], {
+      onSuccess: (r) =>
+        r.isPlant && r.suggestions.length
+          ? set({ scanId: r.scanId, suggestions: r.suggestions.slice(0, 3) })
+          : setMessage(COULDNT),
+      onError: (e) => setMessage(e.message === SERVER_LIMIT ? LIMIT : COULDNT),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- starts once on mount
+  }, []);
 
-  const apply = (s: { speciesId: string; commonName: string; scientificName: string }) =>
+  const top = suggestions?.[0];
+  // The person's pick (an alternative or a search result) wins over the top match.
+  const shown: Species | undefined =
+    draft.species ?? (top && { id: top.speciesId, name: top.commonName, scientific: top.scientificName });
+  const shownId = shown && 'id' in shown ? shown.id : undefined;
+  const match = suggestions?.find((s) => s.speciesId === shownId);
+  const name = !shown ? undefined : 'custom' in shown ? shown.custom : shown.name || shown.scientific;
+  const latin = shown && 'id' in shown && shown.scientific !== name ? shown.scientific : undefined;
+  const care = useSpecies(shownId);
+  const listOthers = !!suggestions && (others || top?.confidence === 'possibly');
+
+  const search = () => {
+    setOthers(false); // a search pick comes back as the result itself
+    router.push('/add/search');
+  };
+  const pick = (s: NonNullable<typeof top>) => {
     set({ species: { id: s.speciesId, name: s.commonName, scientific: s.scientificName } });
-
-  const runIdentify = () => {
-    setMessage(null);
-    identify.mutate(
-      // The problem photo is for the health check only; identify takes whole, leaf and flower.
-      draft.photos.filter((p) => p.kind !== 'problem').map((p) => p.path),
-      {
-        onSuccess: (r) => {
-          if (r.isPlant && r.suggestions.length) {
-            set({ scanId: r.scanId, suggestions: r.suggestions.slice(0, 3) });
-            if (r.suggestions[0].confidence === 'very_likely') apply(r.suggestions[0]);
-          } else setMessage(COULDNT);
-        },
-        onError: (e) => setMessage(e.message === LIMIT ? LIMIT : COULDNT),
-      },
-    );
+    setOthers(false);
   };
 
-  const cancel = () => {
-    void deletePhotos(draft.photos.map((p) => p.path)).catch(() => {});
-    router.dismissTo('/');
-  };
-
-  // The plant is saved: going back here must not touch its photos.
+  // The plant is saved: going back here must not touch its photo.
   if (draft.plantId) return <Redirect href="/add/health" />;
+  if (!capture) return <Redirect href="/add/capture" />;
 
   return (
     <View style={styles.flex}>
-      <Stack.Screen options={{ headerRight: () => <TextLink label="Cancel" onPress={cancel} /> }} />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <StepProgress step={2} />
-        <Text variant="largeTitle" accessibilityRole="header">
-          What kind of plant is it?
-        </Text>
-        {hasWhole && !draft.scanId ? (
-          <Button
-            label="Identify from my photo"
-            variant="line"
-            busy={identify.isPending}
-            disabled={identify.isPending}
-            onPress={runIdentify}
-          />
-        ) : null}
-        <Button label="I know it — search" variant="line" onPress={() => router.push('/add/search')} />
-        {message ? (
-          <Text variant="footnote" color="statusNow" accessibilityRole="alert">
-            {message}
-          </Text>
-        ) : null}
-        {draft.suggestions?.length ? (
-          <Suggestions
-            suggestions={draft.suggestions}
-            selected={species && 'id' in species ? species.id : undefined}
-            onPick={apply}
-            onSearch={() => router.push('/add/search')}
-          />
-        ) : null}
-        {type ? (
-          <StepDone title={`It's a ${type}.`}>
-            {scientific ? (
-              <Text variant="subheadline" color="secondaryLabel">
-                {scientific}
-              </Text>
-            ) : null}
-          </StepDone>
-        ) : (
-          <>
-            {skipped ? <Text color="secondaryLabel">Not sure? You can set it later.</Text> : null}
-            <Button label="Skip" variant="plain" onPress={() => setSkipped(true)} />
-          </>
-        )}
+      <ScrollView contentInsetAdjustmentBehavior="never">
+        <HeroPhoto uri={capture.localUri} label="Your plant" loading={false} pills={[]} height={360} onBack={() => router.back()} />
+        <View style={styles.content}>
+          {name ? (
+            <FadeIn>
+              <View style={styles.text}>
+                {match ? <Text variant="footnote" color="secondaryLabel">{WORDS[match.confidence]}</Text> : null}
+                <Text variant="display" accessibilityRole="header">
+                  {name}
+                </Text>
+                {latin ? (
+                  <Text variant="subheadline" color="secondaryLabel" style={{ fontFamily: fonts.italic }}>
+                    {latin}
+                  </Text>
+                ) : null}
+                {care.data?.description ? <Text style={styles.care}>{care.data.description}</Text> : null}
+              </View>
+            </FadeIn>
+          ) : message ? (
+            <Text variant="title" accessibilityRole="alert">
+              {message}
+            </Text>
+          ) : (
+            <LoadingGroup>
+              <SkeletonText variant="footnote" width="25%" />
+              <SkeletonText variant="display" width="70%" />
+              <SkeletonText variant="subheadline" width="45%" />
+            </LoadingGroup>
+          )}
+          {listOthers ? <Suggestions suggestions={suggestions} selected={shownId} onPick={pick} onSearch={search} /> : null}
+        </View>
       </ScrollView>
       <BottomBar>
-        <Button label="Continue" disabled={identify.isPending} onPress={() => router.push('/add/where')} />
+        {name || !message ? (
+          <>
+            <Button
+              label="This is my plant"
+              disabled={!shown}
+              onPress={() => {
+                set({ species: shown });
+                router.push('/add/where');
+              }}
+            />
+            <Button label="It's something else" variant="plain" onPress={() => (suggestions ? setOthers(true) : search())} />
+          </>
+        ) : (
+          <>
+            <Button label="Try another photo" onPress={() => router.back()} />
+            <Button label="Search by name" variant="plain" onPress={search} />
+          </>
+        )}
       </BottomBar>
     </View>
   );
@@ -110,5 +120,7 @@ export default function IdentifyStep() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  content: { padding: space.l, gap: space.l },
+  content: { paddingHorizontal: space.xl, paddingTop: space.xl, paddingBottom: space.xl, gap: space.xl },
+  text: { gap: space.xs },
+  care: { marginTop: space.s },
 });

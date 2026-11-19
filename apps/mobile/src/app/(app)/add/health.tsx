@@ -6,7 +6,6 @@ import { AccessibilityInfo, BackHandler, Platform, ScrollView, StyleSheet, View 
 import type { HealthResult as Result } from '@/plants/api';
 import { plantName, useAddDraft } from '@/plants/addDraft';
 import { HealthResult } from '@/plants/HealthResult';
-import { deletePhotos } from '@/plants/photos';
 import { useCheckHealth, useHealthCheckStatus } from '@/plants/queries';
 import { radius, space } from '@/theme';
 import { BottomBar, Button, StepProgress, Text, TextLink } from '@/ui';
@@ -14,40 +13,22 @@ import { BottomBar, Button, StepProgress, Text, TextLink } from '@/ui';
 // The server's own message for a 429; any other failure reads as "couldn't check".
 const LIMIT = "You've reached the health check limit for now. Try again later.";
 
-/** Step 4 of 4: an optional health check. The plant already exists, so every way out keeps it. */
+/** Step 3 of 3: an optional health check of the capture. The plant already exists, so every way out keeps it. */
 export default function HealthStep() {
   const router = useRouter();
-  const { draft, set } = useAddDraft();
-  const { plantId = '' } = draft;
+  const { draft } = useAddDraft();
+  const { plantId = '', capture } = draft;
   const check = useCheckHealth();
   const status = useHealthCheckStatus(plantId);
 
-  const whole = draft.photos.find((p) => p.kind === 'whole');
-  const problem = draft.photos.find((p) => p.kind === 'problem');
-  // The ref guards re-runs of the effect; the draft flag survives a remount. One check, one credit.
-  const started = useRef(!!draft.healthStarted);
   const busy = useRef(false); // two taps in one frame start one check
   const run = () => {
-    if (busy.current) return;
+    if (busy.current || !capture) return;
     busy.current = true;
-    started.current = true;
-    set({ healthStarted: true });
-    check.mutate(
-      { plantId, photoPaths: [whole, problem].flatMap((p) => (p ? [p.path] : [])) },
-      { onSettled: () => (busy.current = false) },
-    );
+    check.mutate({ plantId, photoPaths: [capture.path] }, { onSettled: () => (busy.current = false) });
   };
-  useEffect(() => {
-    if (plantId && problem && !started.current) run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- starts once on mount
-  }, []);
 
-  const done = () => {
-    // A failed check counts as no check: its problem-spot photo is not kept.
-    if (status?.status === 'error' && problem) void deletePhotos([problem.path]).catch(() => {});
-    router.dismissTo('/');
-    router.push(`/plant/${plantId}`);
-  };
+  const done = () => router.replace('/add/module-offer');
   useEffect(() => {
     if (Platform.OS === 'web') return; // react-native-web's BackHandler throws
     const sub = BackHandler.addEventListener('hardwareBackPress', () => (done(), true));
@@ -63,23 +44,26 @@ export default function HealthStep() {
     if (spoken && Platform.OS === 'ios') AccessibilityInfo.announceForAccessibility(spoken);
   }, [spoken]);
 
-  if (!plantId) return <Redirect href="/add/photo" />;
+  if (!plantId) return <Redirect href="/add/capture" />;
 
-  // With a problem photo the check is about to start (or running); otherwise offer it.
-  const offer = !result && status?.status !== 'pending' && (failed || !problem || draft.healthStarted);
-
-  const photo = (
-    <Image accessibilityLabel="Your plant" source={{ uri: (problem ?? whole)?.localUri }} style={styles.photo} />
-  );
+  const running = status?.status === 'pending';
+  const photo = <Image accessibilityLabel="Your plant" source={{ uri: capture?.localUri }} style={styles.photo} />;
 
   return (
     <View style={styles.flex}>
       <Stack.Screen options={{ headerRight: () => <TextLink label="Done" onPress={done} /> }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <StepProgress step={4} />
+        <StepProgress step={3} total={3} />
         {result ? (
-          <HealthResult result={result} photoUri={(problem ?? whole)?.localUri} />
-        ) : offer ? (
+          <HealthResult result={result} photoUri={capture?.localUri} />
+        ) : running ? (
+          <>
+            {photo}
+            <Text variant="largeTitle" accessibilityLiveRegion="polite">
+              Looking at your plant…
+            </Text>
+          </>
+        ) : (
           <>
             {photo}
             <Text variant="largeTitle" accessibilityRole="header">
@@ -94,24 +78,17 @@ export default function HealthStep() {
               </Text>
             ) : null}
           </>
-        ) : (
-          <>
-            {photo}
-            <Text variant="largeTitle" accessibilityLiveRegion="polite">
-              Looking at your plant…
-            </Text>
-          </>
         )}
       </ScrollView>
       <BottomBar>
-        {offer ? (
+        {result ? (
+          <Button label="Done" onPress={done} />
+        ) : running ? null : (
           <>
             <Button label={failed ? 'Try again' : 'Check its health now'} onPress={run} />
             <Button label="Skip for now" variant="plain" onPress={done} />
           </>
-        ) : result ? (
-          <Button label="Done" onPress={done} />
-        ) : null}
+        )}
       </BottomBar>
     </View>
   );

@@ -1,12 +1,13 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 
-import { radius, space, useTheme } from '@/theme';
+import { fonts, radius, space, useTheme } from '@/theme';
 import { Button, Icon, Text } from '@/ui';
 
 import type { IdentifyResult } from './api';
 
 type Suggestion = IdentifyResult['suggestions'][number];
-const WORDS = { very_likely: 'Very likely', likely: 'Likely', possibly: 'Possibly' } as const;
+/** Confidence in words (SCREEN_SPECIFICATIONS §3); the server's cutoffs stay 0.7 / 0.35. */
+export const WORDS = { very_likely: 'Very likely', likely: 'Probably', possibly: 'Might be' } as const;
 
 /** "Is it one of these?": tapping a row picks it (`selected` is the applied species id); never percentages. */
 export function Suggestions({
@@ -36,14 +37,17 @@ export function Suggestions({
           style={[styles.row, { backgroundColor: colors.surface }]}>
           <View style={styles.text}>
             <Text variant="headline">{s.commonName}</Text>
-            <Text variant="subheadline" color="secondaryLabel">
-              {s.scientificName} · {WORDS[s.confidence]}
+            <Text variant="subheadline" color="secondaryLabel" style={{ fontFamily: fonts.italic }}>
+              {s.scientificName}
+            </Text>
+            <Text variant="footnote" color="secondaryLabel">
+              {WORDS[s.confidence]}
             </Text>
           </View>
           {s.speciesId === selected ? <Icon name="checkmark" size={18} color="tint" /> : null}
         </Pressable>
       ))}
-      <Button label="None of these, search instead" variant="plain" onPress={onSearch} />
+      <Button label="Search by name" variant="plain" onPress={onSearch} />
     </View>
   );
 }

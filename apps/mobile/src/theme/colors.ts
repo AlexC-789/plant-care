@@ -15,7 +15,10 @@ export type ColorToken =
   | 'water'
   | 'waterFill'
   | 'skeleton'
-  | 'skeletonHighlight';
+  | 'skeletonHighlight'
+  // Capture: the camera is black and its marks white in both schemes.
+  | 'camera'
+  | 'onCamera';
 
 export type ColorScheme = 'light' | 'dark';
 export type Palette = Record<ColorToken, string>;
@@ -34,6 +37,8 @@ export const colors: Record<ColorScheme, Palette> = {
     waterFill: '#D9D8D4',
     skeleton: '#ECEBE8',
     skeletonHighlight: '#F5F5F3',
+    camera: '#000000',
+    onCamera: '#FFFFFF',
   },
   dark: {
     background: '#161616',
@@ -48,5 +53,7 @@ export const colors: Record<ColorScheme, Palette> = {
     waterFill: '#3A3A38',
     skeleton: '#262625',
     skeletonHighlight: '#2E2E2C',
+    camera: '#000000',
+    onCamera: '#FFFFFF',
   },
 };

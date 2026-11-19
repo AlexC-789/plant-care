@@ -99,14 +99,14 @@ test('empty state: No plants yet, and Scan a plant opens the add flow', async ()
   expect(screen.getByText('No plants yet')).toBeTruthy();
   expect(screen.getByText('Scan a plant to add it.')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Scan a plant' }));
-  expect(mockPush).toHaveBeenCalledWith('/add/photo');
+  expect(mockPush).toHaveBeenCalledWith('/add/capture');
 });
 
 test('the toolbar + is "Add a plant" and opens the add flow', async () => {
   loaded([plant('a', 'Fern')]);
   await openHome();
   await fireEvent.press(screen.getByRole('button', { name: 'Add a plant' }));
-  expect(mockPush).toHaveBeenCalledWith('/add/photo');
+  expect(mockPush).toHaveBeenCalledWith('/add/capture');
 });
 
 test('need-you rows: name, "{type}, {room}" and the status sentence; a row opens its plant', async () => {
@@ -216,8 +216,8 @@ test('refetches when Home regains focus, not on first open', async () => {
   loaded([plant('a', 'Fern')]);
   await openHome();
   expect(refetch).not.toHaveBeenCalled();
-  await act(async () => router.push('/add/photo'));
-  expect(screen).toHavePathname('/add/photo');
+  await act(async () => router.push('/add/capture'));
+  expect(screen).toHavePathname('/add/capture');
   await act(async () => router.back());
   expect(screen).toHavePathname('/');
   await waitFor(() => expect(refetch).toHaveBeenCalled());
