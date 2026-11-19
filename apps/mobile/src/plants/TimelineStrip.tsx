@@ -105,7 +105,7 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
             }}
             renderItem={({ item, index }) => {
               const taken = new Date(item.taken_at);
-              const dot = item.health && (item.health.healthy ? 'statusFine' : item.health.healthy === false ? 'statusNow' : 'statusQuiet');
+              const dot = item.health && (item.health.healthy ? 'label' : item.health.healthy === false ? 'statusNow' : 'secondaryLabel');
               return (
                 <Pressable
                   accessibilityRole="button"
@@ -119,7 +119,7 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
                     style={[styles.thumb, { backgroundColor: colors.skeleton }]}
                   />
                   {dot ? <View testID="timeline-dot" style={[styles.dot, { backgroundColor: colors[dot], borderColor: colors.surface }]} /> : null}
-                  <Text variant="caption1" color="secondaryLabel">
+                  <Text variant="footnote" color="secondaryLabel">
                     {taken.toLocaleDateString(undefined, SHORT)}
                   </Text>
                 </Pressable>
@@ -131,17 +131,17 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
       {offer ? (
         <View style={styles.stack}>
           <Text variant="subheadline">Added to the timeline.</Text>
-          <Button label="Check its health" variant="bordered" onPress={check} />
+          <Button label="Check its health" variant="line" onPress={check} />
           <Button label="Not now" variant="plain" onPress={() => setOffer(null)} />
         </View>
       ) : choosing ? (
         <View style={styles.stack}>
-          <Button label="Take photo" variant="bordered" busy={busy} disabled={busy} onPress={() => void add('camera')} />
-          <Button label="Choose from library" variant="bordered" disabled={busy} onPress={() => void add('library')} />
+          <Button label="Take photo" variant="line" busy={busy} disabled={busy} onPress={() => void add('camera')} />
+          <Button label="Choose from library" variant="line" disabled={busy} onPress={() => void add('library')} />
           <Button label="Cancel" variant="plain" disabled={busy} onPress={() => setChoosing(false)} />
         </View>
       ) : (
-        <Button label="Add a photo" variant="bordered" onPress={() => setChoosing(true)} />
+        <Button label="Add a photo" variant="line" onPress={() => setChoosing(true)} />
       )}
       {denied ? (
         <View style={styles.stack}>

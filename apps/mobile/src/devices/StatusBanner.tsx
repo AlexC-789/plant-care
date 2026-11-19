@@ -24,11 +24,10 @@ export function StatusBanner({ status, device, plantId }: { status: Status; devi
   const resume = useResumeWatering(plantId);
   const [now] = useState(() => Date.now());
   if (!status.banner && status.key !== 'setup') return null;
-  const bg = status.level === 'now' ? colors.nowFill : status.level === 'soon' ? colors.soonFill : colors.surface;
   const canResume = status.key === 'fault' && device?.fault_code === 'no_moisture_rise';
   const next = device && new Date(Math.max(now, new Date(device.last_seen_at ?? device.created_at).getTime() + device.sync_interval_s * 1000));
   return (
-    <View style={[styles.banner, { backgroundColor: bg }]}>
+    <View style={[styles.banner, { backgroundColor: colors.surface }]}>
       <Text variant="headline">{HEADLINE[status.key]}</Text>
       <Text variant="subheadline">{status.banner ?? 'Add its module to start watering automatically.'}</Text>
       {status.key === 'setup' ? <Button label="Add its module" onPress={() => router.push(`/plant/${plantId}/module`)} /> : null}

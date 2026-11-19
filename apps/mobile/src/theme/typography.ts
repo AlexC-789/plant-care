@@ -1,32 +1,36 @@
-import { Platform, type TextStyle } from 'react-native';
+import type { TextStyle } from 'react-native';
 
-/** The iOS system serif (New York), with the nearest equivalent elsewhere. */
-export const serifFamily = Platform.select({
-  ios: 'ui-serif',
-  android: 'serif',
-  default: 'ui-serif, "New York", "Iowan Old Style", Georgia, serif',
-});
+/**
+ * Archivo, bundled as static fonts (SIL OFL, assets/fonts/OFL.txt). Each weight is its own family:
+ * custom fonts ignore `fontWeight` on Android, so styles never set it.
+ */
+export const fonts = {
+  regular: 'Archivo-Regular',
+  italic: 'Archivo-Italic',
+  semiBold: 'Archivo-SemiBold',
+  condensed: 'ArchivoCondensed-ExtraBold',
+} as const;
 
-export type TextStyleName =
-  | 'largeTitle'
-  | 'title'
-  | 'title3'
-  | 'headline'
-  | 'body'
-  | 'callout'
-  | 'subheadline'
-  | 'footnote'
-  | 'caption1';
+/** Loaded by the root layout before the first screen (expo-font). */
+export const fontFiles = {
+  [fonts.regular]: require('../../assets/fonts/Archivo-Regular.ttf'),
+  [fonts.italic]: require('../../assets/fonts/Archivo-Italic.ttf'),
+  [fonts.semiBold]: require('../../assets/fonts/Archivo-SemiBold.ttf'),
+  [fonts.condensed]: require('../../assets/fonts/ArchivoCondensed-ExtraBold.ttf'),
+};
 
-/** Sizes are defaults; the system text-size setting scales them (never capped). */
+export type TextStyleName = 'display' | 'largeTitle' | 'title' | 'headline' | 'body' | 'subheadline' | 'footnote';
+
+/**
+ * DESIGN_SYSTEM §2. Condensed is for plant names and screen titles only. Tracking is em × size.
+ * Sizes are defaults; the system text-size setting scales them (never capped).
+ */
 export const typography: Record<TextStyleName, TextStyle> = {
-  largeTitle: { fontFamily: serifFamily, fontSize: 34, lineHeight: 41, fontWeight: '500' },
-  title: { fontFamily: serifFamily, fontSize: 28, lineHeight: 34, fontWeight: '500' },
-  title3: { fontFamily: serifFamily, fontSize: 20, lineHeight: 25, fontWeight: '500' },
-  headline: { fontSize: 17, lineHeight: 22, fontWeight: '600' },
-  body: { fontSize: 17, lineHeight: 22, fontWeight: '400' },
-  callout: { fontSize: 16, lineHeight: 21, fontWeight: '400' },
-  subheadline: { fontSize: 15, lineHeight: 20, fontWeight: '400' },
-  footnote: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
-  caption1: { fontSize: 12, lineHeight: 16, fontWeight: '400' },
+  display: { fontFamily: fonts.condensed, fontSize: 40, lineHeight: 40, letterSpacing: -0.4 },
+  largeTitle: { fontFamily: fonts.condensed, fontSize: 32, lineHeight: 34, letterSpacing: -0.16 },
+  title: { fontFamily: fonts.condensed, fontSize: 21, lineHeight: 24 },
+  headline: { fontFamily: fonts.semiBold, fontSize: 17, lineHeight: 22 },
+  body: { fontFamily: fonts.regular, fontSize: 17, lineHeight: 24 },
+  subheadline: { fontFamily: fonts.regular, fontSize: 15, lineHeight: 20 },
+  footnote: { fontFamily: fonts.regular, fontSize: 13, lineHeight: 18, letterSpacing: 0.065 },
 };

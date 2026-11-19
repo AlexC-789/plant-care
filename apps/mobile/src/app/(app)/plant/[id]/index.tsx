@@ -14,7 +14,7 @@ import { HealthCard } from '@/plants/HealthCard';
 import { signPhotoUrls } from '@/plants/photos';
 import { useLatestHealth, usePlant, useSpecies } from '@/plants/queries';
 import { TimelineStrip } from '@/plants/TimelineStrip';
-import { radius, space, useTheme } from '@/theme';
+import { fonts, radius, space, useTheme } from '@/theme';
 import { Button, FadeIn, LoadingGroup, PotDrawing, Skeleton, SkeletonRow, SkeletonText, Text } from '@/ui';
 
 function MenuButton({ onPress }: { onPress: () => void }) {
@@ -26,7 +26,7 @@ function MenuButton({ onPress }: { onPress: () => void }) {
       accessibilityLabel="More options"
       onPress={onPress}
       style={[styles.menuButton, { backgroundColor: colors.surface }]}>
-      <Text variant="title3" color="tint">
+      <Text variant="title" color="tint">
         …
       </Text>
     </Pressable>
@@ -117,7 +117,7 @@ export default function PlantDetail() {
         {plant ? (
           <FadeIn style={styles.stack}>
             <View style={styles.titles}>
-              <Text variant="title" accessibilityRole="header">
+              <Text variant="display" accessibilityRole="header">
                 {plant.name}
               </Text>
               {subtitle || plant.room ? (
@@ -147,13 +147,13 @@ export default function PlantDetail() {
           </FadeIn>
         ) : loading ? (
           <LoadingGroup>
-            <SkeletonText variant="title" width="50%" />
+            <SkeletonText variant="display" width="50%" />
             <SkeletonText variant="subheadline" width="35%" />
             <View style={styles.gap} />
             <Skeleton height={96} radius={radius.group} />
           </LoadingGroup>
         ) : (
-          <Text variant="title" accessibilityRole="header">
+          <Text variant="display" accessibilityRole="header">
             —
           </Text>
         )}
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   body: { padding: space.l, gap: space.l },
   stack: { gap: space.xxl },
   titles: { gap: space.xs },
-  italic: { fontStyle: 'italic' },
+  italic: { fontFamily: fonts.italic },
   gap: { height: space.l },
   confirm: { padding: space.l, gap: space.s, maxWidth: 280 },
   menuButton: { width: space.touch, height: space.touch, borderRadius: radius.capsule, alignItems: 'center', justifyContent: 'center' },

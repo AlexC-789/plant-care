@@ -1,11 +1,13 @@
 import { act, render, screen } from '@testing-library/react-native';
 import { AccessibilityInfo, Platform, StyleSheet } from 'react-native';
 
+import { colors, resetAppearanceForTests } from '@/theme';
 import { StepDone, StepProgress, Text } from '@/ui';
 
 let reduceMotion = false;
 beforeEach(() => {
   reduceMotion = false;
+  resetAppearanceForTests('light');
   jest.spyOn(AccessibilityInfo, 'isReduceMotionEnabled').mockImplementation(async () => reduceMotion);
 });
 afterEach(() => jest.restoreAllMocks());
@@ -17,6 +19,13 @@ test('StepProgress says which step, with the earlier segments filled', async () 
   expect(screen.getByRole('progressbar', { name: 'Step 2 of 4' })).toBeTruthy();
   const filled = [1, 2, 3, 4].map((n) => screen.getByTestId(`segment-${n}`).props.accessibilityState.checked);
   expect(filled).toEqual([true, true, false, false]);
+});
+
+test('StepProgress is ink on the water track', async () => {
+  await render(<StepProgress step={2} />);
+  expect(flat('segment-1').backgroundColor).toBe(colors.light.label);
+  expect(flat('fill-2').backgroundColor).toBe(colors.light.label);
+  expect(flat('segment-3').backgroundColor).toBe(colors.light.waterFill);
 });
 
 test('StepProgress current segment grows in, or starts filled with Reduce Motion', async () => {

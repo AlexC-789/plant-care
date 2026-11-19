@@ -151,12 +151,12 @@ export default function PhotoViewer() {
             <Text variant="body" accessibilityRole="alert">
               Delete this photo? This can&apos;t be undone.
             </Text>
-            <Button label="Delete" variant="bordered" destructive busy={del.isPending} disabled={del.isPending} onPress={remove} />
+            <Button label="Delete" variant="line" destructive busy={del.isPending} disabled={del.isPending} onPress={remove} />
             <Button label="Cancel" variant="plain" disabled={del.isPending} onPress={() => setConfirming(false)} />
           </>
         ) : (
           <>
-            <Button label="What is it?" variant="bordered" busy={identify.isPending} disabled={identify.isPending} onPress={whatIsIt} />
+            <Button label="What is it?" variant="line" busy={identify.isPending} disabled={identify.isPending} onPress={whatIsIt} />
             <Button label="Delete photo" variant="plain" onPress={() => setConfirming(true)} />
           </>
         )}

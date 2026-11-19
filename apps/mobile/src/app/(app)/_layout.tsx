@@ -3,7 +3,7 @@ import { Platform, Pressable, View } from 'react-native';
 
 import { useSession } from '@/auth/AuthProvider';
 import { CloseButton } from '@/navigation/CloseButton';
-import { serifFamily, space, useTheme } from '@/theme';
+import { fonts, space, typography, useTheme } from '@/theme';
 import { Icon } from '@/ui';
 
 // Settings is a sheet over Plants, even when opened directly from a link.
@@ -66,14 +66,14 @@ export default function AppLayout() {
           headerLargeTitle: true,
           headerLargeTitleShadowVisible: false,
           headerLargeTitleStyle: {
-            fontFamily: serifFamily,
+            fontFamily: fonts.condensed,
             color: colors.label,
           },
-          // Large titles are iOS-only; elsewhere the serif title sits in the bar.
+          // Large titles are iOS-only; elsewhere the condensed title sits in the bar.
           headerTitleStyle:
             Platform.OS === 'ios'
               ? { color: colors.label }
-              : { fontFamily: serifFamily, fontSize: 28, color: colors.label },
+              : { fontFamily: fonts.condensed, fontSize: typography.largeTitle.fontSize, color: colors.label },
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
               <AddButton />

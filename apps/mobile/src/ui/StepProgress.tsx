@@ -3,7 +3,7 @@ import { Animated, View } from 'react-native';
 
 import { motion, radius, space, useReduceMotion, useTheme } from '@/theme';
 
-/** Segmented "Step n of total" bar; the current segment fills from the left. */
+/** Segmented "Step n of total" bar, ink on the water track; the current segment fills from the left. */
 export function StepProgress({ step, total = 4 }: { step: 1 | 2 | 3 | 4; total?: number }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
@@ -42,7 +42,7 @@ export function StepProgress({ step, total = 4 }: { step: 1 | 2 | 3 | 4; total?:
             height: 4,
             borderRadius: radius.capsule,
             overflow: 'hidden',
-            backgroundColor: n < step ? colors.statusFine : colors.separator,
+            backgroundColor: n < step ? colors.label : colors.waterFill,
           }}
         >
           {n === step && (
@@ -50,7 +50,7 @@ export function StepProgress({ step, total = 4 }: { step: 1 | 2 | 3 | 4; total?:
               testID={`fill-${n}`}
               style={{
                 flex: 1,
-                backgroundColor: colors.statusFine,
+                backgroundColor: colors.label,
                 ...(reduceMotion ? {} : { transform: [{ scaleX: grow }] }),
                 transformOrigin: 'left',
               }}

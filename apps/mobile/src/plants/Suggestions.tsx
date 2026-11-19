@@ -23,7 +23,7 @@ export function Suggestions({
   const { colors } = useTheme();
   return (
     <View style={styles.list}>
-      <Text variant="title3" accessibilityRole="header">
+      <Text variant="title" accessibilityRole="header">
         Is it one of these?
       </Text>
       {suggestions.map((s) => (

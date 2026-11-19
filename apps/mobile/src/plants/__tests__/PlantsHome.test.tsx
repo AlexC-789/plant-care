@@ -150,13 +150,13 @@ test('the dot colour follows the level', async () => {
   await openHome();
   const [now, fine] = screen.getAllByTestId('status-dot');
   expect(now).toHaveStyle({ backgroundColor: colors.light.statusNow });
-  expect(fine).toHaveStyle({ backgroundColor: colors.light.statusFine });
+  expect(fine).toHaveStyle({ backgroundColor: colors.light.secondaryLabel });
 });
 
 test('the status marker is a solid dot (the Material font has no filled circle)', async () => {
   loaded([plant('a', 'Fern')]);
   await openHome();
-  expect(screen.getByTestId('status-dot')).toHaveStyle({ backgroundColor: colors.light.statusQuiet });
+  expect(screen.getByTestId('status-dot')).toHaveStyle({ backgroundColor: colors.light.secondaryLabel });
 });
 
 test('long, emoji and right-to-left names render in full (they wrap)', async () => {

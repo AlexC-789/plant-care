@@ -17,13 +17,17 @@ type Props = {
   testID?: string;
 };
 
-/** One row in an InsetGroup. At accessibility text sizes the value wraps under the label. */
+/**
+ * One row (DESIGN_SYSTEM §4): label in secondary, value in ink with tabular figures; a navigation
+ * row (chevron) or a row with only a label has an ink label. At accessibility sizes the value wraps under the label.
+ */
 export function Row({ label, value, accessory = 'none', onPress, destructive, children, testID }: Props) {
   const stacked = useIsAccessibilitySize();
+  const inkLabel = (value === undefined && !children) || accessory === 'chevron';
   const content = (
     <>
       <Text
-        color={destructive ? 'statusNow' : 'label'}
+        color={destructive ? 'statusNow' : inkLabel ? 'label' : 'secondaryLabel'}
         style={stacked ? undefined : value === undefined && !children ? styles.labelFill : styles.label}>
         {label}
       </Text>
@@ -31,7 +35,7 @@ export function Row({ label, value, accessory = 'none', onPress, destructive, ch
         stacked ? <View style={styles.stretch}>{children}</View> : children
       ) :
         (value !== undefined ? (
-          <Text color="secondaryLabel" style={stacked ? undefined : styles.value}>
+          <Text style={[styles.figures, stacked ? undefined : styles.value]}>
             {value}
           </Text>
         ) : null)}
@@ -71,6 +75,7 @@ const styles = StyleSheet.create({
   // No value: the label takes the row so accessories sit at the trailing edge.
   labelFill: { flex: 1 },
   value: { flex: 1, textAlign: 'right' },
+  figures: { fontVariant: ['tabular-nums'] },
   pressed: { opacity: 0.6 },
   stretch: { alignSelf: 'stretch' },
 });

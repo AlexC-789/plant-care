@@ -16,23 +16,29 @@ describe.each(['light', 'dark'] as const)('%s theme', (scheme) => {
     },
   );
 
-  test('text on the tint button is readable', () => {
+  test('text on the ink button is readable', () => {
     expect(contrastRatio(c.onTint, c.tint)).toBeGreaterThanOrEqual(4.5);
   });
 
-  test('banner text is readable on its fill', () => {
-    expect(contrastRatio(c.label, c.nowFill)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(c.label, c.soonFill)).toBeGreaterThanOrEqual(4.5);
+  test('buttons are ink, not a brand colour', () => {
+    expect(c.tint).toBe(c.label);
   });
 });
 
-test('colour values match the design table', () => {
-  expect(colors.light).toMatchObject({
-    background: '#F4F1EB', surface: '#FFFDF9', label: '#1D1B18', secondaryLabel: '#5E5950',
-    separator: '#E3DDD3', tint: '#2E5B47', statusNow: '#A3392B', water: '#3F6A82',
+// The light water line (1.7:1) is soft on purpose and always paired with words (DESIGN_SYSTEM §1).
+test('dark water line stands out from its track (≥ 3:1)', () => {
+  expect(contrastRatio(colors.dark.water, colors.dark.waterFill)).toBeGreaterThanOrEqual(3);
+});
+
+test('colour values match the Direction E table (DESIGN_SYSTEM §1)', () => {
+  expect(colors.light).toEqual({
+    background: '#F5F5F3', surface: '#FFFFFF', label: '#1F1F1F', secondaryLabel: '#66655F',
+    separator: '#E3E3E0', waterFill: '#D9D8D4', water: '#5FAEE3', statusNow: '#D0213B',
+    tint: '#1F1F1F', onTint: '#FFFFFF', skeleton: '#ECEBE8', skeletonHighlight: '#F5F5F3',
   });
-  expect(colors.dark).toMatchObject({
-    background: '#161412', surface: '#221F1B', label: '#F2EEE7', secondaryLabel: '#B5AEA3',
-    separator: '#3A352F', tint: '#8FC0A4', onTint: '#0F2419', statusNow: '#EF8A78',
+  expect(colors.dark).toEqual({
+    background: '#161616', surface: '#222221', label: '#F2F2F0', secondaryLabel: '#A3A29C',
+    separator: '#2E2E2C', waterFill: '#3A3A38', water: '#7CC0EE', statusNow: '#FF5C70',
+    tint: '#F2F2F0', onTint: '#161616', skeleton: '#262625', skeletonHighlight: '#2E2E2C',
   });
 });

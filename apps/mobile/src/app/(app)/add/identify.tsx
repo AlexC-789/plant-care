@@ -60,19 +60,19 @@ export default function IdentifyStep() {
       <Stack.Screen options={{ headerRight: () => <TextLink label="Cancel" onPress={cancel} /> }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <StepProgress step={2} />
-        <Text variant="title" accessibilityRole="header">
+        <Text variant="largeTitle" accessibilityRole="header">
           What kind of plant is it?
         </Text>
         {hasWhole && !draft.scanId ? (
           <Button
             label="Identify from my photo"
-            variant="bordered"
+            variant="line"
             busy={identify.isPending}
             disabled={identify.isPending}
             onPress={runIdentify}
           />
         ) : null}
-        <Button label="I know it — search" variant="bordered" onPress={() => router.push('/add/search')} />
+        <Button label="I know it — search" variant="line" onPress={() => router.push('/add/search')} />
         {message ? (
           <Text variant="footnote" color="statusNow" accessibilityRole="alert">
             {message}

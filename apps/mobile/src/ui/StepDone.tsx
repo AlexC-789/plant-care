@@ -54,14 +54,14 @@ export function StepDone({ title, children }: { title: string; children?: ReactN
             borderRadius: 32,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: colors.statusFine,
+            backgroundColor: colors.tint,
           }}
         >
           <Icon name="checkmark" size={32} color="onTint" />
         </View>
       </Enter>
       <Enter delay={motion.stagger}>
-        <Text variant="title" style={{ textAlign: 'center' }}>
+        <Text variant="largeTitle" style={{ textAlign: 'center' }}>
           {title}
         </Text>
       </Enter>
