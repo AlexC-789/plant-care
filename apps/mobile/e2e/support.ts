@@ -153,13 +153,14 @@ export async function signIn(page: Page, u: TestUser): Promise<void> {
 // Earlier stack screens stay mounted (hidden), so click the visible one.
 export const clickVisible = (page: Page, name: string) => page.getByRole('button', { name, exact: true }).filter({ visible: true }).click();
 
-export async function startSim(o: { code: string; name: string; scenario?: string; from?: '1d' | '6h'; speed?: number }): Promise<{ stop(): Promise<void> }> {
+export async function startSim(o: { code: string; name: string; scenario?: string; from?: '1d' | '6h'; speed?: number }): Promise<{ stop(): Promise<void>; exited: Promise<number | null> }> {
   const args = [SIM, '--claim', o.code, '--name', o.name, '--url', process.env.SUPABASE_URL!];
   if (o.scenario) args.push('--scenario', o.scenario);
   if (o.from) args.push('--from', o.from);
   if (o.speed) args.push('--speed', String(o.speed));
   const child = spawn('node', args, { stdio: 'ignore' });
   return {
+    exited: new Promise((resolve) => child.once('exit', resolve)),
     async stop() {
       child.kill();
       rmSync(join(SIM_DEVICES, `${o.name}.json`), { force: true });
