@@ -1,6 +1,6 @@
 # Current state
 
-_Last updated: 2026-11-18 (M4 done on `m4-devices`, PR to `main` open; hosted deploy waits for the owner)._
+_Last updated: 2026-11-19 (Direction E Phase 3 add flow on `design-e-add`, PR open; depends on #14)._
 Update this file at the end of every substantial task. Detail and history live in
 `docs/LOCAL_MIGRATION_HANDOFF.md` (cloud → local handoff, 2026-11-18) and the specs/plans; this
 file is the short, current summary.
@@ -12,6 +12,24 @@ file is the short, current summary.
   hosted PG 17; without an `apikey` header an unknown code → 404 and an unknown secret → 410, so the
   gateway, the tables and the service_role grants work). Owner phone check on mobile data still owed.
   The CLI login lacks `database_write`: `db push` needs `--password=…` (the `=` form; the password starts with `-`).
+- **Direction E redesign, Phase 3 Add flow** (branch `design-e-add` = `design-e-foundation` + `main`; PR depends on
+  #14, which brings Phases 1–2 to `main`; 2026-11-19). Specs: SCREEN_SPECIFICATIONS §2–4, §7; DESIGN_SYSTEM §8.
+  - Flow: `add/capture` (was `add/photo`) → `add/identify` (Result) → `add/where` (Name and place, saves) →
+    `add/health` → `add/module-offer` → Home or `plant/[id]/module`. Account step and health-after-account are Phase 4.
+  - `CaptureView` (`src/plants/CaptureView.tsx`, new dep `expo-camera`, photo mode; mic and barcode off in the
+    plugin): corner marks, tips, Photos (library), shutter, camera-denied state. One capture replaces the four photo
+    cards; `preparePhoto` still re-encodes every photo; retake deletes the replaced upload, Close/Cancel delete it.
+  - Result identifies once on arrival; words Very likely / Probably / Might be (server cutoffs 0.7 / 0.35 unchanged,
+    owner); care line = `species.description`; alternatives inline, Search by name.
+  - DB: `plants.light` (same 4 values as `species.light`; insert/update granted to authenticated; pgTAP incl.
+    cross-user). Bright → `bright_indirect`. Applied locally with `migration up`; **not yet pushed to hosted**.
+  - Owner decisions 2026-11-19: add expo-camera; add `plants.light`; words only; module offer always shown.
+  - Limit copy avoids "20 plants" (the limit counts identify and health calls over 24 h).
+  - Review (Opus): 2 Important (Android back on Capture skipped Close; Close during an upload orphaned it) +
+    2 Minor (swipe back during save; care line loading) fixed test-first.
+  - Verified 2026-11-19: Jest 331, typecheck, lint, `db:test` 171, `fn:test` 122, `sim:test` 7; web screenshots
+    light + dark (identify stubbed; the QA fake Plant.id gave no match). Not checked on a phone.
+  - Also fixed: `plant_photos.test.sql` test 21 matched any row ending in `b1.jpg` (failed on the shared QA DB).
 - **Direction E redesign, Phase 2 Home + plant page** (branch `design-e-home`, stacked on Phase 1; 2026-11-19).
   Specs: SCREEN_SPECIFICATIONS §11–12, UX_ARCHITECTURE §6 (latest design commit `cb52776` on `design-direction-e`,
   not yet on `main`). `status.ts`: one sentence per plant plus a plant-page headline + line, no middle dots;

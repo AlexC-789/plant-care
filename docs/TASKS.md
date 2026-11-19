@@ -52,8 +52,17 @@ T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when neede
 - [x] Phase 2 Home + plant page (branch `design-e-home`, stacked on Phase 1 and M4).
 - [ ] Phase 2 leftovers (need M5 data): Last drink row, "about {n} days", Today's limit line, Watering resumed /
   Back to normal, Pause watering. Also server-side Home counts and the offline line.
-- [ ] Phase 3 Add flow (CaptureView, `add/photo` → `add/capture`). Phase 4 First run (Opus security review).
-  Phases 5–7: History, Notifications, 3D scan.
+- [x] Phase 3 Add flow (branch `design-e-add`, PR depends on #14).
+- [ ] Phase 3 follow-ups: **owner** push `20261119120000_plants_light.sql` to hosted before the app ships; check
+  on a device: in-app camera on iOS/Android, `statusBarStyle: 'light'` over the camera, permission text;
+  Edit plant has no light choice yet; alternatives have no thumbnails (Plant.id images not passed through);
+  the web header still shows a back arrow on Health and the module offer (native hides it).
+- [ ] Phase 2 visual fixes (QA visual check 2026-11-19, 11 items; from the `plant-care-ea` session): Home loading
+  skeleton shaped like PlantRow; plant page Latin name variant/colour; needs-you status sentence `headline`;
+  grid tiles reserve the water line slot; plant page hairline right margin; ⋯ menu edge, rows and destructive
+  confirm; empty Home "Scan a plant" in BottomBar; no-photo placeholder; TankBar left label secondary; `+` disc 44;
+  frosted buttons on web (check on device first).
+- [ ] Phase 4 First run (Opus security review). Phases 5–7: History, Notifications, 3D scan.
 - [ ] Owner: open decision 8 (mark `2026-11-17-app-ui-design.md` superseded; CLAUDE.md still points UI to it).
 
 ## Later milestones (P3; product spec §11, in order)

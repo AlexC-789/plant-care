@@ -113,7 +113,8 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
   `device-claim`/`device-sync` have `verify_jwt = false` and are deployed with `--no-verify-jwt`. Module rules and
   compiled limits live in `supabase/functions/_shared/watering.ts` (the firmware port follows it; the twin's
   conversions are in `_shared/twin.ts`). 410 twice in a row = unpaired. App jest runs with `maxWorkers: '50%'`.
-- Add flow = four step screens in `src/app/(app)/add/` (photo, identify, where, health) with `StepProgress` / `StepDone`; motion tokens in `src/theme/motion.ts`.
+- Add flow = `src/app/(app)/add/`: capture (`CaptureView`, expo-camera) → identify (Result) → where (saves) → health →
+  module-offer, with `StepProgress` / `StepDone`; motion tokens in `src/theme/motion.ts`.
 - Press handlers stay synchronous (`void doAsync()`); RNTL awaits async handlers.
 - Watering safety limits (≤ 40 ml/dose, ≤ 150 ml/24 h, never pump when float switch is low,
   stop after 2 doses with no moisture rise) live in firmware and the shared watering module.
