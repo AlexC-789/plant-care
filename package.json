@@ -17,7 +17,9 @@
     "fn:test": "for d in supabase/functions/*/; do deno test --config $d/deno.json --allow-read --allow-env --allow-net=jsr.io,registry.npmjs.org $d || exit 1; done",
     "sim:test": "node --test sim/sim_test.ts",
     "e2e": "npm run e2e -w apps/mobile --",
-    "e2e:pr": "npm run e2e:pr -w apps/mobile --"
+    "e2e:pr": "npm run e2e:pr -w apps/mobile --",
+    "qa:coverage": "node scripts/check-flow-coverage.mjs",
+    "qa:test": "node --test scripts/check-flow-coverage.test.mjs"
   },
   "devDependencies": {
     "deno": "^2.9.6",

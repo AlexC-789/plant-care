@@ -177,6 +177,16 @@ Connect → Fill the tank → Notifications → Plants.
 | J7 | Speed: time to first screen, time to content, no layout jumps | Web, Native |
 | J8 | iOS vs Android differences (back button, header styles, keyboard) | Native |
 
+## Not covered by e2e
+
+Read by `npm run qa:coverage`; one `- <ID>: <reason>` per line.
+
+- F6: fn:test + sim:test (watering limits)
+- I3: db:test (column grants)
+- F8: not built (M7)
+- A5: native, stage 2
+- D3: native, stage 2
+
 ---
 
 Not covered by any flow on purpose: subscriptions/paywall (RevenueCat comes later), real module
