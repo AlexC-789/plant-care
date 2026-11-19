@@ -20,7 +20,7 @@
     "e2e:pr": "npm run e2e:pr -w apps/mobile --",
     "e2e:speed": "npm run e2e:speed -w apps/mobile --",
     "qa:coverage": "node scripts/check-flow-coverage.mjs",
-    "qa:test": "node --test scripts/check-flow-coverage.test.mjs apps/mobile/e2e/serve-static.test.mjs"
+    "qa:test": "node --test scripts/check-flow-coverage.test.mjs apps/mobile/e2e/serve-static.test.mjs apps/mobile/e2e/fake-plantid.test.mjs"
   },
   "devDependencies": {
     "deno": "^2.9.6",

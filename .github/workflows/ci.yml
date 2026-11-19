@@ -47,7 +47,7 @@ jobs:
       - run: npm ci
       - run: npm run qa:test
       - run: npm run qa:coverage
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -56,10 +56,10 @@ jobs:
       - name: Point Edge Functions at the fake Plant.id (never the real API)
         run: |
           printf 'PLANT_ID_BASE_URL=http://host.docker.internal:8787\nPLANT_ID_API_KEY=fake\n' > supabase/functions/.env
-      - run: npx supabase start
+      - run: npx supabase start -x studio,postgres-meta,logflare,vector,realtime
       - run: npm run e2e:pr
       - if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-pr-report
           path: |

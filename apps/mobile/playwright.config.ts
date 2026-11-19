@@ -30,6 +30,7 @@ export default defineConfig({
   testDir: 'e2e',
   testMatch: '**/*.spec.ts', // not fake-plantid.test.mjs (node:test)
   globalSetup: './e2e/global-setup.ts',
+  expect: { timeout: process.env.CI ? 10_000 : 5_000 },
   retries: process.env.CI ? 1 : 0,
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }], ['github']] : [['list'], ['html', { open: 'never' }]],

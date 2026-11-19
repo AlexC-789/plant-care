@@ -27,7 +27,10 @@ async function fillAndSubmit(page: Page, email: string, password: string, button
 async function signUp(page: Page, email: string) {
   created.push(email);
   await page.goto('/sign-up');
+  // The hook, MX lookup and SMTP round trip can outlast the default expect timeout: wait on the response first.
+  const signup = page.waitForResponse((r) => r.url().includes('/auth/v1/signup'), { timeout: 15_000 });
   await fillAndSubmit(page, email, PASSWORD, 'Create account');
+  expect((await signup).ok()).toBe(true);
   await expect(page.getByText(`We sent a confirmation link to ${email}. Confirm your email, then sign in.`)).toBeVisible();
 }
 

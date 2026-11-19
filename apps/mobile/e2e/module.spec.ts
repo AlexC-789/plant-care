@@ -1,18 +1,14 @@
 import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, test, signIn, clickVisible, startSim, type Admin, type TestUser } from './support';
+import { expect, test, signIn, clickVisible, startSim, openDetail, type Admin, type TestUser } from './support';
 import type { Page } from '@playwright/test';
 
 const CODE = /^[A-Z0-9]{4} [A-Z0-9]{4} [A-Z0-9]{4}$/;
 const SIM_DEVICES = join(__dirname, '../../../sim/.devices');
 const simName = () => `e2e-${randomUUID().slice(0, 8)}`;
 const count = async (admin: Admin, path: string) => ((await (await admin.rest(`/rest/v1/${path}`)).json()) as unknown[]).length;
-
-async function openDetail(page: Page, name: string) {
-  await page.getByRole('button', { name: new RegExp(`^${name},`) }).filter({ visible: true }).click();
-  await expect(page.getByRole('heading', { name })).toBeVisible();
-}
+test.describe.configure({ mode: 'parallel' }); // each test has its own user and sim, so the 120 s ones overlap
 
 /** Sign in, open a plant without a module and go to its setup screen; returns the code shown. */
 async function openSetup(page: Page, user: TestUser, admin: Admin, name: string): Promise<{ plantId: string; code: string }> {

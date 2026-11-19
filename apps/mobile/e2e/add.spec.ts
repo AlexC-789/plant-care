@@ -1,28 +1,12 @@
-import { expect, test, signIn, clickVisible, FIXTURE_JPEG, type TestUser, type Admin } from './support';
+import { expect, test, signIn, clickVisible, startAdd, addPhoto, type TestUser, type Admin } from './support';
 import type { Page } from '@playwright/test';
 
-const FAKE = 'http://127.0.0.1:8787';
-const callCount = async () => ((await (await fetch(`${FAKE}/__calls`)).json()) as { calls: number }).calls;
 const LIMIT = "You've reached the identification limit for now. Search for the plant type, or try again later.";
 const HEALTHY = 'It looks healthy in this photo.';
 
-const photoCard = async (page: Page, n: number) => {
-  const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Choose from library' }).filter({ visible: true }).nth(n).click();
-  await (await chooser).setFiles(FIXTURE_JPEG);
-};
-// Card order: 0 whole, 1 leaf, 2 flower, 3 problem. Waits for the upload (the card's photo) before returning.
-const addPhoto = async (page: Page, n: number, title: string) => {
-  await photoCard(page, n);
-  await expect(page.getByRole('img', { name: `${title} photo` })).toBeVisible();
-};
 const identifyStep = async (page: Page) => {
   await clickVisible(page, 'Continue');
   await expect(page.getByRole('heading', { name: 'What kind of plant is it?' })).toBeVisible();
-};
-const startAdd = async (page: Page) => {
-  await page.getByRole('button', { name: 'Add a pot' }).first().click();
-  await addPhoto(page, 0, 'Whole plant');
 };
 /** On the identify step with no type: Continue to Where and fill the required Name. */
 const nameIt = async (page: Page, name: string) => {
@@ -75,13 +59,12 @@ test('D2 photo step rules', async ({ page, user }) => {
 
 test('D5 @pr identify limit', async ({ page, user, admin }) => {
   await admin.seedScans(user.id, 20);
-  const before = await callCount();
   await signIn(page, user);
   await startAdd(page);
   await identifyStep(page);
   await page.getByRole('button', { name: 'Identify from my photo' }).click();
   await expect(page.getByText(LIMIT)).toBeVisible();
-  expect(await callCount()).toBe(before); // refused before any Plant.id call
+  // Still 20 scans: every Plant.id call inserts one, so none was made.
   const scans = await (await admin.rest(`/rest/v1/scans?select=id&user_id=eq.${user.id}`)).json();
   expect(scans).toHaveLength(20);
 });

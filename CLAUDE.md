@@ -37,7 +37,7 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 `npm test` · `npm run typecheck` · `npm run lint` · `npm run db:start` · `npm run db:reset` ·
 `npm run db:test` · `npm run db:types` · `npm run fn:test` · `npm run sim:test` · `npm run e2e` · `npm run e2e:pr` ·
 `npm run e2e:speed` · `npm run qa:test` · `npm run qa:coverage`. Run all of test/typecheck/lint/db:test/fn:test/sim:test before calling work done.
-`e2e*` need `npm run db:start` first and `PLANT_ID_BASE_URL=http://host.docker.internal:8787` (the fake Plant.id) in `supabase/functions/.env`.
+`e2e*` need `npm run db:start` first and `PLANT_ID_BASE_URL=http://host.docker.internal:8787` (the fake Plant.id) in `supabase/functions/.env` (restart Supabase after editing it).
 Use these root scripts, not the bare commands in `apps/mobile/AGENTS.md` (`typecheck` also generates route types).
 Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Windows npm's
 `script-shell` must be Git Bash. Never report a check as passed unless it ran and passed; name the ones you couldn't run.
