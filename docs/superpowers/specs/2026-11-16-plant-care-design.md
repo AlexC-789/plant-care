@@ -73,9 +73,10 @@ design lives in the hardware document.
   TP4056-type USB-C charger, peristaltic pump via logic-level MOSFET,
   capacitive soil probe v1.2 (GPIO-powered only while reading), reed float
   switch tripping at ~100 ml left, tank ~705 ml.
-- **Water level is estimated, not continuously measured**: water left = full
-  volume − pumped volume since last refill; the float switch only says
-  "low (≤ ~100 ml)" or "not low".
+- **Water level is measured** (amended 2026-11-18, M4, see
+  `2026-11-18-m4-devices-design.md`): a tank level sensor gives water left; the
+  float switch stays as the low-water cut-off ("low (≤ ~100 ml)" / "not low").
+  (Was: estimated from pumped volume.)
 - Hardware prototype is not functioning yet; app work must not wait on it.
 - Plant identification relies on a third-party API (cost per call).
 - Device talks to the cloud over the user's home 2.4 GHz Wi-Fi.
@@ -155,73 +156,41 @@ Supabase.
 
 ### 5.5 Device protocol (shared by simulator and real firmware)
 
-`POST /functions/v1/device-sync`, authenticated with
-`Authorization: Bearer <device secret>` (secret issued at pairing; server
-stores only its hash).
-
-Request (device → cloud):
-```json
-{
-  "firmware_version": "0.1.0",
-  "readings": [
-    { "ts": "2026-11-16T21:00:00Z",
-      "soil_raw": 1830, "soil_pct": 41.2,
-      "float_low": false, "water_left_ml_est": 512,
-      "battery_mv": 3920, "charging": false }
-  ],
-  "events": [
-    { "ts": "2026-11-16T20:45:00Z", "type": "watered", "ml": 40, "runtime_ms": 13200 },
-    { "ts": "2026-11-16T20:10:00Z", "type": "refill_detected" },
-    { "ts": "2026-11-16T19:00:00Z", "type": "fault", "code": "no_moisture_rise" }
-  ]
-}
-```
-Event types: `watered`, `refill_detected`, `tank_low`, `fault`
-(`no_moisture_rise`, `sensor_out_of_range`), `battery_low`, `boot`.
-
-Response (cloud → device):
-```json
-{
-  "plan": { "version": 7, "moisture_min_pct": 35, "moisture_max_pct": 55,
-            "dose_ml": 30, "max_ml_per_day": 120, "min_minutes_between_doses": 60 },
-  "config": { "read_interval_s": 900, "sync_interval_s": 3600,
-              "soil_air_raw": 2900, "soil_wet_raw": 1200,
-              "pump_ml_per_s": 3.0, "tank_full_ml": 705 },
-  "commands": [ { "id": "c1", "type": "set_water_left", "ml": 705 } ]
-}
-```
-- `readings`/`events` are arrays so an offline device uploads its buffer.
-- Device acknowledges commands by id on the next sync.
+*Amended 2026-11-18 (M4, see `2026-11-18-m4-devices-design.md`): replaced by M4 §5.* `device-claim` and `device-sync` (both
+`verify_jwt = false`); the module authenticates with `Authorization: Bearer
+<secret>` (the server stores only its SHA-256). Raw readings and events go up
+(`soil_raw`, `tank_raw`, `float_low`, `battery_mv`, `charging`; the cloud
+converts); the current `fault` is sent on every sync. The full `instructions`
+(`water_when_soil_raw_above`, `pump_ms`, `min_minutes_between_doses`,
+`read_interval_s`, `sync_interval_s`) and un-acked `commands` come back every
+time. (Was: a versioned plan/config with converted values and `set_water_left`.)
 
 ### 5.6 Watering logic and safety (firmware; simulator mirrors it exactly)
-The plan is a **moisture band plus caps**, not a clock schedule:
-- If `soil_pct < moisture_min_pct`, float not low, and caps allow: run the pump
-  for `dose_ml / (pump_ml_per_s × voltage_correction)` seconds.
-- Wait at least `min_minutes_between_doses` before another dose so the water
-  soaks in.
-- Soil % is computed from the per-pot calibration span
-  (`soil_air_raw` → 0 %, `soil_wet_raw` → 100 %).
 
-**Hard limits compiled into firmware (a plan can't exceed them):**
-- Dose ≤ 40 ml; ≤ 150 ml per rolling 24 h.
-- Never pump while the float switch reads low.
-- After 2 doses with no moisture rise: stop watering, raise
-  `fault: no_moisture_rise` (stake out of soil, tube kinked/blocked, pump
-  failure), and wait for the user to clear it in the app.
-- No plan ever received → conservative built-in default plan.
-- No sync for a long time → keep the last plan.
+*Amended 2026-11-18 (M4, see `2026-11-18-m4-devices-design.md`): rules in M4 §5.3, shared code `supabase/functions/_shared/watering.ts`.*
+The module waters when `soil_raw > water_when_soil_raw_above` (the plan is
+still a moisture band, converted to raw by the twin), float not low, no fault,
+and the dose spacing and rolling caps allow it.
 
-**Water-left estimate:** `water_left = tank_full_ml − Σ pumped since last
-refill`. Reset to full when the float switch goes low → not low (refill
-detected). Because a partial top-up while not low isn't detectable, the app
-offers **"I refilled it"**, which sends `set_water_left` (full by default).
-The app always labels the level as an estimate ("≈ 510 ml") and shows the
-float switch's "low" state as authoritative.
+**Hard limits compiled into firmware (a plan can't exceed them):** dose ≤ 40 ml;
+≤ 150 ml per rolling 24 h (both as pump time at a compiled worst-case rate);
+never pump while the float switch reads low; after 2 doses with no moisture
+rise stop and raise `fault: no_moisture_rise` until the user clears it. Safety
+state survives reboots; if it is lost, the day's budget counts as used. No
+instructions ever received: conservative defaults; no sync for a long time:
+keep the last. Failed syncs back off (1, 2, 4, max 6 h) while watering carries on.
+
+**Water left is measured** (M4 §6, `_shared/twin.ts`): tank level sensor raw
+to ml via the device's calibration, null when out of span. The pumped-volume
+estimate, refill-detection reset and "I refilled it" / `set_water_left` are
+dropped. Soil % and battery % are converted in the twin, not on the module.
 
 ### 5.7 Remote commands and firmware updates
-- v1 commands: `unpair` (wipe secret + Wi-Fi, return to setup mode),
-  `set_water_left`, `clear_fault`, `recalibrate_soil`. All apply at next sync.
-- "Water now" deferred.
+- *Amended 2026-11-18 (M4, see `2026-11-18-m4-devices-design.md`):* the only M4 command is `clear_fault`. Unpair = the cloud answers
+  **410** (the device row is gone) twice in a row; the module then wipes its
+  secret and Wi-Fi. `set_water_left` is dropped; `recalibrate_soil` is M7. All
+  apply at next sync.
+- "Water now" deferred (M5: `water_once`, `pause_until`).
 - Over-the-air firmware updates not built in v1, but the firmware uses an
   OTA-capable partition layout from day one.
 
@@ -271,6 +240,8 @@ scan looked healthy; you chose 'default'"). v1 is rules-based.
 
 ## 6. Data model (Postgres)
 
+*Amended 2026-11-18 (M4, see `2026-11-18-m4-devices-design.md`): the device tables follow M4 §7 (`device_claims` added; `readings` and `device_events` hold raw values plus converted ones; `devices` holds the calibration and the latest values; `watering_plans` is M5).*
+
 | Table | Key columns |
 |---|---|
 | `profiles` | user_id, display_name, units, notification prefs, quiet hours, `subscription_status` (v1: manual) |
@@ -294,8 +265,9 @@ without a device (scanned/tracked only).
    health badge, moisture status, water-left bar ("≈ 510 ml · ~9 days"),
    battery icon when low, warning badge for faults or offline.
 3. **Plant detail:** photo, health summary from latest scan, current moisture,
-   water left + "days of water left" (from recent use), "I refilled it"
-   button, battery, 7/30-day moisture chart with watering marks, current plan
+   water left (measured; "days of water left" later), battery (*Amended
+   2026-11-18, M4, see `2026-11-18-m4-devices-design.md`: "I refilled it" dropped*),
+   7/30-day moisture chart with watering marks, current plan
    with its explanation, **Facts & details** (species info), care reminders,
    photo timeline from past scans, rescan button, personalization.
 4. **Scan flow:** camera → upload → results (species suggestions, health) →
@@ -352,7 +324,7 @@ isn't kinked"); new health issue on rescan; care reminders due.
    species facts. (Amended 2026-11-17: identification moved here from milestone 3.)
 3. **Scanning extras:** rescan, photo timeline.
 4. **Devices (simulated):** device-claim, device-sync, simulator, live status,
-   water-left estimate, battery, "I refilled it"; hosted Supabase.
+   measured water left, battery (no "I refilled it", amended 2026-11-18); hosted Supabase.
 5. **Watering plans:** plan generator, plan display, watering preference.
 6. **Alerts & reminders:** push notifications, care reminders, away mode.
 7. **Firmware:** ESP32-C3 firmware with the same protocol, duty cycle, watering
@@ -369,8 +341,8 @@ isn't kinked"); new health issue on rescan; care reminders due.
 
 **Decided:** Expo + Supabase; Plant.id; Wi-Fi + device-initiated HTTPS; battery
 duty cycle with buffered readings; moisture-band plan with firmware hard limits
-from the hardware doc; estimated water level with float-switch reset and "I
-refilled it"; per-pot soil calibration in the app; simulator-first; local
+from the hardware doc; measured water level (M4 amendment) with the float switch as cut-off; "I
+refilled it" dropped; per-pot soil calibration in the app; simulator-first; local
 testing first, stores later; RevenueCat later.
 
 **Builder's calls (marked, owner can override):** 15 min read / 60 min sync

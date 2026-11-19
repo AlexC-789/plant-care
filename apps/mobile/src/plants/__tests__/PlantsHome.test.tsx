@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { act, fireEvent, renderRouter, screen, waitFor } from 'expo-router/testing-library';
 
 import { usePlants } from '@/plants/queries';
@@ -16,10 +17,29 @@ jest.mock('expo-router', () => ({
 }));
 
 const auth = supabase.auth as unknown as Record<string, jest.Mock>;
-const plant = (id: string, name: string, photo_path: string | null = null) => ({
+const plant = (id: string, name: string, photo_path: string | null = null, device: unknown = null) => ({
   id,
   name,
   photo_path,
+  device,
+});
+const ago = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
+const module = (over: Record<string, unknown> = {}) => ({
+  id: 'd1',
+  plant_id: 'p1',
+  created_at: ago(1000),
+  last_seen_at: ago(5),
+  sync_interval_s: 3600,
+  reading_ts: ago(5),
+  soil_pct: 45,
+  water_left_ml: 500,
+  float_low: false,
+  battery_pct: 80,
+  charging: false,
+  fault_code: null,
+  tank_full_ml: 705,
+  resumePending: false,
+  ...over,
 });
 
 const refetch = jest.fn();
@@ -87,9 +107,50 @@ test('rows show name and status line, with the summary; a row opens its plant', 
   expect(screen.getByText('2 need you')).toBeTruthy();
   expect(screen.getByText('Fern')).toBeTruthy();
   expect(screen.getAllByText("Setup isn't finished · Add its module")).toHaveLength(2);
-  expect(screen.queryByText('Needs you')).toBeNull();
   await fireEvent.press(screen.getByRole('button', { name: /^Monstera/ }));
   expect(mockPush).toHaveBeenCalledWith('/plant/b');
+});
+
+test("shows each plant's status line", async () => {
+  loaded([plant('a', 'Fern', null, module({ fault_code: 'no_moisture_rise' }))]);
+  await openHome();
+  expect(screen.getByText('Watering stopped · Check the stake is in the soil')).toBeTruthy();
+});
+
+test('summary counts need you and doing well', async () => {
+  loaded([plant('a', 'Fern', null, module({ float_low: true })), plant('b', 'Aloe', null, module())]);
+  await openHome();
+  expect(screen.getByText('1 need you · 1 doing well')).toBeTruthy();
+  expect(screen.getByText('Needs you')).toBeTruthy();
+  expect(screen.getByText('Doing well')).toBeTruthy();
+});
+
+test('headers hidden when all are fine', async () => {
+  loaded([plant('a', 'Fern', null, module())]);
+  await openHome();
+  expect(screen.getByText('1 doing well')).toBeTruthy();
+  expect(screen.queryByText('Needs you')).toBeNull();
+  expect(screen.queryByText('Doing well')).toBeNull();
+});
+
+test('plants without a module are under Needs you', async () => {
+  loaded([plant('a', 'Fern'), plant('b', 'Aloe', null, module())]);
+  await openHome();
+  expect(screen.getByText('Needs you')).toBeTruthy();
+});
+
+test('headers show when every row needs you', async () => {
+  loaded([plant('a', 'Fern'), plant('b', 'Aloe')]);
+  await openHome();
+  expect(screen.getByText('Needs you')).toBeTruthy();
+});
+
+test('the dot colour follows the level', async () => {
+  loaded([plant('a', 'Fern', null, module({ float_low: true })), plant('b', 'Aloe', null, module())]);
+  await openHome();
+  const [now, fine] = screen.getAllByTestId('status-dot');
+  expect(now).toHaveStyle({ backgroundColor: colors.light.statusNow });
+  expect(fine).toHaveStyle({ backgroundColor: colors.light.statusFine });
 });
 
 test('the status marker is a solid dot (the Material font has no filled circle)', async () => {
@@ -120,6 +181,17 @@ test('does not ask for another page when there is none', async () => {
   await openHome();
   await act(async () => screen.getByTestId('plants-list').props.onEndReached());
   expect(fetchNextPage).not.toHaveBeenCalled();
+});
+
+test('refetches when Home regains focus, not on first open', async () => {
+  loaded([plant('a', 'Fern')]);
+  await openHome();
+  expect(refetch).not.toHaveBeenCalled();
+  await act(async () => router.push('/add/photo'));
+  expect(screen).toHavePathname('/add/photo');
+  await act(async () => router.back());
+  expect(screen).toHavePathname('/');
+  await waitFor(() => expect(refetch).toHaveBeenCalled());
 });
 
 test('pull to refresh refetches', async () => {

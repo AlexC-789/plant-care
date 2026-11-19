@@ -2,6 +2,8 @@
 
 > **Amended 2026-11-17:** the app is light by default with a Light/Dark choice in Settings
 > (see `2026-11-17-appearance-setting-design.md`); it no longer follows the phone's setting.
+>
+> **Amended 2026-11-18 (M4, see `2026-11-18-m4-devices-design.md`):** the tank level is measured, so the vessel line is solid and the "I refilled it" sheet and "Still reads low" state are removed. Give a drink and Pause watering (and their sheets, banners and rules below) are M5; M4 ships Resume watering only.
 
 Date: 2026-11-17
 Status: Draft for owner review
@@ -24,7 +26,7 @@ Builds on: [Software design](2026-11-16-plant-care-design.md), [Hardware v1](../
 
 ## 2. Direction: Glazed Ceramic, with a photo and one sentence
 
-The module is a décor object that sits under a pot, so the app reads like the care card that comes with a good ceramic: warm paper, quiet ink and the owner's own plant photo as the hero. Every pot gets exactly one plain-English sentence that tells the whole story. Colour appears only when something needs a person, so "fine" stays quiet and a problem is visible at a glance. New York (the iOS system serif) is used only for plant names and the one large title per screen. The signature detail is the tank vessel with its water line, shown only on the detail and refill screens. A dashed line marks the estimate and a solid line marks the measured refill point.
+The module is a décor object that sits under a pot, so the app reads like the care card that comes with a good ceramic: warm paper, quiet ink and the owner's own plant photo as the hero. Every pot gets exactly one plain-English sentence that tells the whole story. Colour appears only when something needs a person, so "fine" stays quiet and a problem is visible at a glance. New York (the iOS system serif) is used only for plant names and the one large title per screen. The signature detail is the tank vessel with its water line, shown only on the detail and refill screens. The water line is solid: the level is measured, never estimated (amended 2026-11-18, M4).
 
 Considered and set aside:
 - **"Linen and Light"** (photo-first, sentence-only). Its photo and sentence rule were merged in.
@@ -118,7 +120,6 @@ Shape carries the meaning and colour only confirms it. No emoji anywhere.
   - Toolbar `+` → Add a pot (full-screen cover)
 - **Plant detail**
   - Moisture target → sheet
-  - I refilled it → sheet (medium detent)
   - Give a drink → inline queued row with Cancel
   - "…" menu (UIMenu):
     - Pause watering (1 day, 3 days, a week, until I resume)
@@ -161,7 +162,6 @@ Left out on purpose:
 - Modifiers append to the winning sentence rather than compete with it: "· Drink queued" and "· as of 09:12" for stale data.
 - Home shows a summary line under the title ("3 need you · 3 doing well") and two sections. "Needs you" holds every row with an action for the owner (#1 to #7, plus "Setup isn't finished"). "Doing well" holds #8 and #9. The section headers are dropped when everything is fine.
 - When the phone is offline, the cached list is shown under a grey banner and values are never blanked.
-- If the float switch still reads low after "I refilled it": "Still reads low · Check the tank is pushed in all the way"
 
 ## 6. Actions and safety honesty
 
@@ -173,7 +173,6 @@ Left out on purpose:
   - "Follow plant profile" is the recommended default.
   - "Choose myself" offers three choices: On the dry side, Lightly damp, Evenly moist.
   - There's no "wet" option and no free slider. The copy states the 150 ml/day cap.
-- **I refilled it:** "To the top" is the default. "Only partly" offers ¼, ½ or ¾.
 - **Pause:** the banner says "Starts at the next check-in, by about 14:20" until the module confirms, since it could still water before then. "Resume watering" undoes it.
 - **Forecasts** ("next drink in about…", "lasts about…", "runs out in about…") appear only after 3 days of readings and at least 2 drinks. They are always rounded ("about 2 days", "about a week").
 - **Plant.id** shows up to 3 suggestions, with confidence as words ("Very likely", "Possibly") and never %. Search is always available. On failure: "Couldn't tell from this photo."

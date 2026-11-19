@@ -27,6 +27,7 @@ apps/mobile/          Expo (SDK 58) + Expo Router app, TypeScript strict
   src/test-utils/     supabaseMock for jest.mock('@/lib/supabase')
 supabase/             config.toml, migrations/, tests/database/ (pgTAP),
                       functions/ (Edge Functions, Deno; tests: npm run fn:test)
+sim/                  Node module simulator, zero deps: `node sim/sim.ts --claim CODE`
 ```
 
 Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, don't trust memory).
@@ -34,7 +35,7 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 ## Commands (repo root)
 
 `npm test` · `npm run typecheck` · `npm run lint` · `npm run db:start` · `npm run db:reset` ·
-`npm run db:test` · `npm run db:types` · `npm run fn:test`. Run all of test/typecheck/lint/db:test/fn:test before calling work done.
+`npm run db:test` · `npm run db:types` · `npm run fn:test` · `npm run sim:test`. Run all of test/typecheck/lint/db:test/fn:test/sim:test before calling work done.
 Use these root scripts, not the bare commands in `apps/mobile/AGENTS.md` (`typecheck` also generates route types).
 Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Windows npm's
 `script-shell` must be Git Bash. Never report a check as passed unless it ran and passed; name the ones you couldn't run.
@@ -107,6 +108,11 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
     managed on the timeline (strip + `plant/[id]/photos` viewer), not in Edit.
   - Security proofs (GPS-free upload, no objects left after delete, PNG / >3 MB rejected):
     `node apps/mobile/e2e/m2-security.mjs` (Playwright, local Supabase + `expo start --web --port 8081`).
+- Devices (M4; spec `docs/superpowers/specs/2026-11-18-m4-devices-design.md`): the module secret is stored only as
+  SHA-256; `devices`/`readings`/`device_events` are written only by functions (service role).
+  `device-claim`/`device-sync` have `verify_jwt = false` and are deployed with `--no-verify-jwt`. Module rules and
+  compiled limits live in `supabase/functions/_shared/watering.ts` (the firmware port follows it; the twin's
+  conversions are in `_shared/twin.ts`). 410 twice in a row = unpaired. App jest runs with `maxWorkers: '50%'`.
 - Add flow = four step screens in `src/app/(app)/add/` (photo, identify, where, health) with `StepProgress` / `StepDone`; motion tokens in `src/theme/motion.ts`.
 - Press handlers stay synchronous (`void doAsync()`); RNTL awaits async handlers.
 - Watering safety limits (≤ 40 ml/dose, ≤ 150 ml/24 h, never pump when float switch is low,

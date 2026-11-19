@@ -445,3 +445,11 @@ enabled = true
 
 [functions.search-plants]
 verify_jwt = true
+
+# Called by the watering module (no user); authenticated by a one-time claim code.
+[functions.device-claim]
+verify_jwt = false
+
+# Called by the watering module; authenticated by its device secret.
+[functions.device-sync]
+verify_jwt = false

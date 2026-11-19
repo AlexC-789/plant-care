@@ -5,13 +5,17 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ModuleCard } from '@/devices/ModuleCard';
+import { useDevice, useRemoveDevice } from '@/devices/queries';
+import { StatusBanner } from '@/devices/StatusBanner';
+import { deviceStatus } from '@/devices/status';
 import { AboutPlant } from '@/plants/AboutPlant';
 import { HealthCard } from '@/plants/HealthCard';
 import { signPhotoUrls } from '@/plants/photos';
 import { useLatestHealth, usePlant, useSpecies } from '@/plants/queries';
 import { TimelineStrip } from '@/plants/TimelineStrip';
 import { radius, space, useTheme } from '@/theme';
-import { Button, FadeIn, LoadingGroup, PotDrawing, Skeleton, SkeletonText, Text } from '@/ui';
+import { Button, FadeIn, LoadingGroup, PotDrawing, Skeleton, SkeletonRow, SkeletonText, Text } from '@/ui';
 
 function MenuButton({ onPress }: { onPress: () => void }) {
   const { colors } = useTheme();
@@ -38,6 +42,12 @@ export default function PlantDetail() {
   const { width } = useWindowDimensions();
   const { top } = useSafeAreaInsets();
   const [menu, setMenu] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const deviceQuery = useDevice(id, 30_000);
+  const removeModule = useRemoveDevice(id);
+  const device = deviceQuery.data ?? null;
+  const status = deviceStatus(device, new Date());
+  const closeMenu = () => (setMenu(false), setRemoving(false));
   const { data: plant, isPending: loading } = usePlant(id);
   const species = useSpecies(plant?.species_id).data;
   const health = useLatestHealth(id).data;
@@ -84,11 +94,23 @@ export default function PlantDetail() {
       </View>
       {menu && plant ? (
         <View style={[styles.menu, { top: top + space.touch, backgroundColor: colors.surface }]}>
-          <Button
-            label="Edit plant"
-            variant="plain"
-            onPress={() => (setMenu(false), router.push(`/plant/${id}/edit`))}
-          />
+          {removing && device ? (
+            <View style={styles.confirm}>
+              <Text>Remove the module? Its history is deleted. The module forgets this account at its next check-in.</Text>
+              <Button
+                label="Remove"
+                destructive
+                busy={removeModule.isPending}
+                onPress={() => removeModule.mutate(device.id, { onSuccess: closeMenu })}
+              />
+              <Button label="Cancel" variant="plain" onPress={() => setRemoving(false)} />
+            </View>
+          ) : (
+            <>
+              <Button label="Edit plant" variant="plain" onPress={() => (closeMenu(), router.push(`/plant/${id}/edit`))} />
+              {device ? <Button label="Remove module" variant="plain" destructive onPress={() => setRemoving(true)} /> : null}
+            </>
+          )}
         </View>
       ) : null}
       <View style={styles.body}>
@@ -106,12 +128,19 @@ export default function PlantDetail() {
                 </Text>
               ) : null}
             </View>
-            <View style={[styles.banner, { backgroundColor: colors.soonFill }]}>
-              <Text variant="headline" color="statusSoon">
-                {"Setup isn't finished"}
-              </Text>
-              <Text variant="subheadline">The module steps arrive in the next build.</Text>
-            </View>
+            {deviceQuery.isPending ? (
+              <LoadingGroup>
+                <SkeletonRow />
+                <SkeletonRow />
+              </LoadingGroup>
+            ) : deviceQuery.isError && !deviceQuery.data ? (
+              <ModuleCard device={null} />
+            ) : (
+              <>
+                <StatusBanner status={status} device={device} plantId={id} />
+                {device ? <ModuleCard device={device} /> : null}
+              </>
+            )}
             <TimelineStrip plantId={id} />
             <HealthCard plantId={id} latest={health} />
             {species ? <AboutPlant species={species} /> : null}
@@ -141,7 +170,7 @@ const styles = StyleSheet.create({
   titles: { gap: space.xs },
   italic: { fontStyle: 'italic' },
   gap: { height: space.l },
-  banner: { borderRadius: radius.group, padding: space.l, gap: space.xs },
+  confirm: { padding: space.l, gap: space.s, maxWidth: 280 },
   menuButton: { width: space.touch, height: space.touch, borderRadius: radius.capsule, alignItems: 'center', justifyContent: 'center' },
   menu: { position: 'absolute', right: space.l, borderRadius: radius.group, zIndex: 1 },
 });

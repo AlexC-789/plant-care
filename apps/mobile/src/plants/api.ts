@@ -1,3 +1,4 @@
+import { DEVICE_COLUMNS, type Device } from '@/devices/api';
 import type { Database } from '@/lib/database.types';
 import { supabase } from '@/lib/supabase';
 
@@ -6,7 +7,8 @@ import { deletePhotos, type PreparedPhoto, signPhotoUrls, uploadPhoto } from './
 export type Plant = Database['public']['Tables']['plants']['Row'];
 export type Species = Database['public']['Tables']['species']['Row'];
 export type Scan = Database['public']['Tables']['scans']['Row'];
-export type PlantsPage = { plants: Plant[]; photoUrls: Record<string, string> };
+export type PlantWithDevice = Plant & { device: Device | null };
+export type PlantsPage = { plants: PlantWithDevice[]; photoUrls: Record<string, string> };
 export type NewPlant = {
   name: string;
   room?: string;
@@ -58,13 +60,14 @@ export const pickSpecies = (scientificName: string) =>
 export async function fetchPlantsPage(page: number): Promise<PlantsPage> {
   const { data, error } = await supabase
     .from('plants')
-    .select('*')
+    .select(`*, device:devices(${DEVICE_COLUMNS})`)
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
   if (error) throw error;
-  const paths = data.flatMap((p) => (p.photo_path ? [p.photo_path] : []));
-  return { plants: data, photoUrls: await signPhotoUrls(paths) };
+  const plants = data.map((p) => ({ ...p, device: p.device ? { ...p.device, resumePending: false } : null }));
+  const paths = plants.flatMap((p) => (p.photo_path ? [p.photo_path] : []));
+  return { plants, photoUrls: await signPhotoUrls(paths) };
 }
 
 export async function fetchPlant(id: string): Promise<Plant> {

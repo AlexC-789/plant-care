@@ -1,6 +1,7 @@
 {
   "name": "plant-care",
   "private": true,
+  "type": "module",
   "workspaces": [
     "apps/*"
   ],
@@ -13,7 +14,8 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts",
-    "fn:test": "for d in supabase/functions/*/; do deno test --config $d/deno.json --allow-read --allow-env --allow-net=jsr.io,registry.npmjs.org $d || exit 1; done"
+    "fn:test": "for d in supabase/functions/*/; do deno test --config $d/deno.json --allow-read --allow-env --allow-net=jsr.io,registry.npmjs.org $d || exit 1; done",
+    "sim:test": "node --test sim/sim_test.ts"
   },
   "devDependencies": {
     "deno": "^2.9.6",

@@ -24,10 +24,30 @@ T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when neede
    - A health check that fails after the user left the Health screen leaves orphan objects (shortcut).
    - Spec §5.1 note: main photo = newest *added*; health-check photos never replace the hero (owner to confirm).
 
+## M4 — Devices, simulated (PR open from `m4-devices`)
+
+1. **P1, owner:** hosted deploy done 2026-11-19 (PG 17; functions answer without `apikey`). Left:
+   reset the hosted DB password (it was pasted in a chat); on the phone on mobile data add a module
+   to a plant and run `node sim/sim.ts --claim <code>` (hosted by default) — proves the app's claim
+   (`new_claim_code()` execute) and a real sync on hosted.
+2. Notes for M7 firmware: chunk uploads to ≤ 200 readings per sync if `read_interval_s` < ~430 s;
+   trusted monotonic clock (a forward jump frees the daily budget); persist state before pumping;
+   `battery_low` hysteresis; sync at the next wake after applying a command; tank level sensor part
+   and pump worst-case rate (4.0 ml/s compiled) chosen there; add a `pump_ml_per_s > 0` CHECK when
+   calibration becomes writable.
+3. Recovery path to document in the app later: a claim whose 200 never reached the module → code
+   used, plant shows the module "waiting" → Remove module, make a new code.
+4. Deferred minors (fix when touching that code, test first): Remove-module failure is silent;
+   `fetchDevice` embeds all commands each poll; TankVessel fill overhangs 2 units; code
+   normalisation accepts Unicode case folds / any whitespace; `firmware_version` allows control chars;
+   sim polish (stray key wakes, missing `.env.local` stack trace; sim resume/next-wake-sync changes
+   tested by hand only); StatusBanner's "by about" uses `now` from mount; TankVessel has no
+   `aria-hidden` on web; no test for the `['plants']` invalidation on claim; no retention or rate limit on
+   readings/sync (shortcuts until store readiness). Original product spec §5.9 still lists the old
+   `refill`/`partial-topup` sim scenarios (M4 spec §9 supersedes).
+
 ## Later milestones (P3; product spec §11, in order)
 
-- **M4 Devices (simulated):** device-claim, device-sync, simulator, live status, water-left
-  estimate, battery, "I refilled it"; hosted Supabase (README "Hosted project" steps). Depends on M3.
 - **M5 Watering plans:** generator, plan display, watering preference; inside safety limits.
 - **M6 Alerts & reminders:** push notifications, care reminders, away mode.
 - **M7 Firmware:** ESP32-C3, same protocol and safety limits; pairing + calibration.

@@ -119,9 +119,9 @@ test('Delete asks first (copy, Cancel keeps it), then deletes row + all photos a
   });
   await open();
   await press('Delete plant');
-  expect(screen.getByText("Delete Fernando? Its photos are deleted too. This can't be undone.")).toBeTruthy();
+  expect(screen.getByText("Delete Fernando? Its photos and module are removed too. This can't be undone.")).toBeTruthy();
   await press('Cancel');
-  expect(screen.queryByText(/Its photos are deleted too/)).toBeNull();
+  expect(screen.queryByText(/Its photos and module are removed too/)).toBeNull();
   await press('Delete plant');
   await press('Delete');
   await waitFor(() =>
