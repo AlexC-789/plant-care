@@ -1,6 +1,7 @@
 /**
- * Colour tokens from the app UI design (docs/superpowers/specs/2026-11-17-app-ui-design.md §3).
- * The only place in the app where colour values are written.
+ * Colour tokens, Direction E (docs/design/DESIGN_SYSTEM.md §1): ink on a neutral page, blue only
+ * for water, red only when a person must act. The only place in the app where colour values are written.
+ * `waterFill` is the track (empty part of tank and water lines, inactive progress).
  */
 export type ColorToken =
   | 'background'
@@ -10,15 +11,9 @@ export type ColorToken =
   | 'separator'
   | 'tint'
   | 'onTint'
-  | 'statusFine'
-  | 'statusSoon'
   | 'statusNow'
-  | 'statusQuiet'
   | 'water'
   | 'waterFill'
-  | 'band'
-  | 'nowFill'
-  | 'soonFill'
   | 'skeleton'
   | 'skeletonHighlight';
 
@@ -27,43 +22,31 @@ export type Palette = Record<ColorToken, string>;
 
 export const colors: Record<ColorScheme, Palette> = {
   light: {
-    background: '#F4F1EB',
-    surface: '#FFFDF9',
-    label: '#1D1B18',
-    secondaryLabel: '#5E5950',
-    separator: '#E3DDD3',
-    tint: '#2E5B47',
+    background: '#F5F5F3',
+    surface: '#FFFFFF',
+    label: '#1F1F1F',
+    secondaryLabel: '#66655F',
+    separator: '#E3E3E0',
+    tint: '#1F1F1F',
     onTint: '#FFFFFF',
-    statusFine: '#4A7545',
-    statusSoon: '#8F6210',
-    statusNow: '#A3392B',
-    statusQuiet: '#56606A',
-    water: '#3F6A82',
-    waterFill: '#DCE7EC',
-    band: '#668C60',
-    nowFill: '#F7E4DF',
-    soonFill: '#F6ECD6',
-    skeleton: '#ECE7DE',
-    skeletonHighlight: '#F6F3ED',
+    statusNow: '#D0213B',
+    water: '#5FAEE3',
+    waterFill: '#D9D8D4',
+    skeleton: '#ECEBE8',
+    skeletonHighlight: '#F5F5F3',
   },
   dark: {
-    background: '#161412',
-    surface: '#221F1B',
-    label: '#F2EEE7',
-    secondaryLabel: '#B5AEA3',
-    separator: '#3A352F',
-    tint: '#8FC0A4',
-    onTint: '#0F2419',
-    statusFine: '#8DBB86',
-    statusSoon: '#E0B25A',
-    statusNow: '#EF8A78',
-    statusQuiet: '#A3AEB9',
-    water: '#86B2C9',
-    waterFill: '#2A3A42',
-    band: '#6F9A69',
-    nowFill: '#3A221D',
-    soonFill: '#352A16',
-    skeleton: '#2A2622',
-    skeletonHighlight: '#35302A',
+    background: '#161616',
+    surface: '#222221',
+    label: '#F2F2F0',
+    secondaryLabel: '#A3A29C',
+    separator: '#2E2E2C',
+    tint: '#F2F2F0',
+    onTint: '#161616',
+    statusNow: '#FF5C70',
+    water: '#7CC0EE',
+    waterFill: '#3A3A38',
+    skeleton: '#262625',
+    skeletonHighlight: '#2E2E2C',
   },
 };

@@ -1,4 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query';
+import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Slot, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
@@ -8,7 +9,7 @@ import { AuthProvider, useSession } from '@/auth/AuthProvider';
 import { LaunchAnimation } from '@/launch/LaunchAnimation';
 import { useLaunchGate } from '@/launch/useLaunchGate';
 import { queryClient } from '@/lib/queryClient';
-import { loadStoredAppearance, useAppearanceLoaded, useTheme } from '@/theme';
+import { fontFiles, loadStoredAppearance, useAppearanceLoaded, useTheme } from '@/theme';
 import { ShimmerProvider } from '@/ui';
 
 // Keep the native splash (plain paper) up until the launch animation's first frame is on
@@ -20,6 +21,9 @@ function RootNavigator() {
   const { isLoading } = useSession();
   const { colors } = useTheme();
   const appearanceLoaded = useAppearanceLoaded();
+  // Archivo loads behind the native splash; if it fails, the system font is used rather than blocking.
+  const [fontsLoaded, fontError] = useFonts(fontFiles);
+  const ready = appearanceLoaded && (fontsLoaded || fontError != null);
   const { mounted, fadingOut, onAnimationDone, onExited } = useLaunchGate(isLoading);
 
   // Read the saved Light/Dark choice before showing anything (a few ms; the native splash
@@ -31,10 +35,10 @@ function RootNavigator() {
   // Without a launch animation (e.g. the root remounted), hide the native splash now;
   // otherwise the overlay hides it once its first frame is on screen.
   useEffect(() => {
-    if (appearanceLoaded && !mounted) hideSplash();
-  }, [appearanceLoaded, mounted]);
+    if (ready && !mounted) hideSplash();
+  }, [ready, mounted]);
 
-  if (!appearanceLoaded) return null;
+  if (!ready) return null;
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>

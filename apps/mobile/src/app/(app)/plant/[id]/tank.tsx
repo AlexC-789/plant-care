@@ -33,7 +33,7 @@ export default function TankSetup() {
           <StepDone title="The tank is full." />
         ) : (
           <>
-            <Text variant="title" accessibilityRole="header">
+            <Text variant="largeTitle" accessibilityRole="header">
               Fill the tank
             </Text>
             <Text>Open the cap on the saucer and pour until the water reaches the top of the hole.</Text>

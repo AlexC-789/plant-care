@@ -74,7 +74,7 @@ export default function WhereStep() {
           <StepDone title={room ? `${name} is in the ${room}.` : `${name} is saved.`} />
         ) : (
           <>
-            <Text variant="title" accessibilityRole="header">
+            <Text variant="largeTitle" accessibilityRole="header">
               Where does it live?
             </Text>
             <InsetGroup>

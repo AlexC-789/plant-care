@@ -14,7 +14,7 @@ export { colors, type ColorScheme, type ColorToken, type Palette } from './color
 export { contrastRatio } from './contrast';
 export { motion } from './motion';
 export { radius, space } from './spacing';
-export { serifFamily, typography, type TextStyleName } from './typography';
+export { fontFiles, fonts, typography, type TextStyleName } from './typography';
 
 /** Colours for the user's Appearance choice (light by default; see appearance.ts). */
 export function useTheme(): { scheme: ColorScheme; colors: Palette } {

@@ -47,7 +47,7 @@ export default function Plants() {
   const placeholder = data ? (
     <View style={styles.empty}>
       <PotDrawing />
-      <Text variant="title3" accessibilityRole="header" style={styles.center}>
+      <Text variant="title" accessibilityRole="header" style={styles.center}>
         No plants yet
       </Text>
       <Text variant="subheadline" color="secondaryLabel" style={styles.center}>
@@ -60,7 +60,7 @@ export default function Plants() {
       <Text variant="subheadline" color="secondaryLabel" style={styles.center}>
         {"Couldn't reach Plant Care. Check your connection and try again."}
       </Text>
-      <Button label="Try again" variant="bordered" onPress={() => void refetch()} />
+      <Button label="Try again" variant="line" onPress={() => void refetch()} />
     </View>
   ) : isPending ? (
     <LoadingGroup>

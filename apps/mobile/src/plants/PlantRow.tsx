@@ -7,12 +7,6 @@ import { radius, space, useTheme } from '@/theme';
 import { PotDrawing, Text } from '@/ui';
 
 const PHOTO = 60;
-const STATUS_COLOR = {
-  now: 'statusNow',
-  soon: 'statusSoon',
-  quiet: 'statusQuiet',
-  fine: 'statusFine',
-} as const;
 
 /** One plant on Home with its module's status line. */
 export function PlantRow({
@@ -45,9 +39,9 @@ export function PlantRow({
         </View>
       )}
       <View style={styles.text}>
-        <Text variant="title3">{plant.name}</Text>
+        <Text variant="title">{plant.name}</Text>
         <View style={styles.status}>
-          <View testID="status-dot" style={[styles.dot, { backgroundColor: colors[STATUS_COLOR[status.level]] }]} />
+          <View testID="status-dot" style={[styles.dot, { backgroundColor: status.level === 'now' ? colors.statusNow : colors.secondaryLabel }]} />
           <Text variant="subheadline" style={styles.statusText}>
             {status.line}
           </Text>

@@ -82,7 +82,7 @@ export default function HealthStep() {
         ) : offer ? (
           <>
             {photo}
-            <Text variant="title" accessibilityRole="header">
+            <Text variant="largeTitle" accessibilityRole="header">
               {`Want a quick health check for ${plantName(draft)}?`}
             </Text>
             <Text variant="footnote" color="secondaryLabel">
@@ -97,7 +97,7 @@ export default function HealthStep() {
         ) : (
           <>
             {photo}
-            <Text variant="title" accessibilityLiveRegion="polite">
+            <Text variant="largeTitle" accessibilityLiveRegion="polite">
               Looking at your plant…
             </Text>
           </>

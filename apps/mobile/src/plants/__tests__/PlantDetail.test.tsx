@@ -9,6 +9,7 @@ import * as devices from '@/devices/api';
 import * as api from '@/plants/api';
 import * as photos from '@/plants/photos';
 import { fakeSession } from '@/test-utils/supabaseMock';
+import { colors, fonts } from '@/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports -- jest.mock factories must be self-contained
 jest.mock('@/lib/supabase', () => require('@/test-utils/supabaseMock'));
@@ -256,7 +257,7 @@ test('a failed load with no cache shows a dash, not a guessed value', async () =
   mocked(api.fetchPlant).mockRejectedValue(new Error('x'));
   await open();
   await screen.findByText('—', undefined, { timeout: 5000 });
-  expect(StyleSheet.flatten(screen.getByTestId('plant-hero').props.style).backgroundColor).toBe('#FFFDF9');
+  expect(StyleSheet.flatten(screen.getByTestId('plant-hero').props.style).backgroundColor).toBe(colors.light.surface);
 });
 
 test('health card shows the latest result with its date, and the Check button', async () => {
@@ -399,7 +400,7 @@ test('a plant named like its type shows the scientific name in italics, then the
   mocked(api.fetchPlant).mockResolvedValue({ ...fern, name: 'monstera' });
   await open();
   const sub = await screen.findByText('Monstera deliciosa');
-  expect(StyleSheet.flatten(sub.props.style).fontStyle).toBe('italic');
+  expect(StyleSheet.flatten(sub.props.style).fontFamily).toBe(fonts.italic);
   expect(screen.getByText(/Kitchen/)).toBeTruthy();
 });
 

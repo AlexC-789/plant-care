@@ -38,7 +38,7 @@ export function HealthCard({ plantId, latest }: { plantId: string; latest?: Scan
           Not checked yet.
         </Text>
       )}
-      <Button label="Check its health" variant="bordered" onPress={() => router.push(`/plant/${plantId}/health`)} />
+      <Button label="Check its health" variant="line" onPress={() => router.push(`/plant/${plantId}/health`)} />
       {failed ? (
         <Text variant="footnote" color="statusNow" accessibilityRole="alert">
           {check.error?.message === LIMIT ? LIMIT : "Couldn't check right now. Try again."}
