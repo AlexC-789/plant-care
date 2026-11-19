@@ -9,6 +9,7 @@ import { validatePhotoPaths } from '../_shared/validate.ts';
 
 export interface IdentifyDeps extends Deps {
   plantIdApiKey: string;
+  plantIdBaseUrl?: string;
 }
 
 const LIMIT_MESSAGE = "You've reached the identification limit for now. Search for the plant type, or try again later.";
@@ -86,7 +87,7 @@ export async function handler(req: Request, deps: IdentifyDeps): Promise<Respons
     const scan = { user_id: userId, kind: 'identify', photo_paths: paths };
     let result;
     try {
-      result = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch }).identify(images);
+      result = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch, baseUrl: deps.plantIdBaseUrl }).identify(images);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
       providerStatus = e.status;
@@ -127,5 +128,5 @@ export async function handler(req: Request, deps: IdentifyDeps): Promise<Respons
 }
 
 if (import.meta.main) {
-  Deno.serve((req) => handler(req, { ...envDeps(), plantIdApiKey: Deno.env.get('PLANT_ID_API_KEY') ?? '' }));
+  Deno.serve((req) => handler(req, { ...envDeps(), plantIdApiKey: Deno.env.get('PLANT_ID_API_KEY') ?? '', plantIdBaseUrl: Deno.env.get('PLANT_ID_BASE_URL') }));
 }

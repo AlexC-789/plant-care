@@ -1,4 +1,4 @@
-const BASE = 'https://plant.id/api/v3';
+const DEFAULT_BASE = 'https://plant.id/api/v3';
 const IDENTIFY_DETAILS = 'common_names,description,watering,best_light_condition';
 
 export type Confidence = 'very_likely' | 'likely' | 'possibly';
@@ -49,16 +49,18 @@ export class PlantIdClient {
   private apiKey: string;
   private fetch: typeof fetch;
   private timeoutMs: number;
+  private base: string;
 
-  constructor(opts: { apiKey: string; fetch: typeof fetch; timeoutMs?: number }) {
+  constructor(opts: { apiKey: string; fetch: typeof fetch; timeoutMs?: number; baseUrl?: string }) {
     this.apiKey = opts.apiKey;
     this.fetch = opts.fetch;
     this.timeoutMs = opts.timeoutMs ?? 20_000;
+    this.base = opts.baseUrl || DEFAULT_BASE;
   }
 
   private async call(path: string, init: RequestInit = {}): Promise<Json> {
     try {
-      const res = await this.fetch(`${BASE}${path}`, {
+      const res = await this.fetch(`${this.base}${path}`, {
         ...init,
         headers: { 'Api-Key': this.apiKey, 'content-type': 'application/json' },
         signal: AbortSignal.timeout(this.timeoutMs),
