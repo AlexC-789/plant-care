@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planta comparison</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --page:#ECEBE8; --ink:#1A1A1A; --muted:#5C5A57; --rule:#D5D2CC; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--page); color:var(--ink); font:15px/1.5 "Schibsted Grotesk", -apple-system, sans-serif; }
+  section { max-width:1200px; margin:0 auto; padding:32px 16px; border-top:1px solid var(--rule); }
+  section:first-of-type { border-top:0; }
+  h1 { font-size:34px; font-weight:800; letter-spacing:-.6px; margin:0 0 8px; }
+  h2 { font-size:24px; font-weight:800; letter-spacing:-.3px; margin:0 0 6px; }
+  h3 { font-size:14px; font-weight:700; margin:16px 0 4px; }
+  p.lead { max-width:72ch; color:var(--muted); margin:0 0 16px; }
+  .strip { display:flex; gap:16px; overflow-x:auto; padding-bottom:8px; }
+  .strip figure { margin:0; flex:0 0 200px; }
+  .strip img { width:200px; border-radius:14px; display:block; }
+  .strip figcaption { font-size:12.5px; color:var(--muted); margin-top:6px; }
+  ul { margin:0; padding-left:18px; } li { margin:3px 0; }
+  .cols { display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:24px; }
+  table { border-collapse:collapse; width:100%; font-size:14px; background:#fff; border-radius:12px; overflow:hidden; }
+  th, td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid #E6E3DE; }
+  th { background:#F6F5F2; font-weight:700; }
+  .row { display:flex; gap:32px; flex-wrap:wrap; align-items:flex-start; }
+  .cap { width:320px; text-align:center; color:var(--muted); font-size:13px; margin-top:16px; }
+
+  /* phone */
+  .phone { width:320px; height:660px; border-radius:40px; overflow:hidden; position:relative; flex:0 0 auto;
+    box-shadow:0 0 0 9px #1c1c1c, 0 18px 40px rgba(0,0,0,.18); background:var(--bg); color:var(--ink2); }
+  .sb { height:40px; display:flex; justify-content:space-between; align-items:center; padding:0 26px; font-weight:600; font-size:13px; }
+  .scr { position:absolute; top:40px; left:0; right:0; bottom:0; overflow:hidden; }
+  .cover { object-fit:cover; display:block; }
+  .hd { display:flex; justify-content:space-between; align-items:center; padding:6px 18px 0; }
+  .hd h4 { margin:0; font-size:32px; font-weight:800; letter-spacing:-.8px; color:var(--brand); }
+  .btn { width:38px; height:38px; border-radius:19px; display:grid; place-items:center; background:var(--brand); color:#fff; font-size:22px; font-weight:500; }
+  .ghost { background:#fff; color:var(--brand); }
+  .pills { display:flex; gap:8px; padding:10px 18px 4px; }
+  .pill { font-size:12.5px; font-weight:600; padding:5px 11px; border-radius:999px; white-space:nowrap; }
+  .p-now { background:var(--alert); color:#fff; }
+  .p-out { border:1.5px solid var(--brand); color:var(--brand); }
+  .p-wh { background:rgba(255,255,255,.92); color:#1A1A1A; }
+  .p-quiet { background:#3E4650; color:#fff; }
+  .lbl { font-size:13px; font-weight:700; color:var(--brand); margin:14px 18px 8px; }
+  .need { display:flex; gap:12px; background:#fff; border-radius:20px; margin:0 14px 10px; padding:10px; align-items:center; }
+  .need img { width:76px; height:76px; border-radius:14px; }
+  .need .n { font-weight:700; font-size:18px; letter-spacing:-.2px; color:var(--brand); }
+  .need .r { font-size:12.5px; color:var(--muted2); margin-bottom:6px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 14px; }
+  .tile img { width:100%; height:120px; border-radius:16px; }
+  .tile .n { font-weight:700; font-size:16px; margin-top:6px; color:var(--brand); }
+  .tile .s { font-size:12px; color:var(--muted2); }
+  .top { display:flex; justify-content:space-between; padding:4px 16px; }
+  .dn { font-size:30px; font-weight:800; letter-spacing:-.8px; margin:6px 18px 0; color:var(--brand); line-height:1.05; }
+  .lat { font-style:italic; color:var(--muted2); margin:2px 18px 10px; font-size:14px; }
+  .photo { position:relative; margin:0 14px; }
+  .photo img { width:100%; height:200px; border-radius:22px; }
+  .photo .tags { position:absolute; left:10px; bottom:10px; display:flex; gap:6px; }
+  .cards { display:flex; gap:10px; padding:12px 14px 4px; overflow:hidden; }
+  .card { flex:0 0 150px; border-radius:20px; padding:12px; }
+  .card small { font-size:12px; opacity:.8; display:block; }
+  .card b { font-size:21px; font-weight:800; letter-spacing:-.4px; display:block; line-height:1.15; }
+  .card span { font-size:12.5px; }
+  .c-water { background:var(--water); color:#fff; }
+  .c-white { background:#fff; color:var(--ink2); }
+  .seg { display:flex; margin:12px 14px 6px; background:var(--segbg); border-radius:999px; padding:4px; }
+  .seg div { flex:1; text-align:center; font-size:13.5px; font-weight:600; padding:7px 0; border-radius:999px; color:var(--brand); }
+  .seg .on { background:var(--brand); color:#fff; }
+  .log { background:#fff; border-radius:20px; margin:4px 14px; }
+  .log div { display:flex; justify-content:space-between; padding:11px 14px; font-size:14px; }
+  .log div + div { border-top:1px solid #EEE9E4; }
+  .log span:last-child { color:var(--muted2); }
+
+  .bleed { position:relative; margin:0; }
+  .bleed img { width:100%; height:300px; }
+  .bleed .tags { position:absolute; left:14px; bottom:14px; display:flex; gap:6px; }
+  .bleed .navb { position:absolute; top:-40px; left:0; right:0; display:flex; justify-content:space-between; padding:48px 16px 0; }
+  .neutral .need, .neutral .log, .neutral .c-white { box-shadow:0 0 0 1px #E7E5E1; }
+  .clayN { --bg:#F5F5F3; --brand:#5A2416; --ink2:#2A1A14; --muted2:#6B6661; --alert:#B5452A; --water:#1F3D52; --segbg:#ECEAE7; }
+  .waterN { --bg:#F5F5F3; --brand:#12324A; --ink2:#12324A; --muted2:#5E6670; --alert:#B5452A; --water:#12324A; --segbg:#ECEAE7; }
+  .mono { --bg:#F5F5F3; --brand:#1C1C1A; --ink2:#1C1C1A; --muted2:#68665F; --alert:#B5452A; --water:#2F6F8F; --segbg:#EAE9E6; }
+  .mono .p-out { border-color:#CFCDC8; color:#1C1C1A; }
+  .mono .p-quiet { background:#fff; color:#1C1C1A; box-shadow:inset 0 0 0 1.5px #CFCDC8; }
+  .mono .p-now { background:#B5452A; }
+  .lvl { height:6px; border-radius:3px; background:#E3E8EB; margin:8px 0 6px; overflow:hidden; }
+  .lvl i { display:block; height:100%; background:var(--water); border-radius:3px; }
+  .lvl.low i { background:#B5452A; }
+  .ico { display:inline-block; width:8px; height:8px; border-radius:4px; margin-right:6px; vertical-align:1px; }
+  .clay { --bg:#F6EAE3; --brand:#5A2416; --ink2:#2A1A14; --muted2:#7A6157; --alert:#B5452A; --water:#1F3D52; --segbg:#EBD7CC; }
+  .water { --bg:#E5EDF1; --brand:#12324A; --ink2:#12324A; --muted2:#55697A; --alert:#B5452A; --water:#12324A; --segbg:#D3E0E7; }
+</style>
+</head>
+<body>
+
+<section>
+  <h1>Planta: what it does, and what Plant Care takes from it</h1>
+  <p class="lead">Source: Planta's App Store listing (id1410126781, 4.8 from 115K ratings, Editors' Choice, subtitle "Identifier, Diagnose &amp; Journal"). These are marketing screenshots, so they show the strongest screens, not every step. The onboarding itself wasn't visible and isn't described from guesswork here.</p>
+  <div class="strip">
+    <figure><img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/ce/05/d9/ce05d988-10b3-d90e-4a2e-4bc9168c0b9d/CPP_Type__MB.png/300x650bb-60.jpg" alt="Planta identify"><figcaption>Identify: full camera, ring, then "Identification completed" in frame</figcaption></figure>
+    <figure><img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/1b/e6/48/1be6486a-0ca5-9e6a-6ee6-c0091ddb981f/CPP_Type__MB-1.png/300x650bb-60.jpg" alt="Planta journal"><figcaption>Plants grouped by room ("Sites") as photo mosaics</figcaption></figure>
+    <figure><img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource221/v4/94/ce/1a/94ce1a6d-7588-4456-6560-9183f1b38baf/CPP_Type__MB-2.png/300x650bb-60.jpg" alt="Planta light meter"><figcaption>Light meter in the camera: one big answer, "Part sun · Facing West"</figcaption></figure>
+    <figure><img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/32/b5/70/32b5700a-8a67-0437-fd9c-cbffc717618a/CPP_Type__MB-5.png/300x650bb-60.jpg" alt="Planta plant page"><figcaption>Plant page: photo with pills, solid care cards, Todo / Care info / History</figcaption></figure>
+    <figure><img src="https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/f5/83/6f/f5836fee-4226-a6d6-5483-a1176e6540c2/CPP_Type__MB-3.png/300x650bb-60.jpg" alt="Planta Dr Planta"><figcaption>Dr Planta: problems, experts (not for us)</figcaption></figure>
+  </div>
+
+  <div class="cols" style="margin-top:24px">
+    <div>
+      <h3>Why Planta looks designed and our "Care Card" can look AI-made</h3>
+      <ul>
+        <li><b>Planta commits to one colour.</b> Pale sage background, deep forest-green ink for every title, solid green buttons. You'd know it with the logo covered. Care Card's beige paper, muted brown-grey ink and cream cards is the default "tasteful" palette of AI-generated interfaces right now; it's identity by absence.</li>
+        <li><b>Planta's type has weight.</b> A heavy grotesk for titles and plant names, regular for the rest. Care Card's light serif titles plus small grey text look polite and generic.</li>
+        <li><b>Planta uses solid colour blocks with meaning.</b> Watering is a navy card, fertilising a mustard one. Care Card puts everything in identical white rows.</li>
+        <li><b>Photos are big and carry labels.</b> Room, condition and a warning sit as pills on the photo. Care Card keeps photos small in list rows.</li>
+        <li><b>Each screen has one big answer.</b> "Part sun", "Regular watering in 12 days", "Identification completed".</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Where Plant Care is different (and must stay different)</h3>
+      <ul>
+        <li><b>Planta tells you to water. Plant Care waters.</b> Planta's core is a reminder schedule with a checkbox ("Regular watering in 12 days · Last: 2 days ago"). Ours is a measured state: "Watered itself 2 days ago · water left for about 9 days". No checkbox, no chore.</li>
+        <li><b>Don't take its colour.</b> Planta owns sage and forest green; PictureThis and PlantIn own dark UI with mint. A third green app disappears. Below are two non-green brand colours: Clay (the pot) and Water (what the module does).</li>
+        <li><b>Leave out:</b> community feed, experts, Meta glasses, reviews and laurels in the product, the "Dr" hub. They're Planta's growth engine, not our job.</li>
+        <li><b>Rooms:</b> Planta groups by room. Our Home groups by "needs you" first, because a module problem matters more than where the plant stands. Room stays as a label on the photo.</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>Flow, side by side</h2>
+  <p class="lead">Planta's steps come from the screenshots and the listing; anything not visible is marked. Plant Care's are as built today (M1 to M4).</p>
+  <table>
+    <tr><th>Step</th><th>Planta</th><th>Plant Care today</th><th>Take / change</th></tr>
+    <tr><td>Add a plant</td><td>Camera opens straight away; a ring frames the plant; the result appears inside the camera ("Identification completed"). Search is also offered (listing).</td><td>Photo step → separate "What is it?" screen with up to 3 suggestions → Where → Health. Four screens.</td><td>Keep our four steps, but make step 1 a full-screen camera with the frame, and show the best match over the photo with one button, "This is my plant". Alternatives and search sit under it.</td></tr>
+    <tr><td>Where it lives</td><td>Plant goes into a Site (room). A light meter measures the spot: "Part sun · Facing West".</td><td>Where step asks for a room as free text.</td><td>Room becomes a pick-or-type list with your existing rooms first. Light (bright / medium / low) is already an approved personalisation (product spec §8); ask it here as three choices. A camera light meter is later, not now.</td></tr>
+    <tr><td>Care plan</td><td>Smart care schedule: watering, fertilising, repotting, misting, adjusted for home and weather. Each is a task with a reminder and a checkbox.</td><td>None yet (watering plan is M5; reminders M6).</td><td>Watering is not a task for us: it's a state card. Only things the module can't do (fertilise, repot, rotate) become reminders in M6, in Planta's card style.</td></tr>
+    <tr><td>Home</td><td>Today's tasks; plants grouped by room as photo mosaics.</td><td>One list; "Needs you" and "Doing well"; small photo and a coloured dot.</td><td>Needs-you plants as large cards with the problem as a solid pill; doing-well plants as a photo grid. Status is words, never a dot alone.</td></tr>
+    <tr><td>Plant page</td><td>Name + Latin name; big photo with pills (room, condition, warning); solid care cards in a row; Todo / Care info / History.</td><td>Photo hero, banner, module rows, photo strip, health card.</td><td>Same skeleton: photo with pills, a row of state cards (Water, Soil, Battery), then Now / About / History. "About" holds species facts; "History" holds the photo timeline and watering log.</td></tr>
+    <tr><td>Problems</td><td>Dr Planta: diagnose from a photo, ask experts.</td><td>Health check from a photo (Plant.id) on the plant page.</td><td>Keep it on the plant page. No expert service.</td></tr>
+  </table>
+</section>
+
+<section id="mono">
+  <h2>D, one colour: ink and photos</h2>
+  <p class="lead">Owner feedback: the colours fight. Cause: up to four solid colours on one screen (brand, clay alert, navy water card, dark-grey offline pill). Fix: the interface is ink on off-white, with no brand hue. One colour, clay red, is used only when something needs you. Water shows as a thin blue level, not a solid card. The photos are the colour.</p>
+  <div class="row">
+    <div>
+      <div class="phone neutral mono"><div class="sb"><span>09:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="hd"><h4>Plants</h4><div style="display:flex;gap:8px"><div class="btn ghost" style="font-size:15px;box-shadow:0 0 0 1px #E7E5E1">◔</div><div class="btn">+</div></div></div>
+        <div class="pills"><span class="pill p-now">2 need you</span><span class="pill p-out">2 doing well</span></div>
+        <div class="lbl">Needs you</div>
+        <div class="need"><img class="cover" src="img/calathea.webp" alt=""><div><div class="n">Stripes</div><div class="r">Living room · Calathea</div><span class="pill p-now">Tank needs refilling</span></div></div>
+        <div class="need"><img class="cover" src="img/monstera.webp" alt=""><div><div class="n">Monty</div><div class="r">Bedroom · Monstera</div><span class="pill p-quiet">Not heard from since 09:12</span></div></div>
+        <div class="lbl">Doing well</div>
+        <div class="grid">
+          <div class="tile"><img class="cover" src="img/snake.webp" alt=""><div class="n">Sid</div><div class="s">Next drink in about 2 days</div></div>
+          <div class="tile"><img class="cover" src="img/olive.webp" alt=""><div class="n">Olive</div><div class="s">Still learning how fast it drinks</div></div>
+        </div>
+      </div></div>
+      <div class="cap">Home</div>
+    </div>
+    <div>
+      <div class="phone neutral mono">
+        <div class="bleed"><img class="cover" src="img/snake.webp" alt=""><div class="tags"><span class="pill p-wh">Hall</span><span class="pill p-wh">Looked healthy</span></div>
+          <div style="position:absolute;top:48px;left:16px;right:16px;display:flex;justify-content:space-between"><div class="btn ghost" style="font-size:18px">‹</div><div class="btn ghost" style="font-size:16px">•••</div></div></div>
+        <div class="dn" style="margin-top:12px">Sid</div><div class="lat" style="margin-bottom:4px">Dracaena trifasciata · Doing well</div>
+        <div class="cards">
+          <div class="card c-white"><small>Water</small><b>About 9 days</b><div class="lvl"><i style="width:72%"></i></div><span>About 500 ml left</span></div>
+          <div class="card c-white"><small>Soil</small><b>Damp</b><span>41 % · aim 35–55 %</span></div>
+          <div class="card c-white"><small>Battery</small><b>78 %</b><span>Checked in 09:12</span></div>
+        </div>
+        <div class="seg"><div class="on">Now</div><div>About</div><div>History</div></div>
+        <div class="log"><div><span>Watered itself</span><span>30 ml · 06:40</span></div><div><span>Next drink</span><span>in about 2 days</span></div></div>
+      </div>
+      <div class="cap">Plant page, doing well</div>
+    </div>
+    <div>
+      <div class="phone neutral mono">
+        <div class="bleed"><img class="cover" src="img/calathea.webp" alt=""><div class="tags"><span class="pill p-wh">Living room</span><span class="pill p-now">Tank needs refilling</span></div>
+          <div style="position:absolute;top:48px;left:16px;right:16px;display:flex;justify-content:space-between"><div class="btn ghost" style="font-size:18px">‹</div><div class="btn ghost" style="font-size:16px">•••</div></div></div>
+        <div class="dn" style="margin-top:12px">Stripes</div><div class="lat" style="margin-bottom:4px">Calathea makoyana</div>
+        <div class="cards">
+          <div class="card c-white" style="box-shadow:inset 0 0 0 2px #B5452A"><small>Water</small><b>Refill now</b><div class="lvl low"><i style="width:10%"></i></div><span>Under 100 ml left</span></div>
+          <div class="card c-white"><small>Soil</small><b>Damp</b><span>38 % · aim 35–55 %</span></div>
+          <div class="card c-white"><small>Battery</small><b>64 %</b><span>Checked in 09:30</span></div>
+        </div>
+        <div class="seg"><div class="on">Now</div><div>About</div><div>History</div></div>
+        <div class="log"><div><span>Watering paused</span><span>until it's refilled</span></div><div><span>Last drink</span><span>30 ml · yesterday</span></div></div>
+      </div>
+      <div class="cap">Plant page, needs you</div>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:20px">Colour rules: ink for all text, buttons and the selected tab; clay red only for "needs you" (pill, outline on the card at fault); water blue only inside the level bar. Offline is an outlined pill, because waiting for a module isn't an alarm.</p>
+</section>
+
+<section id="neutral">
+  <h2>D, neutral page: photos first</h2>
+  <p class="lead">Owner feedback: the photos fight with the tinted page. Fix: the page is a neutral off-white (#F5F5F3, no hue), so any photo sits cleanly whatever its walls, light or pot. Brand colour lives only in titles, buttons, the selected tab and the water card. On the plant page the photo runs edge to edge under the status bar, so it's never framed by page colour.</p>
+  <div class="row">
+    <div>
+      <div class="phone neutral waterN"><div class="sb"><span>09:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="hd"><h4>Plants</h4><div style="display:flex;gap:8px"><div class="btn ghost" style="font-size:15px;box-shadow:0 0 0 1px #E7E5E1">◔</div><div class="btn">+</div></div></div>
+        <div class="pills"><span class="pill p-now">2 need you</span><span class="pill p-out">2 doing well</span></div>
+        <div class="lbl">Needs you</div>
+        <div class="need"><img class="cover" src="img/calathea.webp" alt=""><div><div class="n">Stripes</div><div class="r">Living room · Calathea</div><span class="pill p-now">Tank needs refilling</span></div></div>
+        <div class="need"><img class="cover" src="img/monstera.webp" alt=""><div><div class="n">Monty</div><div class="r">Bedroom · Monstera</div><span class="pill p-quiet">Not heard from since 09:12</span></div></div>
+        <div class="lbl">Doing well</div>
+        <div class="grid">
+          <div class="tile"><img class="cover" src="img/snake.webp" alt=""><div class="n">Sid</div><div class="s">Next drink in about 2 days</div></div>
+          <div class="tile"><img class="cover" src="img/olive.webp" alt=""><div class="n">Olive</div><div class="s">Still learning how fast it drinks</div></div>
+        </div>
+      </div></div>
+      <div class="cap">Home · Water brand</div>
+    </div>
+    <div>
+      <div class="phone neutral waterN">
+        <div class="bleed" style="margin-top:0"><img class="cover" src="img/snake.webp" alt=""><div class="tags"><span class="pill p-wh">Hall</span><span class="pill p-wh">Looked healthy</span></div>
+          <div style="position:absolute;top:48px;left:16px;right:16px;display:flex;justify-content:space-between"><div class="btn ghost" style="font-size:18px">‹</div><div class="btn ghost" style="font-size:16px">•••</div></div></div>
+        <div class="dn" style="margin-top:12px">Sid</div><div class="lat" style="margin-bottom:4px">Dracaena trifasciata · Doing well</div>
+        <div class="cards">
+          <div class="card c-water"><small>Water</small><b>About 9 days</b><span>About 500 ml left</span></div>
+          <div class="card c-white"><small>Soil</small><b>Damp</b><span>41 % · aim 35–55 %</span></div>
+          <div class="card c-white"><small>Battery</small><b>78 %</b><span>Checked in 09:12</span></div>
+        </div>
+        <div class="seg"><div class="on">Now</div><div>About</div><div>History</div></div>
+        <div class="log"><div><span>Watered itself</span><span>30 ml · 06:40</span></div><div><span>Next drink</span><span>in about 2 days</span></div></div>
+      </div>
+      <div class="cap">Plant page · Water brand</div>
+    </div>
+    <div>
+      <div class="phone neutral clayN">
+        <div class="bleed"><img class="cover" src="img/calathea.webp" alt=""><div class="tags"><span class="pill p-wh">Living room</span><span class="pill p-now">Tank needs refilling</span></div>
+          <div style="position:absolute;top:48px;left:16px;right:16px;display:flex;justify-content:space-between"><div class="btn ghost" style="font-size:18px">‹</div><div class="btn ghost" style="font-size:16px">•••</div></div></div>
+        <div class="dn" style="margin-top:12px">Stripes</div><div class="lat" style="margin-bottom:4px">Calathea makoyana</div>
+        <div class="cards">
+          <div class="card c-water"><small>Water</small><b>Refill now</b><span>Under 100 ml left</span></div>
+          <div class="card c-white"><small>Soil</small><b>Damp</b><span>38 % · aim 35–55 %</span></div>
+          <div class="card c-white"><small>Battery</small><b>64 %</b><span>Checked in 09:30</span></div>
+        </div>
+        <div class="seg"><div class="on">Now</div><div>About</div><div>History</div></div>
+        <div class="log"><div><span>Watering paused</span><span>until it's refilled</span></div><div><span>Last drink</span><span>30 ml · yesterday</span></div></div>
+      </div>
+      <div class="cap">Plant page · Clay brand, a plant that needs you</div>
+    </div>
+  </div>
+  <p class="lead" style="margin-top:20px">For comparison, the tinted versions are below. Same layout; only the page colour and the framed photo differ.</p>
+</section>
+
+<section>
+  <h2>D · revised direction, two colour options (tinted page, superseded)</h2>
+  <p class="lead">Planta's structure, our product: heavy grotesk (Schibsted Grotesk, bundled), one committed brand colour, solid state cards, big photos with pills. Alerts are always clay-red; water is always deep blue. Same plants and copy as before.</p>
+
+  <h3>D1 · Clay: the colour of the pot</h3>
+  <div class="row">
+    <div>
+      <div class="phone clay"><div class="sb"><span>09:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="hd"><h4>Plants</h4><div style="display:flex;gap:8px"><div class="btn ghost" style="font-size:15px">◔</div><div class="btn">+</div></div></div>
+        <div class="pills"><span class="pill p-now">2 need you</span><span class="pill p-out">2 doing well</span></div>
+        <div class="lbl">Needs you</div>
+        <div class="need"><img class="cover" src="img/calathea.webp" alt=""><div><div class="n">Stripes</div><div class="r">Living room · Calathea</div><span class="pill p-now">Tank needs refilling</span></div></div>
+        <div class="need"><img class="cover" src="img/monstera.webp" alt=""><div><div class="n">Monty</div><div class="r">Bedroom · Monstera</div><span class="pill p-quiet">Not heard from since 09:12</span></div></div>
+        <div class="lbl">Doing well</div>
+        <div class="grid">
+          <div class="tile"><img class="cover" src="img/snake.webp" alt=""><div class="n">Sid</div><div class="s">Next drink in about 2 days</div></div>
+          <div class="tile"><img class="cover" src="img/olive.webp" alt=""><div class="n">Olive</div><div class="s">Still learning how fast it drinks</div></div>
+        </div>
+      </div></div>
+      <div class="cap">Home</div>
+    </div>
+    <div>
+      <div class="phone clay"><div class="sb"><span>09:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="top"><div class="btn ghost" style="font-size:18px">‹</div><div class="btn ghost" style="font-size:16px">•••</div></div>
+        <div class="dn">Sid</div><div class="lat">Dracaena trifasciata</div>
+        <div class="photo"><img class="cover" src="img/snake.webp" alt=""><div class="tags"><span class="pill p-wh">Hall</span><span class="pill p-wh">Looked healthy</span><span class="pill p-wh">Doing well</span></div></div>
+        <div class="cards">
+          <div class="card c-water"><small>Water</small><b>About 9 days</b><span>About 500 ml left</span></div>
+          <div class="card c-white"><small>Soil</small><b>Damp</b><span>41 % · aim 35–55 %</span></div>
+          <div class="card c-white"><small>Battery</small><b>78 %</b><span>Checked in 09:12</span></div>
+        </div>
+        <div class="seg"><div class="on">Now</div><div>About</div><div>History</div></div>
+        <div class="log"><div><span>Watered itself</span><span>30 ml · 06:40</span></div><div><span>Next drink</span><span>in about 2 days</span></div><div><span>Module</span><span>Checked in 09:12</span></div></div>
+      </div></div>
+      <div class="cap">Plant page</div>
+    </div>
+    <div style="flex:1 1 260px">
+      <h3>D1 Clay</h3>
+      <ul><li>Brand ink: burnt clay #5A2416 on a pale clay tint #F6EAE3; white cards.</li><li>Warm, earthy, tied to the physical pot. No plant app uses terracotta as its brand.</li><li>Risk: alerts are clay-red too, so they must be the only <i>solid bright</i> clay; brand stays dark.</li></ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:32px">D2 · Water: what the module does</h3>
+  <div class="row">
+    <div>
+      <div class="phone water"><div class="sb"><span>09:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="hd"><h4>Plants</h4><div style="display:flex;gap:8px"><div class="btn ghost" style="font-size:15px">◔</div><div class="btn">+</div></div></div>
+        <div class="pills"><span class="pill p-now">2 need you</span><span class="pill p-out">2 doing well</span></div>
+        <div class="lbl">Needs you</div>
+        <div class="need"><img class="cover" src="img/calathea.webp" alt=""><div><div class="n">Stripes</div><div class="r">Living room · Calathea</div><span class="pill p-now">Tank needs refilling</span></div></div>
+        <div class="need"><img class="cover" src="img/monstera.webp" alt=""><div><div class="n">Monty</div><div class="r">Bedroom · Monstera</div><span class="pill p-quiet">Not heard from since 09:12</span></div></div>
+        <div class="lbl">Doing well</div>
+        <div class="grid">
+          <div class="tile"><img class="cover" src="img/snake.webp" alt=""><div class="n">Sid</div><div class="s">Next drink in about 2 days</div></div>
+          <div class="tile"><img class="cover" src="img/olive.webp" alt=""><div class="n">Olive</div><div class="s">Still learning how fast it drinks</div></div>
+        </div>
+      </div></div>
+      <div class="cap">Home</div>
+    </div>
+    <div>
+      <div class="phone water"><div class="sb"><span>09:41</span><span>●●● ▮</span></div><div class="scr">
+        <div class="top"><div class="btn ghost" style="font-size:18px">‹</div><div class="btn ghost" style="font-size:16px">•••</div></div>
+        <div class="dn">Sid</div><div class="lat">Dracaena trifasciata</div>
+        <div class="photo"><img class="cover" src="img/snake.webp" alt=""><div class="tags"><span class="pill p-wh">Hall</span><span class="pill p-wh">Looked healthy</span><span class="pill p-wh">Doing well</span></div></div>
+        <div class="cards">
+          <div class="card c-water"><small>Water</small><b>About 9 days</b><span>About 500 ml left</span></div>
+          <div class="card c-white"><small>Soil</small><b>Damp</b><span>41 % · aim 35–55 %</span></div>
+          <div class="card c-white"><small>Battery</small><b>78 %</b><span>Checked in 09:12</span></div>
+        </div>
+        <div class="seg"><div class="on">Now</div><div>About</div><div>History</div></div>
+        <div class="log"><div><span>Watered itself</span><span>30 ml · 06:40</span></div><div><span>Next drink</span><span>in about 2 days</span></div><div><span>Module</span><span>Checked in 09:12</span></div></div>
+      </div></div>
+      <div class="cap">Plant page</div>
+    </div>
+    <div style="flex:1 1 260px">
+      <h3>D2 Water</h3>
+      <ul><li>Brand ink: deep water blue #12324A on a pale blue-grey tint #E5EDF1; white cards.</li><li>Says what makes the product different (it waters), and alerts in clay-red stand out clearly against cool blue.</li><li>Risk: blue reads "tech" and colder; the plant photos have to bring the warmth.</li></ul>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>
