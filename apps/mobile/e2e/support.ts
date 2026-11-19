@@ -159,10 +159,12 @@ export async function startSim(o: { code: string; name: string; scenario?: strin
   if (o.from) args.push('--from', o.from);
   if (o.speed) args.push('--speed', String(o.speed));
   const child = spawn('node', args, { stdio: 'ignore' });
+  const exited = new Promise<number | null>((resolve) => child.once('exit', resolve));
   return {
-    exited: new Promise((resolve) => child.once('exit', resolve)),
+    exited,
     async stop() {
       child.kill();
+      await exited; // the sim may be mid-save: remove its file only after it is gone
       rmSync(join(SIM_DEVICES, `${o.name}.json`), { force: true });
     },
   };
