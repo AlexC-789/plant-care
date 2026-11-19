@@ -34,3 +34,35 @@ jobs:
         run: npx supabase db start
       - name: Database tests (pgTAP)
         run: npx supabase test db
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run qa:test
+      - run: npm run qa:coverage
+      - uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/mobile
+      - name: Point Edge Functions at the fake Plant.id (never the real API)
+        run: |
+          printf 'PLANT_ID_BASE_URL=http://host.docker.internal:8787\nPLANT_ID_API_KEY=fake\n' > supabase/functions/.env
+      - run: npx supabase start -x studio,postgres-meta,logflare,vector,realtime
+      - run: npm run e2e:pr
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-pr-report
+          path: |
+            apps/mobile/playwright-report
+            apps/mobile/test-results
+          retention-days: 7

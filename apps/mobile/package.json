@@ -36,6 +36,8 @@
     "react-native-worklets": "0.13.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@playwright/test": "^1.65.1",
     "@testing-library/react-native": "^14.1.0",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.3.0",
@@ -52,7 +54,10 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
-    "typecheck": "node scripts/typegen.js && tsc --noEmit"
+    "typecheck": "node scripts/typegen.js && tsc --noEmit",
+    "e2e": "playwright test",
+    "e2e:pr": "playwright test --grep @pr",
+    "e2e:speed": "E2E_SPEED=1 playwright test --project speed"
   },
   "private": true
 }

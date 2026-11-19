@@ -18,3 +18,7 @@ supabase/.env
 
 # Simulator device secrets
 sim/.devices/
+
+apps/mobile/test-results/
+apps/mobile/playwright-report/
+apps/mobile/dist/

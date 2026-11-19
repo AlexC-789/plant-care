@@ -10,6 +10,7 @@ import { validatePhotoPaths } from '../_shared/validate.ts';
 
 export interface CheckHealthDeps extends Deps {
   plantIdApiKey: string;
+  plantIdBaseUrl?: string;
 }
 
 // the daily limit is shared with identify-plant, the copy is not
@@ -55,7 +56,7 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
     const scan = { user_id: userId, kind: 'health', plant_id: plantId, photo_paths: paths };
     let result;
     try {
-      result = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch }).health(images);
+      result = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch, baseUrl: deps.plantIdBaseUrl }).health(images);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
       providerStatus = e.status;
@@ -83,5 +84,5 @@ export async function handler(req: Request, deps: CheckHealthDeps): Promise<Resp
 }
 
 if (import.meta.main) {
-  Deno.serve((req) => handler(req, { ...envDeps(), plantIdApiKey: Deno.env.get('PLANT_ID_API_KEY') ?? '' }));
+  Deno.serve((req) => handler(req, { ...envDeps(), plantIdApiKey: Deno.env.get('PLANT_ID_API_KEY') ?? '', plantIdBaseUrl: Deno.env.get('PLANT_ID_BASE_URL') }));
 }

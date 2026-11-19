@@ -8,6 +8,7 @@ import { PlantIdClient, ProviderError } from '../_shared/plantid.ts';
 
 export interface SearchDeps extends Deps {
   plantIdApiKey: string;
+  plantIdBaseUrl?: string;
 }
 
 const text = (v: unknown, min: number, max: number): string | null => {
@@ -42,7 +43,7 @@ export async function handler(req: Request, deps: SearchDeps): Promise<Response>
     }
     let hits;
     try {
-      hits = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch }).nameSearch(value);
+      hits = await new PlantIdClient({ apiKey: deps.plantIdApiKey, fetch: deps.fetch, baseUrl: deps.plantIdBaseUrl }).nameSearch(value);
     } catch (e) {
       if (!(e instanceof ProviderError)) throw e;
       providerStatus = e.status;
@@ -70,5 +71,5 @@ export async function handler(req: Request, deps: SearchDeps): Promise<Response>
 }
 
 if (import.meta.main) {
-  Deno.serve((req) => handler(req, { ...envDeps(), plantIdApiKey: Deno.env.get('PLANT_ID_API_KEY') ?? '' }));
+  Deno.serve((req) => handler(req, { ...envDeps(), plantIdApiKey: Deno.env.get('PLANT_ID_API_KEY') ?? '', plantIdBaseUrl: Deno.env.get('PLANT_ID_BASE_URL') }));
 }
