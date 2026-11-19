@@ -82,14 +82,15 @@ flowchart TD
   E -->|Save name| F[Keep name: account sheet]
   F -->|account created| G[Health]
   F -->|closed| E
+  F -->|Not now: stays a guest| G
   G --> M{Does name have a module?}
   M -->|Set up the module| P[Connect the module] --> T[Fill the tank] --> N[Notifications priming] --> H[Plants]
   M -->|Not now| H
 ```
 
 **Rules.**
-- **Guest session.** The person gets an anonymous Supabase session when they tap "Scan a plant". A guest can run **3** identifications per install, proposed in place of the 20 a day that account holders get, and the session start is protected by a captcha. This needs the owner's approval and a security review (see roadmap).
-- **The account sheet can't be skipped while saving.** Closing it returns to Name and place with nothing lost. The plant row is written only after the account exists, or as the guest and then kept when the guest becomes an account; the implementation plan picks one.
+- **Guest session.** The person gets an anonymous Supabase session when they tap "Scan a plant". A guest can run **3** identifications per install, proposed in place of the 20 a day that account holders get, and the session start is protected by a captcha. Approved by the owner 2026-11-19; it still gets a security review when built (see roadmap).
+- **The plant is saved as the guest at "Save {name}".** It survives closing the app, email confirmation and sign-in. Turning the guest into an account keeps the same user id. Signing in to an existing account adds the plant there (decided 2026-11-19). Closing the account sheet returns to Name and place with nothing lost. The sheet also offers a neutral "Not now" (decided 2026-11-19): the plant stays on this phone as a guest, Home and Settings show a quiet "Keep your plants" row, and setting up a module requires an account.
 - **The order of the last steps is fixed.** Health runs after the account so its result is stored. Notification permission is asked only after the first module is set up, never at launch.
 - **Second way in: start from the module.** The Welcome screen may later offer "Set up a module". It runs account → Connect → Fill the tank → Capture (Model C as a branch). It's not in the first build.
 
@@ -131,7 +132,7 @@ Each plant shows **one** sentence. The first rule that matches wins, in the same
 | 5 | waiting | Doing well | Waiting for its first check-in | the same text / "This can take a few minutes after setup." |
 | 6 | wet | Doing well (changed) | Soil is very wet | "Soil is very wet" / "Watering is on hold until it dries a little." |
 | 7 | battery | Needs you (ink) | Battery low | "Battery low" / "Charge the module in the next few days." |
-| 8 | fine | Doing well | Next drink in about {n} days, or "Learning how fast it drinks" | "Water left for about {n} days" / "Next drink in about {n} days." |
+| 8 | fine | Doing well | Next drink in about {n} days, or "Learning how fast it drinks" | "Water left for about {n} days" / "Next drink in about {n} days." Before there is drink-rate data: "Learning how fast it drinks" / "It waters itself when the soil starts to dry." |
 
 **Changes from M4:**
 - "no module" moves from Needs you to Doing well.
@@ -148,6 +149,8 @@ Each plant shows **one** sentence. The first rule that matches wins, in the same
 | Offline > 12 h | yes, once | "{name}: not heard from since {time}. The module may be out of Wi-Fi range." |
 | Battery < 15 % | yes, once per charge | "{name}: the module's battery is low." |
 | Watered fine, waiting, wet | **never** | none |
+
+Each alert fires once per condition and is removed from Notification Centre when the condition clears.
 
 ## 8. Edge cases
 

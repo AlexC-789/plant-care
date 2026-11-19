@@ -57,12 +57,13 @@ These are listed for the owner to decide. None has been changed in code or in th
 | 10 | Add flow order | photo → identify → where → health, all after sign-up | capture → result → name and place → **account** → health → module offer | Model A; health results must be saved to an account |
 | 11 | Plant detail | Photo strip, health card, module rows | Hero, status, tank bar, three rows, history row | Planta-style hierarchy without its chores |
 | 12 | `add/photo` route name | photo | capture | A 3D scan is coming |
+| 13 | CLAUDE.md "Launch" rule and `src/launch` | Draw 0.7 s, rest 0.5 s, fade; about 1.45 s, taps blocked | Draw, then fade when ready; tap to skip; no rest (decided 2026-11-19) | Android guidance is 1 s or less and skippable; QA satisfaction report. Update CLAUDE.md when it's built |
 
-**Recommendation:** approve 1–4, 7–12 with this package. For 5 and 6, wait until M4 is merged, then make them a small follow-up so the M4 session isn't disrupted.
+**Recommendation:** approve 1–4 and 7–13 with this package. For 5 and 6, wait until M4 is merged, then make them a small follow-up so the M4 session isn't disrupted.
 
 ## 4. Open decisions
 
-1. **Guest sessions (Model A).** Anonymous sign-in, a guest identify limit of 3, and a captcha on guest sign-in. This is a security-relevant change to auth and the `identify-plant` limits.
+1. **Guest sessions (Model A).** Decided 2026-11-19: yes. Anonymous sign-in, 3 identifications per install for guests, and a captcha on guest sign-in. It still gets an Opus security review when built (phase 4).
 2. **Apple and Google sign-in.** Decided 2026-11-19: deferred to M8. Launch is email only, so the account sheet shows "Continue with email" alone until then.
 3. **A guest plant when signing in to an existing account.** Decided 2026-11-19: add it. After sign-in the app saves the pending plant (re-uploading its photo from the phone) to the existing account. Guest leftovers on the server are cleaned up. The account sheet gets an "I already have an account" link.
 4. **Font asset.** Decided 2026-11-19: Archivo is approved "for now" (static TTFs).

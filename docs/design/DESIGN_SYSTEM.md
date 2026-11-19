@@ -126,6 +126,7 @@ These map to `src/ui`. A component marked "new" doesn't exist yet.
 
 | Moment | Motion | Haptic |
 |---|---|---|
+| Launch (decided 2026-11-19) | Plain splash, then the pot draws (~0.7 s) and fades out as soon as the first screen is ready. The 0.5 s rest is dropped. A tap anywhere skips it, and it never blocks input for long. Runs on every cold start | none |
 | Press | Instant highlight on touch-down (scale 0.97, 100 ms) | none |
 | Push / pop | Native stack | none |
 | Sheet (account) | Spring, damping 1.0, response 0.35; interruptible by drag | none |
