@@ -81,7 +81,7 @@ const takeWhole = async () => {
 describe('step 1: photo', () => {
   test('the + opens it with the prompt and Step 1 of 4', async () => {
     await open('/');
-    await fireEvent.press(screen.getByLabelText('Add a pot'));
+    await fireEvent.press(screen.getByLabelText('Add a plant'));
     await waitFor(() => expect(screen.getByText('Take a photo of your plant')).toBeTruthy());
     expect(screen.getByRole('progressbar', { name: 'Step 1 of 4' })).toBeTruthy();
   });

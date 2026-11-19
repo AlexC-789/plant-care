@@ -8,7 +8,10 @@ import { Button, LoadingGroup, Skeleton, Text, TextLink } from '@/ui';
 
 import { preparePhoto } from './photos';
 import { DENIED, pickPhoto, type PhotoSource } from './pickPhoto';
-import { useAddPlantPhoto, useCheckHealth, usePlantPhotos } from './queries';
+import { useAddPlantPhoto, useCheckHealth, useHealthCheckStatus, usePlantPhotos } from './queries';
+
+// The server's own message for a 429; any other failure reads as "couldn't check".
+const LIMIT = "You've reached the health check limit for now. Try again later.";
 
 const THUMB = 72;
 const SHORT = { day: 'numeric', month: 'short' } as const;
@@ -20,6 +23,7 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
   const timeline = usePlantPhotos(plantId);
   const addPhoto = useAddPlantPhoto();
   const checkHealth = useCheckHealth();
+  const health = useHealthCheckStatus(plantId);
   const [choosing, setChoosing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState<PhotoSource | null>(null);
@@ -150,6 +154,15 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
           </Text>
           <Button label="Open Settings" variant="plain" onPress={() => void Linking.openSettings()} />
         </View>
+      ) : null}
+      {health?.status === 'pending' ? (
+        <Text variant="subheadline" accessibilityLiveRegion="polite">
+          Looking at your plant…
+        </Text>
+      ) : health?.status === 'error' ? (
+        <Text variant="footnote" color="statusNow" accessibilityRole="alert">
+          {health.error?.message === LIMIT ? LIMIT : "Couldn't check right now. Try again."}
+        </Text>
       ) : null}
       {failed ? (
         <Text variant="footnote" color="statusNow" accessibilityRole="alert">

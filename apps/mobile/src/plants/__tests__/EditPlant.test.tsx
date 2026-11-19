@@ -13,7 +13,6 @@ jest.mock('@/plants/api', () => ({
   ...jest.requireActual('@/plants/api'),
   fetchPlant: jest.fn(),
   fetchSpecies: jest.fn(),
-  fetchLatestHealth: jest.fn(),
   updatePlant: jest.fn(),
   searchLocalSpecies: jest.fn(),
   searchPlantNames: jest.fn(),
@@ -42,7 +41,6 @@ beforeEach(() => {
   queryClient.clear();
   mocked(api.fetchPlant).mockResolvedValue(fern);
   mocked(api.fetchSpecies).mockResolvedValue(monstera);
-  mocked(api.fetchLatestHealth).mockResolvedValue(null);
   mocked(api.updatePlant).mockImplementation(async (_id: string, patch: object) => ({ ...fern, ...patch }));
   mocked(api.searchLocalSpecies).mockResolvedValue([pothos]);
   mocked(api.searchPlantNames).mockResolvedValue([]);
