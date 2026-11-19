@@ -84,7 +84,7 @@ select throws_ok($$ select count(*) from public.plant_photos $$, '42501', null, 
 
 -- trigger + cascade (superuser)
 reset role;
-select is((select count(*)::int from public.plant_photos where path like '%b1.jpg'), 1, 'A''s delete left B''s row in place');
+select is((select count(*)::int from public.plant_photos where path like '22222222-%b1.jpg'), 1, 'A''s delete left B''s row in place');
 update public.plants set photo_path = '11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000c1.jpg'
   where id = 'aaaaaaaa-0000-0000-0000-000000000001';
 update public.plants set photo_path = '11111111-1111-1111-1111-111111111111/00000000-0000-0000-0000-0000000000c1.jpg', name = 'again'

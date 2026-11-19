@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(33);
+select plan(38);
 
 create function pg_temp.new_user(uid uuid, mail text) returns void language sql as $$
   insert into auth.users (id, email, aud, role, instance_id)
@@ -44,6 +44,10 @@ select lives_ok($$ insert into public.plants (name, room) values ('Fern', 'Kitch
 select is((select user_id from public.plants where name = 'Fern'),
   '11111111-1111-1111-1111-111111111111'::uuid, 'user_id defaults to the caller');
 select lives_ok($$ update public.plants set name = 'Fern 2' where name = 'Fern' $$, 'A can update own plant');
+select lives_ok($$ insert into public.plants (name, light) values ('Lit', 'bright_indirect') $$, 'A can set light on insert');
+select lives_ok($$ update public.plants set light = 'low' where name = 'Lit' $$, 'A can update light');
+select is((select light from public.plants where name = 'Lit'), 'low', 'light was stored');
+select throws_ok($$ insert into public.plants (name, light) values ('x', 'sunny') $$, '23514', null, 'light is one of the four values');
 select throws_ok($$ insert into public.plants (name) values ('') $$, '23514', null, 'name cannot be empty');
 select throws_ok($$ insert into public.plants (name) values (repeat('x', 61)) $$, '23514', null, 'name is at most 60 chars');
 select throws_ok($$ insert into public.plants (name, room) values ('x', repeat('r', 41)) $$, '23514', null, 'room is at most 40 chars');
@@ -56,7 +60,7 @@ select lives_ok($$ insert into public.plants (name, photo_path) values ('x', '11
 select throws_ok($$ insert into public.plants (user_id, name) values ('22222222-2222-2222-2222-222222222222', 'x') $$,
   '42501', null, 'A cannot insert a plant for B');
 
-update public.plants set name = 'hacked' where id = 'bbbbbbbb-0000-0000-0000-000000000001';
+update public.plants set name = 'hacked', light = 'low' where id = 'bbbbbbbb-0000-0000-0000-000000000001';
 delete from public.plants where id = 'bbbbbbbb-0000-0000-0000-000000000001';
 
 select throws_ok($$ insert into public.species (scientific_name, origin) values ('X y', 'curated') $$,
@@ -86,6 +90,8 @@ select is((select plant_id from public.scans where id = 'aaaaaaaa-0000-0000-0000
   'aaaaaaaa-0000-0000-0000-000000000001'::uuid, 'link was stored');
 select is((select name from public.plants where id = 'bbbbbbbb-0000-0000-0000-000000000001'),
   'B fern', 'A could not change or delete B''s plant');
+select is((select light from public.plants where id = 'bbbbbbbb-0000-0000-0000-000000000001'),
+  null, 'A could not set B''s light');
 
 select pg_temp.as_user('11111111-1111-1111-1111-111111111111');
 update public.scans set plant_id = (select id from public.plants where name = 'Fern 2')
