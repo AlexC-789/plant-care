@@ -102,10 +102,7 @@ const SCREENS: { name: string; primary?: string; open(page: Page): Promise<void>
 ];
 
 // Real app problems found by this matrix: test title prefix -> violation. Marked test.fail so the suite stays green and the gap stays visible.
-const KNOWN: Record<string, string> = {
-  'Home axe light': 'label-content-name-mismatch (serious) on the plant rows: accessible name "name, status" does not start with the visible text',
-  'Home axe dark': 'label-content-name-mismatch (serious) on the plant rows: accessible name "name, status" does not start with the visible text',
-};
+const KNOWN: Record<string, string> = {};
 
 /** Console errors and uncaught exceptions from now on. */
 function watchErrors(page: Page): string[] {
@@ -196,11 +193,13 @@ for (const s of SCREENS) {
   }
   for (const mode of MODES) {
     test(`J4 ${s.name} ${mode} axe`, async ({ page, world }) => {
-      test.fail(`${s.name} axe ${mode}` in KNOWN, KNOWN[`${s.name} axe ${mode}`]);
       await start(page, world.user, SIZES[1], mode, s);
       const { violations } = await new AxeBuilder({ page }).analyze();
       const bad = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
-      expect(bad.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`)).toEqual([]);
+      // Known app bug on Home: plant row names "name, status" do not start with their visible text. When the app is fixed this assertion goes red: remove the expectation.
+      const known = s.name === 'Home' ? ['label-content-name-mismatch'] : [];
+      expect(bad.filter((v) => known.includes(v.id)).map((v) => v.id)).toEqual(known);
+      expect(bad.filter((v) => !known.includes(v.id)).map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s)`)).toEqual([]);
     });
   }
   test(`J2 ${s.name} 200 % zoom renders cleanly`, async ({ page, world }) => {
