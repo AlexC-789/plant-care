@@ -12,6 +12,19 @@ file is the short, current summary.
   hosted PG 17; without an `apikey` header an unknown code → 404 and an unknown secret → 410, so the
   gateway, the tables and the service_role grants work). Owner phone check on mobile data still owed.
   The CLI login lacks `database_write`: `db push` needs `--password=…` (the `=` form; the password starts with `-`).
+- **QA pipeline** (branch `qa-pipeline`, 2026-11-19). Spec `docs/superpowers/specs/2026-11-19-qa-pipeline-design.md`,
+  plan `docs/superpowers/plans/2026-11-19-qa-pipeline.md`, flow inventory `docs/qa/2026-11-19-user-flows.md`.
+  - Playwright on the web build against local Supabase + a fake Plant.id (:8787; CI never calls Plant.id;
+    `supabase/functions/.env` must point `PLANT_ID_BASE_URL` at it). 141 tests in `apps/mobile/e2e/`:
+    add.branches 3, add 9, auth 10, detail 5, edit 3, home 8, matrix 68, module 8, photos 9, security 9,
+    settings 4, smoke 5; plus 6 in the `speed` project (`speed.spec.ts`). Plus `qa:test` (13 node tests)
+    and `qa:coverage` (every inventory flow has a test).
+  - Lanes: `npm run e2e:pr` (`@pr`, 29 tests, CI job `e2e` in `ci.yml`), `npm run e2e` (all), `npm run e2e:speed`
+    (static build, median of 3; `nightly.yml`, 03:23 UTC + manual).
+  - Speed medians: A2 tappable ~2.03 s, A1 launch ~2.0 s (`test.fail` until the redesign launch), tap feedback
+    ~66 ms, next screen ~467 ms; CLS home 0.0095, detail 0.0853, add 0.0095.
+  - Specs target the M4-era UI; after PR #14 (Direction E) merges, merge `main` and update labels.
+  - Open findings are in `docs/TASKS.md` "QA pipeline".
 - **M4 Devices, simulated** (branch `m4-devices`). Spec `docs/superpowers/specs/2026-11-18-m4-devices-design.md`,
   plan `docs/superpowers/plans/2026-11-18-m4-devices.md`.
   - Cloud "digital twin": the module uploads raw readings/events, the cloud converts them (`_shared/twin.ts`)

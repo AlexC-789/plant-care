@@ -35,7 +35,9 @@ Also read `apps/mobile/AGENTS.md` (Expo-specific rules: fetch versioned docs, do
 ## Commands (repo root)
 
 `npm test` · `npm run typecheck` · `npm run lint` · `npm run db:start` · `npm run db:reset` ·
-`npm run db:test` · `npm run db:types` · `npm run fn:test` · `npm run sim:test`. Run all of test/typecheck/lint/db:test/fn:test/sim:test before calling work done.
+`npm run db:test` · `npm run db:types` · `npm run fn:test` · `npm run sim:test` · `npm run e2e` · `npm run e2e:pr` ·
+`npm run e2e:speed` · `npm run qa:test` · `npm run qa:coverage`. Run all of test/typecheck/lint/db:test/fn:test/sim:test before calling work done.
+`e2e*` need `npm run db:start` first and `PLANT_ID_BASE_URL=http://host.docker.internal:8787` (the fake Plant.id) in `supabase/functions/.env`.
 Use these root scripts, not the bare commands in `apps/mobile/AGENTS.md` (`typecheck` also generates route types).
 Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Windows npm's
 `script-shell` must be Git Bash. Never report a check as passed unless it ran and passed; name the ones you couldn't run.
@@ -107,7 +109,7 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
     the `delete_plant_photo` RPC (locks the plant, promotes the next newest), then remove the object. Photos are
     managed on the timeline (strip + `plant/[id]/photos` viewer), not in Edit.
   - Security proofs (GPS-free upload, no objects left after delete, PNG / >3 MB rejected):
-    `node apps/mobile/e2e/m2-security.mjs` (Playwright, local Supabase + `expo start --web --port 8081`).
+    `apps/mobile/e2e/security.spec.ts` (Playwright, run via `npm run e2e`).
 - Devices (M4; spec `docs/superpowers/specs/2026-11-18-m4-devices-design.md`): the module secret is stored only as
   SHA-256; `devices`/`readings`/`device_events` are written only by functions (service role).
   `device-claim`/`device-sync` have `verify_jwt = false` and are deployed with `--no-verify-jwt`. Module rules and
@@ -121,6 +123,7 @@ Node 22 (`.nvmrc`, CI). `db:*` need Docker; `fn:test` is a POSIX loop, so on Win
 - **Ponytail (owner, 2026-11-17):** the laziest solution that works — YAGNI, standard library
   first, one line over fifty. Applies to every implementation and review.
 - Test-first (TDD: failing test, then the smallest change that passes).
+- UI changes keep `npm run e2e:pr` green and update `docs/qa/2026-11-19-user-flows.md`; a new flow gets its test in the same PR.
 - **Git (owner, 2026-11-18):** commit freely on feature branches (one commit per task, never on
   `main`) and push them. When a big task is done, open a PR to `main` (`gh pr create`) with what
   changed, what was verified and what is open; the owner reviews and merges. Never merge, push to
