@@ -36,14 +36,19 @@ async function runs<T>(browser: Browser, state: State, once: (page: Page) => Pro
 const rowBtn = (page: Page, name: string) => page.getByRole('button', { name: new RegExp(`^${name},`) }).filter({ visible: true });
 const probe = (page: Page, key: string) => page.evaluate((k) => (window as unknown as { p: Probe }).p?.[k], key);
 
-// Records the in-page time (ms since navigation start) a row button first appears.
+// Records the in-page time (ms since navigation start) the row is usable: its centre hits the row (not the launch overlay) and no overlay is present.
 const WATCH_ROW = (name: string) => `(() => {
   const p = (window.p = window.p || {});
-  const check = () => {
-    if (p.rowAt === undefined && [...document.querySelectorAll('[role="button"]')].some((e) => (e.getAttribute('aria-label') || '').startsWith(${JSON.stringify(name + ',')}))) p.rowAt = performance.now();
+  const tick = () => {
+    const row = [...document.querySelectorAll('[role="button"]')].find((e) => (e.getAttribute('aria-label') || '').startsWith(${JSON.stringify(name + ',')}));
+    if (row && !document.querySelector('[aria-label="Plant Care"]')) {
+      const r = row.getBoundingClientRect();
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      if (top && row.contains(top)) return void (p.rowAt = performance.now());
+    }
+    requestAnimationFrame(tick);
   };
-  new MutationObserver(check).observe(document, { subtree: true, childList: true, attributes: true });
-  check();
+  tick();
 })()`;
 
 // Flags whether anything labelled "Loading" (the skeleton announcement) was ever on screen.
@@ -88,7 +93,7 @@ test('A2 cold load to usable home <= 2.5 s', async ({ browser, user, admin }) =>
   expect(median(times)).toBeLessThanOrEqual(BUDGETS.coldLoadMs);
 });
 
-// shortcut: launch is ~1.45 s until redesign launch (PR #10) lands; remove .fail then
+// shortcut: launch is ~1.97 s (measured) until redesign launch (PR #10) lands; remove .fail then
 test.fail('A1 launch animation <= 1 s', async ({ browser, user, admin }) => {
   const { state } = await signedInState(browser, user, admin, ['Launch fern']);
   const times = await runs(browser, state, async (page) => {
