@@ -97,6 +97,19 @@ test('C5 C6 @pr each status shows its line and section', async ({ page, user, ad
   await expect(page.getByText('7 need you · 1 doing well')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Needs you' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Doing well' })).toBeVisible();
+  // Section membership by vertical position: needs-you rows sit between the two headings, "Plant fine" below the second.
+  const top = async (l: import('@playwright/test').Locator) => (await l.boundingBox())!.y;
+  const needs = await top(page.getByRole('heading', { name: 'Needs you' }));
+  const well = await top(page.getByRole('heading', { name: 'Doing well' }));
+  expect(needs).toBeLessThan(well);
+  for (const s of STATUSES) {
+    const y = await top(row(page, `Plant ${s.key}`, s.line));
+    if (s.key === 'fine') expect(y).toBeGreaterThan(well);
+    else {
+      expect(y).toBeGreaterThan(needs);
+      expect(y).toBeLessThan(well);
+    }
+  }
 });
 
 test('C7 paging loads the next page at the end of the list', async ({ page, user, admin }) => {
