@@ -72,7 +72,7 @@ export function startFakePlantId(port = FAKE_PLANTID_PORT) {
     send(404, {});
   });
   return new Promise((resolve) =>
-    server.listen(port, '127.0.0.1', () =>
+    server.listen(port, () =>
       resolve({
         url: `http://127.0.0.1:${server.address().port}`,
         setScenario: (s) => void (scenario = { ...scenario, ...s }),
