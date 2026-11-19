@@ -4,8 +4,8 @@ import { defineConfig } from '@playwright/test';
 const PORT = 8091; // not 8081: that is the owner's phone-testing Expo
 const APP = `http://localhost:${PORT}`;
 
-// Read once in the main process; workers inherit the env.
-if (!process.env.SUPABASE_URL) {
+// Always read from the local stack (never trust a pre-set env), once in the main process; workers inherit it.
+{
   const env: Record<string, string> = {};
   for (const line of execSync('npx supabase status -o env', { encoding: 'utf8', cwd: '..' }).split('\n')) {
     const m = /^(\w+)="(.*)"$/.exec(line.trim());
@@ -15,6 +15,7 @@ if (!process.env.SUPABASE_URL) {
   process.env.SUPABASE_ANON_KEY = env.ANON_KEY;
   process.env.SUPABASE_SERVICE_ROLE_KEY = env.SERVICE_ROLE_KEY;
 }
+if (!/^http:\/\/(127\.0\.0\.1|localhost):/.test(process.env.SUPABASE_URL!)) throw new Error('e2e runs only against local Supabase');
 
 export default defineConfig({
   testDir: 'e2e',

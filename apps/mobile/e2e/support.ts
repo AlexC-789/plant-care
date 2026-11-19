@@ -149,7 +149,7 @@ export async function signIn(page: Page, u: TestUser): Promise<void> {
 }
 
 // Earlier stack screens stay mounted (hidden), so click the visible one.
-export const clickVisible = (page: Page, name: string) => page.locator(`role=button[name="${name}"] >> visible=true`).click();
+export const clickVisible = (page: Page, name: string) => page.getByRole('button', { name, exact: true }).filter({ visible: true }).click();
 
 export async function startSim(o: { code: string; name: string; scenario?: string; from?: '1d' | '6h'; speed?: number }): Promise<{ stop(): Promise<void> }> {
   const args = [SIM, '--claim', o.code, '--name', o.name, '--url', process.env.SUPABASE_URL!];
