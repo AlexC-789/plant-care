@@ -32,10 +32,10 @@ export default function EmailConfirmed() {
   const { title, body } = COPY[result];
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Text variant="title" accessibilityRole="header" style={styles.center}>
+      <Text variant="largeTitle" accessibilityRole="header" style={styles.center}>
         {title}
       </Text>
-      <Text variant="callout" color="secondaryLabel" style={styles.center}>
+      <Text variant="subheadline" color="secondaryLabel" style={styles.center}>
         {body}
       </Text>
       <TextLink href="/sign-in" label="Sign in" />

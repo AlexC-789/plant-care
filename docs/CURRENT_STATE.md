@@ -12,6 +12,32 @@ file is the short, current summary.
   hosted PG 17; without an `apikey` header an unknown code → 404 and an unknown secret → 410, so the
   gateway, the tables and the service_role grants work). Owner phone check on mobile data still owed.
   The CLI login lacks `database_write`: `db push` needs `--password=…` (the `=` form; the password starts with `-`).
+- **Direction E redesign, Phase 2 Home + plant page** (branch `design-e-home`, stacked on Phase 1; 2026-11-19).
+  Specs: SCREEN_SPECIFICATIONS §11–12, UX_ARCHITECTURE §6 (latest design commit `cb52776` on `design-direction-e`,
+  not yet on `main`). `status.ts`: one sentence per plant plus a plant-page headline + line, no middle dots;
+  "no module", "waiting" and "wet" are Doing well; red (`now`) only for fault and tank. New `WaterLine`,
+  `TankBar`, `HeroPhoto` (page-colour fade, frosted back/more via `expo-blur`, owner OK; room + red-state pills).
+  Home: "{n} need(s) you" rows (ordered fault, tank, offline, battery), "doing well" 2-column grid (1 at
+  accessibility sizes), "All {m} doing well", empty "No plants yet / Scan a plant", toolbar "Add a plant".
+  Plant page: name, "{Latin}, {room}", headline + line, tank bar, Soil/Battery rows (no module: Set up a module,
+  Check its health), "How watering works" sheet (`plant/[id]/watering`), ⋯ menu (Edit, Check its health,
+  Remove module, Delete {name}), Resume watering in the BottomBar then "Waiting for the module…".
+  Owner choices: photo strip stays until Phase 5 (it now shows health-check progress/errors); health card and
+  About removed (with the latest-health query). Deferred (data not there yet, M5): Last drink, "about {n} days",
+  Today's limit line, "Watering resumed"/"Back to normal", Pause watering; server-side counts; offline line.
+  Review (code-reviewer): offline tank shows no current reading, menu backdrop + screen-reader modal, Resume
+  "Sending…" + error line, tank level in Home row labels, hero shimmer stops if signing fails; all fixed test-first.
+  Verified: Jest 337 (`--maxWorkers=2`; full 50% runs time out while other sessions load the machine),
+  typecheck, lint, `db:test` 166, `fn:test`, `sim:test` 7. Not checked on a device.
+- **Direction E redesign, Phase 1 Foundation** (branch `design-e-foundation`, based on `m4-devices`; 2026-11-19).
+  Design package: `docs/design/` on PR #10 (`DESIGN_SYSTEM.md`, `DESIGN_ROADMAP.md` §1). New palette (ink on
+  neutral page, blue only water, red only `statusNow`; `statusFine/Soon/Quiet`, `band`, `nowFill`, `soonFill`
+  removed), Archivo static TTFs in `apps/mobile/assets/fonts/` (OFL; loaded by `useFonts` behind the splash,
+  system font if loading fails), type scale `display` + six sizes (`title3`/`callout`/`caption1` removed),
+  Button ink 52/14 with `line` (was `bordered`) and `plain`, Row secondary label + ink tabular value,
+  StepProgress ink on track. Interim until Phase 2: Home status dot is red for `now`, grey otherwise;
+  StatusBanner untinted. Verified: Jest 337, typecheck, lint, `db:test` 166, `fn:test`, `sim:test` 7.
+  Not checked on a device or in the browser.
 - **M4 Devices, simulated** (branch `m4-devices`). Spec `docs/superpowers/specs/2026-11-18-m4-devices-design.md`,
   plan `docs/superpowers/plans/2026-11-18-m4-devices.md`.
   - Cloud "digital twin": the module uploads raw readings/events, the cloud converts them (`_shared/twin.ts`)

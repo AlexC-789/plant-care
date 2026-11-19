@@ -27,7 +27,7 @@ export default function PhotoStep() {
       <Stack.Screen options={{ headerRight: () => <TextLink label="Cancel" onPress={cancel} /> }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
         <StepProgress step={1} />
-        <Text variant="title" accessibilityRole="header">
+        <Text variant="largeTitle" accessibilityRole="header">
           Take a photo of your plant
         </Text>
         {whole ? (

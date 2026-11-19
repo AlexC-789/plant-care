@@ -3,7 +3,7 @@ import { Platform, Pressable, View } from 'react-native';
 
 import { useSession } from '@/auth/AuthProvider';
 import { CloseButton } from '@/navigation/CloseButton';
-import { serifFamily, space, useTheme } from '@/theme';
+import { fonts, space, typography, useTheme } from '@/theme';
 import { Icon } from '@/ui';
 
 // Settings is a sheet over Plants, even when opened directly from a link.
@@ -27,12 +27,14 @@ function SettingsButton() {
   );
 }
 
+/** Ink round + (SCREEN_SPECIFICATIONS §11); the 44 pt target wraps a 36 pt disc. */
 function AddButton() {
   const router = useRouter();
+  const { colors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Add a pot"
+      accessibilityLabel="Add a plant"
       onPress={() => router.push('/add/photo')}
       style={{
         width: space.touch,
@@ -40,7 +42,10 @@ function AddButton() {
         alignItems: 'center',
         justifyContent: 'center',
       }}>
-      <Icon name="plus" size={24} color="tint" />
+      <View
+        style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: colors.tint, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="plus" size={20} color="onTint" />
+      </View>
     </Pressable>
   );
 }
@@ -66,18 +71,18 @@ export default function AppLayout() {
           headerLargeTitle: true,
           headerLargeTitleShadowVisible: false,
           headerLargeTitleStyle: {
-            fontFamily: serifFamily,
+            fontFamily: fonts.condensed,
             color: colors.label,
           },
-          // Large titles are iOS-only; elsewhere the serif title sits in the bar.
+          // Large titles are iOS-only; elsewhere the condensed title sits in the bar.
           headerTitleStyle:
             Platform.OS === 'ios'
               ? { color: colors.label }
-              : { fontFamily: serifFamily, fontSize: 28, color: colors.label },
+              : { fontFamily: fonts.condensed, fontSize: typography.largeTitle.fontSize, color: colors.label },
           headerRight: () => (
             <View style={{ flexDirection: 'row' }}>
-              <AddButton />
               <SettingsButton />
+              <AddButton />
             </View>
           ),
         }}
@@ -86,6 +91,10 @@ export default function AppLayout() {
       <Stack.Screen
         name="plant/[id]/edit"
         options={{ presentation: 'modal', title: 'Edit plant', headerBackVisible: false }}
+      />
+      <Stack.Screen
+        name="plant/[id]/watering"
+        options={{ presentation: 'modal', title: 'How watering works', headerBackVisible: false, headerRight: CloseButton }}
       />
       <Stack.Screen
         name="plant/[id]/photos"

@@ -45,7 +45,7 @@ export default function ModuleSetup() {
     <>
       <Stack.Screen options={{ title: '' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={styles.content}>
-        <Text variant="title" accessibilityRole="header">
+        <Text variant="largeTitle" accessibilityRole="header">
           Add its module
         </Text>
         {claim.isError || (device.isError && !device.data) ? (

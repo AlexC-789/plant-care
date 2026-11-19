@@ -2,79 +2,94 @@ import { Image } from 'expo-image';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Status } from '@/devices/status';
-import type { Plant } from '@/plants/api';
-import { radius, space, useTheme } from '@/theme';
-import { PotDrawing, Text } from '@/ui';
+import type { PlantWithDevice } from '@/plants/api';
+import { space, useTheme } from '@/theme';
+import { PotDrawing, tankWords, Text, WaterLine } from '@/ui';
 
-const PHOTO = 60;
-const STATUS_COLOR = {
-  now: 'statusNow',
-  soon: 'statusSoon',
-  quiet: 'statusQuiet',
-  fine: 'statusFine',
-} as const;
+type Props = { plant: PlantWithDevice; photoUrl?: string; status: Status; onPress: () => void };
 
-/** One plant on Home with its module's status line. */
-export function PlantRow({
-  plant,
-  photoUrl,
-  status,
-  onPress,
-}: {
-  plant: Plant;
-  photoUrl?: string;
-  status: Status;
-  onPress: () => void;
-}) {
+// An offline module's last level isn't current: show none rather than a guess.
+const tankMl = (p: PlantWithDevice, s: Status) => (s.key === 'offline' ? null : (p.device?.water_left_ml ?? null));
+
+/** Row label: the water line is hidden from screen readers, so its level goes into words here. */
+const label = (p: PlantWithDevice, s: Status) =>
+  [p.name, s.line, p.device && `tank ${tankWords(tankMl(p, s), !!p.device.float_low).toLowerCase()}`].filter(Boolean).join(', ');
+
+/** "{type}, {room}", leaving out whatever is missing. */
+export const plantSubhead = (p: PlantWithDevice) =>
+  [p.species?.common_names[0] ?? p.custom_type, p.room].filter(Boolean).join(', ');
+
+function Photo({ plant, photoUrl, status, row }: Pick<Props, 'plant' | 'photoUrl' | 'status'> & { row?: boolean }) {
   const { colors } = useTheme();
+  const d = plant.device;
+  const ml = tankMl(plant, status);
+  return (
+    <View style={[styles.photoStack, row ? styles.rowStack : styles.tileStack]}>
+      <View style={[row ? styles.rowPhoto : styles.tilePhoto, styles.photo, { backgroundColor: colors.surface }]}>
+        {photoUrl && plant.photo_path ? (
+          <Image source={{ uri: photoUrl, cacheKey: plant.photo_path }} contentFit="cover" style={StyleSheet.absoluteFill} />
+        ) : (
+          <PotDrawing width={64} />
+        )}
+      </View>
+      {d ? (
+        <WaterLine level={ml === null ? null : ml / d.tank_full_ml} low={!!d.float_low} />
+      ) : null}
+    </View>
+  );
+}
+
+/** A plant under "need you": photo with its water line, name, "{type}, {room}" and the status sentence. */
+export function PlantRow({ plant, photoUrl, status, onPress }: Props) {
+  const subhead = plantSubhead(plant);
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${plant.name}, ${status.line}`}
+      accessibilityLabel={label(plant, status)}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: colors.surface },
-        pressed && styles.pressed,
-      ]}>
-      {photoUrl && plant.photo_path ? (
-        <Image source={{ uri: photoUrl, cacheKey: plant.photo_path }} style={styles.photo} />
-      ) : (
-        <View style={styles.photo}>
-          <PotDrawing width={PHOTO} />
-        </View>
-      )}
+      style={({ pressed }) => [styles.row, pressed && styles.pressed]}>
+      <Photo plant={plant} photoUrl={photoUrl} status={status} row />
       <View style={styles.text}>
-        <Text variant="title3">{plant.name}</Text>
-        <View style={styles.status}>
-          <View testID="status-dot" style={[styles.dot, { backgroundColor: colors[STATUS_COLOR[status.level]] }]} />
-          <Text variant="subheadline" style={styles.statusText}>
-            {status.line}
+        <Text variant="title">{plant.name}</Text>
+        {subhead ? (
+          <Text variant="subheadline" color="secondaryLabel">
+            {subhead}
           </Text>
-        </View>
+        ) : null}
+        <Text variant="subheadline" color={status.level === 'now' ? 'statusNow' : 'label'}>
+          {status.line}
+        </Text>
       </View>
     </Pressable>
   );
 }
 
+/** A plant under "doing well": a grid tile with photo, water line, name and its status in secondary. */
+export function PlantTile({ plant, photoUrl, status, onPress }: Props) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label(plant, status)}
+      onPress={onPress}
+      style={({ pressed }) => [styles.tile, pressed && styles.pressed]}>
+      <Photo plant={plant} photoUrl={photoUrl} status={status} />
+      <Text variant="title">{plant.name}</Text>
+      <Text variant="subheadline" color="secondaryLabel">
+        {status.line}
+      </Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.m,
-    padding: space.m,
-    borderRadius: radius.group,
-  },
-  pressed: { opacity: 0.6 },
-  photo: {
-    width: PHOTO,
-    height: PHOTO,
-    borderRadius: radius.thumb,
-    overflow: 'hidden',
-    justifyContent: 'center',
-  },
-  text: { flex: 1, gap: space.xs },
-  status: { flexDirection: 'row', alignItems: 'center', gap: space.s },
-  dot: { width: 8, height: 8, borderRadius: 4 },
-  statusText: { flex: 1 },
+  row: { flexDirection: 'row', gap: space.l, alignItems: 'flex-start' },
+  tile: { flex: 1, gap: space.xs },
+  photoStack: { gap: space.xs },
+  photo: { borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
+  rowStack: { width: 96 },
+  tileStack: { width: '100%' },
+  rowPhoto: { height: 112 },
+  tilePhoto: { aspectRatio: 96 / 112 },
+  text: { flex: 1, gap: space.xs, paddingTop: space.xs },
+  pressed: { transform: [{ scale: 0.97 }] },
 });

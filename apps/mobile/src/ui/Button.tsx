@@ -7,13 +7,13 @@ import { Text } from './Text';
 type Props = {
   label: string;
   onPress: () => void;
-  variant?: 'prominent' | 'bordered' | 'plain';
+  variant?: 'prominent' | 'line' | 'plain';
   disabled?: boolean;
   busy?: boolean;
   destructive?: boolean;
 };
 
-/** Capsule button. Prominent = the one primary action on a screen. */
+/** Ink button (DESIGN_SYSTEM §4). Prominent = the one primary action; line = surface with a hairline; plain = ink text. */
 export function Button({
   label,
   onPress,
@@ -23,8 +23,7 @@ export function Button({
   destructive = false,
 }: Props) {
   const { colors } = useTheme();
-  const textColor =
-    variant === 'prominent' ? 'onTint' : destructive ? 'statusNow' : 'tint';
+  const textColor = variant === 'prominent' ? 'onTint' : destructive ? 'statusNow' : 'label';
 
   return (
     <Pressable
@@ -36,11 +35,16 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         variant === 'prominent' && { backgroundColor: colors.tint },
-        variant === 'bordered' && { borderWidth: StyleSheet.hairlineWidth * 2, borderColor: colors.tint },
-        (pressed || disabled) && styles.dim,
+        variant === 'line' && {
+          backgroundColor: colors.surface,
+          borderWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.separator,
+        },
+        pressed && styles.pressed,
+        disabled && styles.dim,
       ]}>
       {busy ? <ActivityIndicator color={colors[textColor]} /> : null}
-      <Text variant={variant === 'plain' ? 'body' : 'headline'} color={textColor}>
+      <Text variant="headline" color={textColor}>
         {label}
       </Text>
     </Pressable>
@@ -49,8 +53,8 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    minHeight: space.touch,
-    borderRadius: radius.capsule,
+    minHeight: 52,
+    borderRadius: radius.button,
     paddingHorizontal: space.xl,
     paddingVertical: space.m,
     flexDirection: 'row',
@@ -58,5 +62,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: space.s,
   },
+  // DESIGN_SYSTEM §7: instant highlight on touch-down.
+  pressed: { transform: [{ scale: 0.97 }] },
   dim: { opacity: 0.6 },
 });

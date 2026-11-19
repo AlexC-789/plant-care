@@ -41,10 +41,10 @@ test('the group is announced once as "Loading"; blocks are hidden from screen re
 });
 
 test('text skeletons take the height of their text style', async () => {
-  await renderLoading(<SkeletonText variant="title3" width={120} testID="text" />);
+  await renderLoading(<SkeletonText variant="title" width={120} testID="text" />);
   await act(async () => jest.advanceTimersByTime(300));
   expect(StyleSheet.flatten(screen.getByTestId('text').props.style).height).toBe(
-    typography.title3.lineHeight,
+    typography.title.lineHeight,
   );
 });
 

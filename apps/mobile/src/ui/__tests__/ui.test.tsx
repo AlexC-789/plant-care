@@ -45,20 +45,36 @@ describe('Text', () => {
 });
 
 describe('Button', () => {
-  test('prominent: tint background, onTint label, pressable', async () => {
+  test('prominent: ink fill, white label, 52 high, radius 14, pressable', async () => {
     const onPress = jest.fn();
     await render(<Button label="Sign in" onPress={onPress} />);
     const button = screen.getByRole('button', { name: 'Sign in' });
-    expect(flat(button).backgroundColor).toBe(colors.light.tint);
-    expect(flat(screen.getByText('Sign in')).color).toBe(colors.light.onTint);
-    expect(flat(button).minHeight).toBeGreaterThanOrEqual(44);
+    expect(flat(button)).toMatchObject({ backgroundColor: colors.light.label, minHeight: 52, borderRadius: 14 });
+    expect(flat(screen.getByText('Sign in'))).toMatchObject({
+      color: colors.light.onTint,
+      fontSize: typography.headline.fontSize,
+    });
     await fireEvent.press(button);
     expect(onPress).toHaveBeenCalled();
   });
 
+  test('line: surface with a hairline, ink label', async () => {
+    await render(<Button label="Try again" variant="line" onPress={() => {}} />);
+    const style = flat(screen.getByRole('button', { name: 'Try again' }));
+    expect(style).toMatchObject({ backgroundColor: colors.light.surface, borderColor: colors.light.separator });
+    expect(style.borderWidth).toBeGreaterThan(0);
+    expect(flat(screen.getByText('Try again')).color).toBe(colors.light.label);
+  });
+
+  test('plain: ink label, no fill', async () => {
+    await render(<Button label="Skip" variant="plain" onPress={() => {}} />);
+    expect(flat(screen.getByRole('button', { name: 'Skip' })).backgroundColor).toBeUndefined();
+    expect(flat(screen.getByText('Skip')).color).toBe(colors.light.label);
+  });
+
   test('disabled and busy are exposed and block presses', async () => {
     const onPress = jest.fn();
-    await render(<Button label="Resend" variant="bordered" onPress={onPress} disabled busy />);
+    await render(<Button label="Resend" variant="line" onPress={onPress} disabled busy />);
     const button = screen.getByRole('button', { name: 'Resend' });
     expect(button).toBeDisabled();
     expect(button.props.accessibilityState).toMatchObject({ disabled: true, busy: true });
@@ -73,6 +89,24 @@ describe('Button', () => {
 });
 
 describe('Row and InsetGroup', () => {
+  test('label in secondary, value in ink with tabular figures', async () => {
+    await render(<Row label="Tank" value="500 ml" />);
+    expect(flat(screen.getByText('Tank')).color).toBe(colors.light.secondaryLabel);
+    expect(flat(screen.getByText('500 ml'))).toMatchObject({
+      color: colors.light.label,
+      fontVariant: ['tabular-nums'],
+    });
+  });
+
+  test('a navigation row has an ink label and a chevron', async () => {
+    await render(<Row label="Module" value="Connected" accessory="chevron" onPress={() => {}} />);
+    expect(flat(screen.getByText('Module')).color).toBe(colors.light.label);
+    expect(SymbolView).toHaveBeenCalledWith(
+      expect.objectContaining({ name: expect.objectContaining({ ios: 'chevron.right' }) }),
+      undefined,
+    );
+  });
+
   test('checkmark row is selected and shows the check icon', async () => {
     await render(
       <InsetGroup header="Units">

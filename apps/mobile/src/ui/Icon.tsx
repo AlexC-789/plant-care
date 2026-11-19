@@ -8,6 +8,8 @@ const SYMBOLS = {
   account: { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
   checkmark: { ios: 'checkmark', android: 'check', web: 'check' },
   chevronRight: { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
+  back: { ios: 'chevron.left', android: 'arrow_back', web: 'arrow_back' },
+  more: { ios: 'ellipsis', android: 'more_horiz', web: 'more_horiz' },
   plus: { ios: 'plus', android: 'add', web: 'add' },
   light: { ios: 'sun.max', android: 'light_mode', web: 'light_mode' },
   water: { ios: 'drop', android: 'water_drop', web: 'water_drop' },

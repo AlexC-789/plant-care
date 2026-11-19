@@ -6,9 +6,9 @@ import { radius, space, useTheme } from '@/theme';
 import { FadeIn, Icon, Text } from '@/ui';
 
 const STATUS = {
-  true: { icon: 'healthy', color: 'statusFine', label: 'Looks healthy' },
-  false: { icon: 'error', color: 'statusSoon', label: 'Needs attention' },
-  null: { icon: 'unsure', color: 'statusQuiet', label: 'Not sure' },
+  true: { icon: 'healthy', color: 'label', label: 'Looks healthy' },
+  false: { icon: 'error', color: 'label', label: 'Needs attention' },
+  null: { icon: 'unsure', color: 'secondaryLabel', label: 'Not sure' },
 } as const;
 
 /** The status line, note and what to do for a finished check. */
@@ -23,7 +23,7 @@ export function HealthText({ result }: { result: Result }) {
           {status.label}
         </Text>
       </View>
-      <Text variant="title3" accessibilityRole="header">
+      <Text variant="title" accessibilityRole="header">
         {result.note}
       </Text>
       {result.advice ? (

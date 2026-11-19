@@ -86,21 +86,21 @@ export function CaptureCards({
             {isSkipped ? (
               <Button
                 label="Add photo"
-                variant="bordered"
+                variant="line"
                 onPress={() => setSkipped(skipped.filter((k) => k !== kind))}
               />
             ) : (
               <>
                 <Button
                   label="Take photo"
-                  variant="bordered"
+                  variant="line"
                   busy={busy === kind}
                   disabled={busy !== null}
                   onPress={() => void pick(kind, 'camera')}
                 />
                 <Button
                   label="Choose from library"
-                  variant="bordered"
+                  variant="line"
                   disabled={busy !== null}
                   onPress={() => void pick(kind, 'library')}
                 />

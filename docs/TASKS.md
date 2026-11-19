@@ -46,6 +46,16 @@ T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when neede
    readings/sync (shortcuts until store readiness). Original product spec §5.9 still lists the old
    `refill`/`partial-topup` sim scenarios (M4 spec §9 supersedes).
 
+## Direction E redesign (`docs/design/DESIGN_ROADMAP.md` §1, on PR #10)
+
+- [x] Phase 1 Foundation: tokens, Archivo, Text, Button, Row, StepProgress (branch `design-e-foundation`).
+- [x] Phase 2 Home + plant page (branch `design-e-home`, stacked on Phase 1 and M4).
+- [ ] Phase 2 leftovers (need M5 data): Last drink row, "about {n} days", Today's limit line, Watering resumed /
+  Back to normal, Pause watering. Also server-side Home counts and the offline line.
+- [ ] Phase 3 Add flow (CaptureView, `add/photo` → `add/capture`). Phase 4 First run (Opus security review).
+  Phases 5–7: History, Notifications, 3D scan.
+- [ ] Owner: open decision 8 (mark `2026-11-17-app-ui-design.md` superseded; CLAUDE.md still points UI to it).
+
 ## Later milestones (P3; product spec §11, in order)
 
 - **M5 Watering plans:** generator, plan display, watering preference; inside safety limits.

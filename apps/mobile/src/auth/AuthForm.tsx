@@ -143,7 +143,7 @@ export function AuthForm({
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled">
-        <Text variant="title" accessibilityRole="header" style={styles.title}>
+        <Text variant="largeTitle" accessibilityRole="header" style={styles.title}>
           {title}
         </Text>
 
@@ -209,7 +209,7 @@ export function AuthForm({
           {showResend ? (
             <Button
               label={resendLabel}
-              variant="bordered"
+              variant="line"
               onPress={handleResend}
               disabled={resendDisabled}
               busy={resendPending}

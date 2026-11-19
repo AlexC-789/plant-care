@@ -8,7 +8,10 @@ import { Button, LoadingGroup, Skeleton, Text, TextLink } from '@/ui';
 
 import { preparePhoto } from './photos';
 import { DENIED, pickPhoto, type PhotoSource } from './pickPhoto';
-import { useAddPlantPhoto, useCheckHealth, usePlantPhotos } from './queries';
+import { useAddPlantPhoto, useCheckHealth, useHealthCheckStatus, usePlantPhotos } from './queries';
+
+// The server's own message for a 429; any other failure reads as "couldn't check".
+const LIMIT = "You've reached the health check limit for now. Try again later.";
 
 const THUMB = 72;
 const SHORT = { day: 'numeric', month: 'short' } as const;
@@ -20,6 +23,7 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
   const timeline = usePlantPhotos(plantId);
   const addPhoto = useAddPlantPhoto();
   const checkHealth = useCheckHealth();
+  const health = useHealthCheckStatus(plantId);
   const [choosing, setChoosing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [denied, setDenied] = useState<PhotoSource | null>(null);
@@ -105,7 +109,7 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
             }}
             renderItem={({ item, index }) => {
               const taken = new Date(item.taken_at);
-              const dot = item.health && (item.health.healthy ? 'statusFine' : item.health.healthy === false ? 'statusNow' : 'statusQuiet');
+              const dot = item.health && (item.health.healthy ? 'label' : item.health.healthy === false ? 'statusNow' : 'secondaryLabel');
               return (
                 <Pressable
                   accessibilityRole="button"
@@ -119,7 +123,7 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
                     style={[styles.thumb, { backgroundColor: colors.skeleton }]}
                   />
                   {dot ? <View testID="timeline-dot" style={[styles.dot, { backgroundColor: colors[dot], borderColor: colors.surface }]} /> : null}
-                  <Text variant="caption1" color="secondaryLabel">
+                  <Text variant="footnote" color="secondaryLabel">
                     {taken.toLocaleDateString(undefined, SHORT)}
                   </Text>
                 </Pressable>
@@ -131,17 +135,17 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
       {offer ? (
         <View style={styles.stack}>
           <Text variant="subheadline">Added to the timeline.</Text>
-          <Button label="Check its health" variant="bordered" onPress={check} />
+          <Button label="Check its health" variant="line" onPress={check} />
           <Button label="Not now" variant="plain" onPress={() => setOffer(null)} />
         </View>
       ) : choosing ? (
         <View style={styles.stack}>
-          <Button label="Take photo" variant="bordered" busy={busy} disabled={busy} onPress={() => void add('camera')} />
-          <Button label="Choose from library" variant="bordered" disabled={busy} onPress={() => void add('library')} />
+          <Button label="Take photo" variant="line" busy={busy} disabled={busy} onPress={() => void add('camera')} />
+          <Button label="Choose from library" variant="line" disabled={busy} onPress={() => void add('library')} />
           <Button label="Cancel" variant="plain" disabled={busy} onPress={() => setChoosing(false)} />
         </View>
       ) : (
-        <Button label="Add a photo" variant="bordered" onPress={() => setChoosing(true)} />
+        <Button label="Add a photo" variant="line" onPress={() => setChoosing(true)} />
       )}
       {denied ? (
         <View style={styles.stack}>
@@ -150,6 +154,15 @@ export function TimelineStrip({ plantId }: { plantId: string }) {
           </Text>
           <Button label="Open Settings" variant="plain" onPress={() => void Linking.openSettings()} />
         </View>
+      ) : null}
+      {health?.status === 'pending' ? (
+        <Text variant="subheadline" accessibilityLiveRegion="polite">
+          Looking at your plant…
+        </Text>
+      ) : health?.status === 'error' ? (
+        <Text variant="footnote" color="statusNow" accessibilityRole="alert">
+          {health.error?.message === LIMIT ? LIMIT : "Couldn't check right now. Try again."}
+        </Text>
       ) : null}
       {failed ? (
         <Text variant="footnote" color="statusNow" accessibilityRole="alert">

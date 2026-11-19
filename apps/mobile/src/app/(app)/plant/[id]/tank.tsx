@@ -2,10 +2,9 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet } from 'react-native';
 
-import { TankVessel } from '@/devices/TankVessel';
 import { useDevice } from '@/devices/queries';
 import { space } from '@/theme';
-import { BottomBar, Button, StepDone, Text } from '@/ui';
+import { BottomBar, Button, StepDone, TankBar, Text } from '@/ui';
 
 const SUCCESS_MS = 700;
 const FALLBACK_FULL_ML = 705;
@@ -33,11 +32,11 @@ export default function TankSetup() {
           <StepDone title="The tank is full." />
         ) : (
           <>
-            <Text variant="title" accessibilityRole="header">
+            <Text variant="largeTitle" accessibilityRole="header">
               Fill the tank
             </Text>
             <Text>Open the cap on the saucer and pour until the water reaches the top of the hole.</Text>
-            <TankVessel ml={ml} fullMl={fullMl} width={84} />
+            <TankBar ml={ml} fullMl={fullMl} low={false} />
           </>
         )}
       </ScrollView>
