@@ -26,11 +26,10 @@ T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when neede
 
 ## M4 — Devices, simulated (PR open from `m4-devices`)
 
-1. **P1, owner approval first (changes the hosted project):** `npx supabase db push`; deploy
-   `device-claim` and `device-sync` with `--no-verify-jwt`. Before: `select version()` must be ≥ 15
-   (`unique nulls not distinct`). After: run the sim against hosted and confirm sync works without an
-   `apikey` header (else the module sends the anon key as `apikey`); a successful claim from the app +
-   sync proves the service_role grants and `new_claim_code()` execute. Owner checks the phone on mobile data.
+1. **P1, owner:** hosted deploy done 2026-11-19 (PG 17; functions answer without `apikey`). Left:
+   reset the hosted DB password (it was pasted in a chat); on the phone on mobile data add a module
+   to a plant and run `node sim/sim.ts --claim <code>` (hosted by default) — proves the app's claim
+   (`new_claim_code()` execute) and a real sync on hosted.
 2. Notes for M7 firmware: chunk uploads to ≤ 200 readings per sync if `read_interval_s` < ~430 s;
    trusted monotonic clock (a forward jump frees the daily budget); persist state before pumping;
    `battery_low` hysteresis; sync at the next wake after applying a command; tank level sensor part

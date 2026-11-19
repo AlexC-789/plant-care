@@ -7,7 +7,11 @@ file is the short, current summary.
 
 ## Status
 
-- `main` = `73eadcc`. M1–M3 merged. M4 done on branch `m4-devices` (PR open), not yet on hosted.
+- `main` = `73eadcc`. M1–M3 merged. M4 done on branch `m4-devices` (PR #9 open) and deployed to hosted
+  (2026-11-19: both M4 migrations pushed, `device-claim` + `device-sync` deployed `--no-verify-jwt`;
+  hosted PG 17; without an `apikey` header an unknown code → 404 and an unknown secret → 410, so the
+  gateway, the tables and the service_role grants work). Owner phone check on mobile data still owed.
+  The CLI login lacks `database_write`: `db push` needs `--password=…` (the `=` form; the password starts with `-`).
 - **M4 Devices, simulated** (branch `m4-devices`). Spec `docs/superpowers/specs/2026-11-18-m4-devices-design.md`,
   plan `docs/superpowers/plans/2026-11-18-m4-devices.md`.
   - Cloud "digital twin": the module uploads raw readings/events, the cloud converts them (`_shared/twin.ts`)
