@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>First-run flow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,400..900;1,62..125,400..700&display=swap" rel="stylesheet">
+<style>
+  :root { --page:#F5F5F3; --ink:#1F1F1F; --muted:#66655F; --red:#D0213B; --water:#5FAEE3; --line:#E3E3E0; --track:#D9D8D4; --sheet:#E9E9E6; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--sheet); color:var(--ink); font:16px/1.5 "Archivo", sans-serif; }
+  .wrap { max-width:1240px; margin:0 auto; padding:32px 16px 56px; }
+  section { margin-top:44px; }
+  h1, h2 { font-stretch:75%; font-weight:800; letter-spacing:-.01em; line-height:1.05; margin:0 0 10px; }
+  h1 { font-size:44px; } h2 { font-size:30px; }
+  h3 { font-size:17px; margin:0 0 4px; }
+  .lead { max-width:72ch; color:var(--muted); margin:0 0 20px; }
+  .row { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .cap { width:360px; color:var(--muted); font-size:13px; margin-top:12px; }
+  .cap b { color:var(--ink); font-weight:650; }
+
+  /* type scale: one family, two widths, six sizes */
+  .t-display { font-size:40px; line-height:1; font-stretch:75%; font-weight:800; letter-spacing:-.01em; }
+  .t-large   { font-size:32px; line-height:1.05; font-stretch:75%; font-weight:800; letter-spacing:-.005em; }
+  .t-title   { font-size:21px; line-height:1.15; font-stretch:75%; font-weight:800; }
+  .t-head    { font-size:17px; line-height:1.3; font-weight:650; }
+  .t-body    { font-size:17px; line-height:1.4; }
+  .t-sub     { font-size:15px; line-height:1.35; color:var(--muted); }
+  .t-foot    { font-size:13px; line-height:1.35; color:var(--muted); letter-spacing:.005em; }
+  .red { color:var(--red); }
+  em { font-style:italic; }
+  p { margin:0; }
+
+  /* type specimen */
+  .spec { background:#fff; border-radius:16px; padding:20px 22px; flex:1 1 520px; }
+  .spec div { display:flex; align-items:baseline; gap:16px; padding:6px 0; border-bottom:1px solid var(--line); }
+  .spec div:last-child { border:0; }
+  .spec code { font:12px/1.3 ui-monospace, monospace; color:var(--muted); width:150px; flex:0 0 auto; }
+
+  /* model cards */
+  .model { background:#fff; border-radius:16px; padding:18px 20px; flex:1 1 360px; }
+  .model.pick { box-shadow:inset 0 0 0 2px var(--ink); }
+  .steps { display:flex; flex-wrap:wrap; gap:6px 0; margin:12px 0; align-items:center; }
+  .steps span { font-size:13px; padding:4px 9px; border-radius:8px; background:var(--page); }
+  .steps span.acct { background:var(--ink); color:#fff; }
+  .steps i { width:12px; height:1px; background:var(--track); display:inline-block; }
+  .model ul { margin:6px 0 0; padding-left:18px; font-size:14.5px; } .model li { margin:3px 0; }
+  .tag { display:inline-block; font-size:12px; font-weight:650; padding:2px 8px; border-radius:6px; background:var(--ink); color:#fff; margin-left:6px; vertical-align:3px; }
+
+  /* phone */
+  .phone { width:360px; height:740px; border-radius:44px; overflow:hidden; position:relative; flex:0 0 auto;
+    background:var(--page); box-shadow:0 0 0 9px #222, 0 18px 40px rgba(0,0,0,.16); }
+  .phone.dark { background:#111; color:#fff; }
+  .sb { height:44px; display:flex; justify-content:space-between; align-items:center; padding:0 28px; font-weight:600; font-size:14px; position:relative; z-index:3; }
+  .sb.float { position:absolute; left:0; right:0; top:0; }
+  .dark .sb { color:#fff; }
+  .scr { padding:0 20px; }
+  img { display:block; object-fit:cover; }
+  .bar { position:absolute; left:20px; right:20px; bottom:30px; display:flex; flex-direction:column; gap:10px; }
+  .btn { height:52px; border-radius:14px; background:var(--ink); color:#fff; display:grid; place-items:center; font-size:17px; font-weight:600; }
+  .btn.plain { background:transparent; color:var(--ink); height:40px; }
+  .btn.line { background:#fff; color:var(--ink); box-shadow:inset 0 0 0 1px var(--track); }
+  .dark .btn.plain { color:#fff; }
+  .round { width:44px; height:44px; border-radius:22px; background:rgba(255,255,255,.72); backdrop-filter:blur(16px) saturate(180%); -webkit-backdrop-filter:blur(16px) saturate(180%); display:grid; place-items:center; font-size:18px; font-weight:700; color:var(--ink); }
+  .navrow { display:flex; justify-content:space-between; align-items:center; padding:4px 16px 0; }
+  .prog { display:flex; gap:4px; flex:1; margin:0 14px; }
+  .prog i { flex:1; height:3px; border-radius:2px; background:var(--track); }
+  .prog i.on { background:var(--ink); }
+
+  /* camera */
+  .cam { position:absolute; inset:0; }
+  .cam img { width:100%; height:100%; }
+  .frame { position:absolute; left:40px; right:40px; top:150px; bottom:220px; }
+  .frame b { position:absolute; width:34px; height:34px; border:3px solid #fff; }
+  .frame b:nth-child(1){ left:0; top:0; border-right:0; border-bottom:0; border-radius:14px 0 0 0; }
+  .frame b:nth-child(2){ right:0; top:0; border-left:0; border-bottom:0; border-radius:0 14px 0 0; }
+  .frame b:nth-child(3){ left:0; bottom:0; border-right:0; border-top:0; border-radius:0 0 0 14px; }
+  .frame b:nth-child(4){ right:0; bottom:0; border-left:0; border-top:0; border-radius:0 0 14px 0; }
+  .camtext { position:absolute; left:0; right:0; bottom:150px; text-align:center; color:#fff; font-size:17px; font-weight:600; text-shadow:0 1px 8px rgba(0,0,0,.5); }
+  .shutter { position:absolute; left:50%; bottom:46px; width:76px; height:76px; margin-left:-38px; border-radius:38px; border:4px solid #fff; display:grid; place-items:center; }
+  .shutter i { width:60px; height:60px; border-radius:30px; background:#fff; }
+  .camside { position:absolute; bottom:64px; color:#fff; font-size:15px; font-weight:600; }
+  .ring { position:absolute; left:50%; top:200px; width:250px; height:250px; margin-left:-125px; }
+
+  /* home + detail bits from Direction E */
+  .gauge { height:4px; border-radius:2px; background:var(--track); margin-top:8px; overflow:hidden; }
+  .gauge i { display:block; height:100%; background:var(--water); }
+  .gauge.low i { background:var(--red); }
+  .gauge.none { background:repeating-linear-gradient(90deg, #BDBCB7 0 6px, transparent 6px 10px); }
+  .tank { height:10px; border-radius:5px; background:var(--track); overflow:hidden; }
+  .tank i { display:block; height:100%; background:var(--water); }
+  .kv > div { display:flex; justify-content:space-between; padding:11px 0; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  .kv { border-top:1px solid var(--line); }
+  .kv > div > span:first-child { color:var(--muted); }
+
+  /* form bits */
+  .field { background:#fff; border-radius:12px; height:52px; display:flex; align-items:center; padding:0 16px; font-size:17px; box-shadow:inset 0 0 0 1px var(--line); }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { height:40px; padding:0 14px; border-radius:20px; display:inline-flex; align-items:center; font-size:15px; background:#fff; box-shadow:inset 0 0 0 1px var(--track); }
+  .chip.on { background:var(--ink); color:#fff; box-shadow:none; }
+  .seg3 { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+  .seg3 div { background:#fff; border-radius:12px; padding:10px 12px; box-shadow:inset 0 0 0 1px var(--track); }
+  .seg3 .on { box-shadow:inset 0 0 0 2px var(--ink); }
+  .code { font-size:44px; font-stretch:75%; font-weight:800; letter-spacing:.06em; font-variant-numeric:tabular-nums; }
+  .notif { background:#fff; border-radius:18px; padding:12px 14px; box-shadow:0 6px 24px rgba(0,0,0,.08); display:flex; gap:10px; }
+  .notif .ico { width:34px; height:34px; border-radius:8px; background:var(--ink); flex:0 0 auto; }
+  .sheetbg { position:absolute; inset:0; background:rgba(0,0,0,.35); }
+  .sheet { position:absolute; left:0; right:0; bottom:0; background:var(--page); border-radius:24px 24px 0 0; padding:10px 20px 30px; }
+  .grab { width:40px; height:5px; border-radius:3px; background:var(--track); margin:0 auto 18px; }
+  .island { position:absolute; top:11px; left:50%; width:118px; height:34px; margin-left:-59px; border-radius:17px; background:#000; z-index:5; }
+  .blend { position:absolute; left:0; right:0; top:0; height:104px; pointer-events:none; background:linear-gradient(to bottom, var(--page) 0%, var(--page) 34%, color-mix(in srgb, var(--page) 80%, transparent) 52%, color-mix(in srgb, var(--page) 35%, transparent) 76%, transparent 100%); }
+  .wisp { -webkit-mask-image:linear-gradient(to bottom, transparent 0, transparent 22px, rgba(0,0,0,.06) 42px, rgba(0,0,0,.2) 64px, rgba(0,0,0,.42) 88px, rgba(0,0,0,.66) 112px, rgba(0,0,0,.86) 136px, #000 164px);
+          mask-image:linear-gradient(to bottom, transparent 0, transparent 22px, rgba(0,0,0,.06) 42px, rgba(0,0,0,.2) 64px, rgba(0,0,0,.42) 88px, rgba(0,0,0,.66) 112px, rgba(0,0,0,.86) 136px, #000 164px); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>First run, without sign-up first</h1>
+  <p class="lead">Direction E carried through the whole first run. Two changes from the last page: a fixed type scale (the sizes were jumping around), and the account now comes after the person has scanned a plant and seen the result. Three ways to place the account are compared first, then the recommended flow screen by screen.</p>
+
+  <!-- TYPE -->
+  <section>
+    <h2>Type, fixed</h2>
+    <p class="lead">What was off: plant names were 58 px extra-condensed next to 13–14 px body text, with four different in-between sizes and two different condensed widths. Now there are six sizes, matched to iOS Dynamic Type (17 pt body), and one condensed width (75 %) used only for names and screen titles.</p>
+    <div class="row">
+      <div class="spec">
+        <div><code>Display 40 · cond.</code><span class="t-display">Stripes</span></div>
+        <div><code>Large title 32 · cond.</code><span class="t-large">Plants</span></div>
+        <div><code>Title 21 · cond.</code><span class="t-title">Monty</span></div>
+        <div><code>Headline 17 semibold</code><span class="t-head">Water left for about 9 days</span></div>
+        <div><code>Body 17</code><span class="t-body">Damp, 41 %</span></div>
+        <div><code>Subhead 15</code><span class="t-sub">Monstera, bedroom</span></div>
+        <div><code>Footnote 13</code><span class="t-foot">About 500 ml of 705 ml</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODELS -->
+  <section>
+    <h2>Where the account goes: three models</h2>
+    <p class="lead">Evidence (Lazyweb): Duolingo asks for a profile only after the first lesson, framed as "Don't lose your progress" (screens:05704a8529064e26032c3f68). Cal AI puts "Save your progress" with Apple, Google and email at the very end of a long onboarding (screens:09e5e4bb90d854ff5304044f). Atoms lets people use the app as a "Guest account" and asks later from the profile (screens:1fae8878be5995bbfe14420c). Common thread: ask when there is something to lose, and say what is kept.</p>
+    <div class="row">
+      <div class="model pick">
+        <h3>A. Scan first, account to keep it <span class="tag">Recommended</span></h3>
+        <div class="steps"><span>Welcome</span><i></i><span>Scan</span><i></i><span>It's a calathea</span><i></i><span>Name and place</span><i></i><span class="acct">Account</span><i></i><span>Health</span><i></i><span>Module?</span><i></i><span>Home</span></div>
+        <ul>
+          <li>The first thing people do is the most impressive thing: point the camera, get an answer.</li>
+          <li>The account is asked at "Save Stripes", when there is a named plant and its photo to lose.</li>
+          <li>Pairing a module always happens after the account, so hardware is never tied to a guest.</li>
+          <li>Cost: one free identification per install before the account; needs a guest session on the server.</li>
+        </ul>
+      </div>
+      <div class="model">
+        <h3>B. Guest until the module</h3>
+        <div class="steps"><span>Welcome</span><i></i><span>Scan</span><i></i><span>Save</span><i></i><span>Home (guest)</span><i></i><span>…</span><i></i><span class="acct">Account</span><i></i><span>Pair module</span></div>
+        <ul>
+          <li>No account at all until a module is paired, or until the person taps "Keep my plants" in Settings.</li>
+          <li>Lowest friction, like Atoms.</li>
+          <li>Risk: a guest who deletes the app or changes phone loses every plant and photo. Plant.id costs money per call, and a guest limit is easy to dodge by reinstalling.</li>
+        </ul>
+      </div>
+      <div class="model">
+        <h3>C. Module first</h3>
+        <div class="steps"><span>Welcome</span><i></i><span>"I have a module"</span><i></i><span class="acct">Account</span><i></i><span>Pair</span><i></i><span>Fill tank</span><i></i><span>Scan plant</span><i></i><span>Home</span></div>
+        <ul>
+          <li>For someone holding the box: setup starts with the hardware.</li>
+          <li>The account comes before pairing, which feels natural when unboxing a device.</li>
+          <li>Weak for anyone who downloaded the app first, and the account is again the second screen.</li>
+          <li>Best kept as a branch of A: the Welcome screen offers "Set up a module" as a second way in.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:16px"><b style="color:var(--ink)">Backend note (needs your OK, not part of this design pass):</b> A and B need Supabase anonymous sign-in, so the first scan has a user id for storage and limits. Turning the guest into a real account keeps the same id, so the plant carries over. Guests need their own small identify limit (suggest 3, not 20) and a captcha on guest sign-in, or the Plant.id key can be drained by reinstalling. "Continue with Apple / Google" also needs setting up; if Google is offered on iOS, Apple must be offered too.</p>
+  </section>
+
+  <!-- FLOW A -->
+  <section>
+    <h2>Model A, screen by screen</h2>
+    <div class="row">
+
+      <!-- 1 Welcome -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <img class="wisp" src="img/calathea.webp" alt="" style="width:100%;height:440px">
+          <div class="sb float"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="scr" style="padding-top:26px">
+            <p class="t-large">Plants that water themselves</p>
+            <p class="t-sub" style="margin-top:10px">Scan a plant to see what it is and how it's doing. Add a Plant Care module and it takes care of the watering.</p>
+          </div>
+          <div class="bar"><div class="btn">Scan a plant</div><div class="btn plain">I already have an account</div></div>
+        </div>
+        <div class="cap"><b>1 Welcome.</b> One photo, one sentence about the product, one way in. Signing in is there for people coming back, but it's not the first thing asked.</div>
+      </div>
+
+      <!-- 2 Capture -->
+      <div>
+        <div class="phone dark"><div class="island"></div>
+          <div class="cam"><img src="img/calathea.webp" alt=""></div>
+          <div class="sb float"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow" style="position:absolute;top:48px;left:0;right:0"><div class="round">✕</div><div class="round">?</div></div>
+          <div class="frame"><b></b><b></b><b></b><b></b></div>
+          <div class="camtext">Fit the whole plant in the frame</div>
+          <div class="camside" style="left:36px">Photos</div>
+          <div class="shutter"><i></i></div>
+        </div>
+        <div class="cap"><b>2 Capture (today: photo).</b> Camera opens straight away, like Planta. "Photos" picks one from the library. Nothing coloured is drawn on the picture.</div>
+      </div>
+
+      <!-- 2b Capture 3D -->
+      <div>
+        <div class="phone dark"><div class="island"></div>
+          <div class="cam"><img src="img/calathea.webp" alt=""></div>
+          <div class="sb float"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow" style="position:absolute;top:48px;left:0;right:0"><div class="round">✕</div><div class="round">?</div></div>
+          <svg class="ring" viewBox="0 0 250 250" aria-hidden="true">
+            <g id="ticks"></g>
+          </svg>
+          <div class="camtext">Walk slowly around the plant<br><span style="font-weight:400;font-size:15px">About halfway round</span></div>
+          <div class="camside" style="left:36px">Use a photo</div>
+          <div class="shutter"><i style="width:28px;height:28px;border-radius:6px"></i></div>
+        </div>
+        <div class="cap"><b>2 Capture (later: 3D scan).</b> Same screen, same place in the flow. The frame becomes a ring of ticks that fill as each angle is covered; the shutter becomes stop. "Use a photo" stays as the fallback. Nothing after this step changes.</div>
+      </div>
+
+      <!-- 3 Result -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <img class="wisp" src="img/calathea.webp" alt="" style="width:100%;height:370px">
+          <div class="sb float"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow" style="position:absolute;top:48px;left:0;right:0"><div class="round">‹</div><div></div></div>
+          <div class="scr" style="padding-top:22px">
+            <p class="t-foot">Very likely</p>
+            <p class="t-display" style="margin-top:4px">Peacock plant</p>
+            <p class="t-sub" style="margin-top:6px"><em>Calathea makoyana</em></p>
+            <p class="t-body" style="margin-top:14px">Likes steady moisture and indirect light. Its leaves curl when it's thirsty.</p>
+          </div>
+          <div class="bar"><div class="btn">This is my plant</div><div class="btn plain">It's something else</div></div>
+        </div>
+        <div class="cap"><b>3 Result.</b> Big photo, the name, one main button (Merlin's "This is my bird" pattern). Confidence in words, not a percentage. "It's something else" opens the other suggestions and name search.</div>
+      </div>
+
+      <!-- 4 Name and place -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow"><div class="round" style="background:#fff">‹</div><div class="prog"><i class="on"></i><i class="on"></i><i></i></div><div style="width:44px"></div></div>
+          <div class="scr" style="padding-top:18px">
+            <p class="t-large">Name and place</p>
+            <p class="t-sub" style="margin:16px 0 6px">Name</p>
+            <div class="field">Stripes</div>
+            <p class="t-sub" style="margin:18px 0 8px">Room</p>
+            <div class="chips"><span class="chip on">Living room</span><span class="chip">Bedroom</span><span class="chip">Kitchen</span><span class="chip">Hall</span><span class="chip">Other…</span></div>
+            <p class="t-sub" style="margin:18px 0 8px">Light where it stands</p>
+            <div class="seg3"><div><p class="t-head" style="font-size:15px">Bright</p><p class="t-foot">Near a sunny window</p></div><div class="on"><p class="t-head" style="font-size:15px">Medium</p><p class="t-foot">A few steps away</p></div><div><p class="t-head" style="font-size:15px">Low</p><p class="t-foot">Far from windows</p></div></div>
+          </div>
+          <div class="bar"><div class="btn">Save Stripes</div></div>
+        </div>
+        <div class="cap"><b>4 Name and place.</b> Rooms are picked, not typed; the person's own rooms come first next time. Light is three plain choices. The button names what it does.</div>
+      </div>
+
+      <!-- 5 Account -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <img src="img/calathea.webp" alt="" style="width:100%;height:330px;filter:brightness(.92)">
+          <div class="sheetbg"></div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <p class="t-large">Keep Stripes</p>
+            <p class="t-sub" style="margin:10px 0 20px">Create an account so Stripes, its photos and its module stay with you if you change or lose your phone.</p>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div class="btn">Continue with Apple</div>
+              <div class="btn line">Continue with Google</div>
+              <div class="btn line">Continue with email</div>
+            </div>
+            <p class="t-foot" style="margin-top:14px;text-align:center">By continuing you agree to the Terms and Privacy Policy.</p>
+          </div>
+        </div>
+        <div class="cap"><b>5 Account.</b> A sheet over the plant just saved, so it's clear what is being kept. It says what is lost without one (Duolingo, Cal AI). No marketing checkbox.</div>
+      </div>
+
+      <!-- 6 Health -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow"><div style="width:44px"></div><div class="prog"><i class="on"></i><i class="on"></i><i class="on"></i></div><div style="width:44px"></div></div>
+          <div class="scr" style="padding-top:18px">
+            <img src="img/calathea.webp" alt="" style="width:100%;height:220px;border-radius:16px">
+            <p class="t-large" style="margin-top:18px">Stripes looks healthy</p>
+            <p class="t-body" style="margin-top:10px">No signs of pests or disease in this photo. A few leaf edges are brown, which usually means the air is dry.</p>
+            <p class="t-foot" style="margin-top:12px">Checked from your photo. Take another any time from Stripes' page.</p>
+          </div>
+          <div class="bar"><div class="btn">Done</div></div>
+        </div>
+        <div class="cap"><b>6 Health.</b> The existing health step, now after the account so its result is saved. Plain sentence first; the caveat in small print.</div>
+      </div>
+
+      <!-- 7 Module offer -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="scr" style="padding-top:60px">
+            <p class="t-large">Does Stripes have a module?</p>
+            <p class="t-body" style="margin-top:12px">The Plant Care module sits in the saucer, reads the soil and waters from its own tank. Setting one up takes about two minutes.</p>
+            <div class="kv" style="margin-top:22px">
+              <div><span>You'll need</span><span>The module and its stake</span></div>
+              <div><span></span><span>Water for the tank</span></div>
+              <div><span></span><span>Your Wi-Fi password</span></div>
+            </div>
+          </div>
+          <div class="bar"><div class="btn">Set up the module</div><div class="btn plain">Not now</div></div>
+        </div>
+        <div class="cap"><b>7 Module offer.</b> Plants without a module are fine and stay "doing well". "Not now" goes to Home; the plant page keeps a "Set up a module" row.</div>
+      </div>
+
+      <!-- 8 Pair -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow"><div class="round" style="background:#fff">‹</div><div class="prog"><i class="on"></i><i></i></div><div style="width:44px"></div></div>
+          <div class="scr" style="padding-top:18px">
+            <p class="t-large">Connect the module</p>
+            <p class="t-body" style="margin-top:12px">Hold the button on the module until the light blinks, join its Wi-Fi, then type this code:</p>
+            <p class="code" style="margin:22px 0 4px">7KQ4 M2XP</p>
+            <p class="t-foot">Code works until 09:56</p>
+            <div class="kv" style="margin-top:22px"><div><span style="color:var(--ink)">Waiting for the module…</span><span></span></div></div>
+          </div>
+          <div class="bar"><div class="btn plain">It isn't connecting</div></div>
+        </div>
+        <div class="cap"><b>8 Pair.</b> One instruction, the code large, a visible waiting state, an expiry time and a way out. Copy follows the M4 screen (code in groups of four; "This code expired." / "New code" when it runs out).</div>
+      </div>
+
+      <!-- 9 Tank -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow"><div class="round" style="background:#fff">‹</div><div class="prog"><i class="on"></i><i class="on"></i></div><div style="width:44px"></div></div>
+          <div class="scr" style="padding-top:18px">
+            <p class="t-large">Fill the tank</p>
+            <p class="t-body" style="margin-top:12px">Open the cap on the saucer and pour until the water reaches the top of the hole.</p>
+            <div class="tank" style="margin-top:28px"><i style="width:100%"></i></div>
+            <div style="display:flex;justify-content:space-between;margin-top:8px" class="t-foot"><span>Full</span><span>705 ml</span></div>
+            <p class="t-head" style="margin-top:20px">The tank is full.</p>
+            <p class="t-sub" style="margin-top:4px">Stripes gets its first drink when the soil starts to dry.</p>
+          </div>
+          <div class="bar"><div class="btn">Done</div></div>
+        </div>
+        <div class="cap"><b>9 Tank.</b> The module sees the water itself, so there is no "I filled it" button; the bar fills and the sentence confirms. The blue appears here for the first time, so its meaning is learned.</div>
+      </div>
+
+      <!-- 10 Notifications -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="scr" style="padding-top:60px">
+            <p class="t-large">Hear about it when Stripes needs you</p>
+            <p class="t-body" style="margin-top:12px">Only when you have to do something. Nothing about watering that went fine.</p>
+            <div style="margin-top:28px;display:flex;flex-direction:column;gap:10px">
+              <div class="notif"><div class="ico"></div><div><p class="t-head" style="font-size:15px">Stripes</p><p class="t-sub" style="color:var(--ink)">The tank needs refilling. Watering is paused until then.</p></div></div>
+              <div class="notif"><div class="ico"></div><div><p class="t-head" style="font-size:15px">Monty</p><p class="t-sub" style="color:var(--ink)">Not heard from since 09:12. The module may be out of Wi-Fi range.</p></div></div>
+            </div>
+          </div>
+          <div class="bar"><div class="btn">Allow notifications</div><div class="btn plain">Not now</div></div>
+        </div>
+        <div class="cap"><b>10 Notifications.</b> Asked after the first module, with the two real alerts shown (Pool app pattern), never at launch. "Not now" is respected; Settings can turn them on later.</div>
+      </div>
+
+      <!-- 11 Home -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <div class="sb"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="scr">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding-top:6px"><p class="t-large">Plants</p><div class="round" style="background:var(--ink);color:#fff;font-size:24px;font-weight:400">+</div></div>
+            <p class="t-head red" style="margin:22px 0 12px">2 need you</p>
+            <div style="display:flex;gap:14px;margin-bottom:16px"><div><img src="img/calathea.webp" width="96" height="112" alt="Stripes" style="border-radius:12px"><div class="gauge low"><i style="width:9%"></i></div></div><div><p class="t-title">Stripes</p><p class="t-sub" style="margin:2px 0 6px">Calathea, living room</p><p class="t-head red" style="font-size:15px">Tank needs refilling</p></div></div>
+            <div style="display:flex;gap:14px"><div><img src="img/monstera.webp" width="96" height="112" alt="Monty" style="border-radius:12px"><div class="gauge none"></div></div><div><p class="t-title">Monty</p><p class="t-sub" style="margin:2px 0 6px">Monstera, bedroom</p><p class="t-head" style="font-size:15px">Not heard from since 09:12</p></div></div>
+            <p class="t-head" style="margin:24px 0 12px">2 doing well</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+              <div><img src="img/snake.webp" alt="Sid" style="width:100%;height:120px;border-radius:12px"><div class="gauge"><i style="width:72%"></i></div><p class="t-title" style="margin-top:8px">Sid</p><p class="t-sub">Next drink in about 2 days</p></div>
+              <div><img src="img/olive.webp" alt="Olive" style="width:100%;height:120px;border-radius:12px"><div class="gauge"><i style="width:88%"></i></div><p class="t-title" style="margin-top:8px">Olive</p><p class="t-sub">Learning how fast it drinks</p></div>
+            </div>
+          </div>
+        </div>
+        <div class="cap"><b>11 Home</b> on the new type scale: large title 32, names 21, status 15–17, details 15.</div>
+      </div>
+
+      <!-- 12 Plant page -->
+      <div>
+        <div class="phone"><div class="island"></div>
+          <img class="wisp" src="img/snake.webp" alt="Sid" style="width:100%;height:280px">
+          <div class="sb float"><span>09:41</span><span>●●● ▮</span></div>
+          <div class="navrow" style="position:absolute;top:48px;left:0;right:0"><div class="round">‹</div><div class="round">⋯</div></div>
+          <div class="scr" style="padding-top:16px">
+            <p class="t-display">Sid</p>
+            <p class="t-sub" style="margin:4px 0 16px"><em>Dracaena trifasciata</em>, hall</p>
+            <p class="t-head">Water left for about 9 days</p>
+            <p class="t-sub" style="margin:2px 0 12px">Next drink in about 2 days.</p>
+            <div class="tank"><i style="width:72%"></i></div>
+            <div style="display:flex;justify-content:space-between;margin:6px 0 12px" class="t-foot"><span>About 500 ml</span><span>of 705 ml</span></div>
+            <div class="kv t-body" style="font-size:16px"><div><span>Soil</span><span>Damp, 41 %</span></div><div><span>Last drink</span><span>30 ml at 06:40</span></div><div><span>Battery</span><span>78 %</span></div><div><span style="color:var(--ink)">Photos and watering history</span><span>›</span></div></div>
+          </div>
+        </div>
+        <div class="cap"><b>12 Plant page</b> on the new scale: name 40 (was 58), status 17, rows 16–17, small print 13.</div>
+      </div>
+
+    </div>
+  </section>
+</div>
+<script>
+  // 3D-scan ring: 36 ticks, the first ~half "covered"
+  const g = document.getElementById('ticks');
+  for (let i = 0; i < 36; i++) {
+    const a = (i / 36) * Math.PI * 2 - Math.PI / 2, r1 = 108, r2 = 122;
+    const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    l.setAttribute('x1', 125 + r1 * Math.cos(a)); l.setAttribute('y1', 125 + r1 * Math.sin(a));
+    l.setAttribute('x2', 125 + r2 * Math.cos(a)); l.setAttribute('y2', 125 + r2 * Math.sin(a));
+    l.setAttribute('stroke', '#fff'); l.setAttribute('stroke-width', '4'); l.setAttribute('stroke-linecap', 'round');
+    l.setAttribute('opacity', i < 17 ? '1' : '.35');
+    g.appendChild(l);
+  }
+</script>
+</body>
+</html>
