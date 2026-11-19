@@ -17,10 +17,10 @@ jest.mock('@/plants/api', () => ({
   ...jest.requireActual('@/plants/api'),
   fetchPlant: jest.fn(),
   fetchSpecies: jest.fn(),
-  fetchLatestHealth: jest.fn(),
   checkHealth: jest.fn(),
   fetchPlantPhotos: jest.fn(),
   addPlantPhoto: jest.fn(),
+  deletePlant: jest.fn(),
 }));
 jest.mock('@/devices/api', () => ({
   ...jest.requireActual('@/devices/api'),
@@ -71,7 +71,6 @@ beforeEach(() => {
   uploads = 0;
   mocked(api.fetchPlant).mockResolvedValue(fern);
   mocked(api.fetchSpecies).mockResolvedValue(monstera);
-  mocked(api.fetchLatestHealth).mockResolvedValue(null);
   mocked(api.fetchPlantPhotos).mockResolvedValue({ photos: [], photoUrls: {} });
   mocked(devices.fetchDevice).mockResolvedValue(null);
   mocked(devices.resumeWatering).mockResolvedValue(undefined);
@@ -91,25 +90,7 @@ async function open(url = '/plant/p1') {
 }
 const press = (name: string | RegExp, i = 0) => fireEvent.press(screen.getAllByRole('button', { name })[i]);
 
-test('shows the hero photo (cached by path), title and "{type} · {room}"', async () => {
-  await open();
-  const hero = await screen.findByLabelText('Fernando photo');
-  expect(hero.props.source).toEqual([{ uri: 'https://signed/p.jpg', cacheKey: 'u/p.jpg' }]);
-  expect(screen.getByText('Fernando')).toBeTruthy();
-  expect(screen.getByText('Monstera · Kitchen')).toBeTruthy();
-});
-
-test('without a photo it draws the pot; subtitle omits missing parts cleanly', async () => {
-  mocked(api.fetchPlant).mockResolvedValue({ ...fern, photo_path: null, species_id: null, custom_type: 'Cactus', room: null });
-  await open();
-  await screen.findByText('Cactus');
-  expect(screen.getByLabelText(/Drawing of a pot/)).toBeTruthy();
-  expect(screen.queryByText(/·/)).toBeNull();
-  expect(screen.queryByLabelText('Fernando photo')).toBeNull();
-});
-
 const minsAgo = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
-const time = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 const dev = (over: object = {}) => ({
   id: 'd1',
   plant_id: 'p1',
@@ -127,53 +108,96 @@ const dev = (over: object = {}) => ({
   resumePending: false,
   ...over,
 });
+const headline = () => StyleSheet.flatten(screen.getByTestId('status-headline').props.style);
 
-test('no module shows the setup banner with Add its module', async () => {
+test('shows the hero photo (cached by path), the name and "{Latin}, {room}" with the Latin name in italics', async () => {
   await open();
-  await screen.findByText("Setup isn't finished");
-  await press('Add its module');
+  const hero = await screen.findByLabelText('Fernando photo');
+  expect(hero.props.source).toEqual([{ uri: 'https://signed/p.jpg', cacheKey: 'u/p.jpg' }]);
+  expect(screen.getByText('Fernando')).toBeTruthy();
+  expect(screen.getByText('Monstera deliciosa, Kitchen')).toBeTruthy();
+  expect(StyleSheet.flatten(screen.getByText('Monstera deliciosa').props.style).fontFamily).toBe(fonts.italic);
+  expect(screen.queryByText(/·/)).toBeNull();
+});
+
+test('without a photo it draws the pot; the subhead omits missing parts cleanly', async () => {
+  mocked(api.fetchPlant).mockResolvedValue({ ...fern, photo_path: null, species_id: null, custom_type: 'Cactus', room: null });
+  await open();
+  await screen.findByText('Cactus');
+  expect(screen.getByLabelText(/Drawing of a pot/)).toBeTruthy();
+  expect(screen.queryByLabelText('Fernando photo')).toBeNull();
+});
+
+test('the hero is 290 high from the top, the photo covers it, and the room sits on it', async () => {
+  await open();
+  const hero = await screen.findByLabelText('Fernando photo');
+  expect(hero.props.contentFit).toBe('cover');
+  expect(StyleSheet.flatten(screen.getByTestId('plant-hero').props.style).height).toBe(290);
+  expect(screen.getByTestId('hero-pills')).toHaveTextContent('Kitchen');
+});
+
+test('no module: its headline and line, Set up a module and Check its health, no tank bar', async () => {
+  await open();
+  await screen.findByText('No module yet');
+  expect(screen.getByText('Photos and health checks only. Set up a module to water it automatically.')).toBeTruthy();
+  expect(headline().color).toBe(colors.light.label);
+  expect(screen.queryByLabelText(/^Tank/)).toBeNull();
+  expect(screen.getByRole('button', { name: 'Check its health' })).toBeTruthy();
+  await press('Set up a module');
   expect(mockPush).toHaveBeenCalledWith('/plant/p1/module');
 });
 
-test('module group shows water, soil, battery, check-in', async () => {
-  const d = dev({ charging: true });
-  mocked(devices.fetchDevice).mockResolvedValue(d);
+test('with a module: status, tank bar, Soil and Battery rows', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ charging: true }));
   await open();
-  await screen.findByText('About 500 ml left');
-  expect(screen.getByText('Module')).toBeTruthy();
-  expect(screen.getByText('Damp · 41 %')).toBeTruthy();
-  expect(screen.getByText('78 % · Charging')).toBeTruthy();
-  expect(screen.getByText(time(d.last_seen_at!))).toBeTruthy();
-  expect(screen.queryByText("Setup isn't finished")).toBeNull();
+  await screen.findByText('About 500 ml');
+  expect(screen.getByText('of 705 ml')).toBeTruthy();
+  expect(screen.getByText('Learning how fast it drinks')).toBeTruthy();
+  expect(screen.getByText('Damp, 41 %')).toBeTruthy();
+  expect(screen.getByText('78 %, charging')).toBeTruthy();
+  expect(screen.queryByText('No module yet')).toBeNull();
 });
 
-test('unknown values show a dash', async () => {
+test('unknown values show a dash and the tank says it has no reading', async () => {
   mocked(devices.fetchDevice).mockResolvedValue(
     dev({ soil_pct: null, water_left_ml: null, battery_pct: null, last_seen_at: null, reading_ts: null }),
   );
   await open();
-  await screen.findByText('Module');
-  expect(screen.getAllByText('—')).toHaveLength(4);
+  await screen.findByText('No current reading');
+  expect(screen.getAllByText('—')).toHaveLength(2);
 });
 
-test('a failed device load with no cache shows dashes, not the setup banner', async () => {
+test('a failed device load with no cache shows dashes, not "No module yet"', async () => {
   mocked(devices.fetchDevice).mockRejectedValue(new Error('x'));
   await open();
-  await screen.findByText('Module', undefined, { timeout: 5000 });
-  expect(screen.getAllByText('—')).toHaveLength(4);
-  expect(screen.queryByText("Setup isn't finished")).toBeNull();
+  await screen.findByText('No current reading', undefined, { timeout: 5000 });
+  expect(screen.getAllByText('—')).toHaveLength(2);
+  expect(screen.queryByText('No module yet')).toBeNull();
 });
 
-test('fault banner offers Resume watering, which inserts clear_fault and then shows the next check-in time', async () => {
+test('fault and tank are red, on the page and on the photo; offline is ink', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ float_low: true }));
+  await open();
+  await screen.findByText('Watering is paused. It starts again by itself once you top it up.');
+  expect(headline().color).toBe(colors.light.statusNow);
+  expect(screen.getByTestId('hero-pills')).toHaveTextContent('Tank needs refilling', { exact: false });
+  expect(screen.getByText('Nearly empty')).toBeTruthy();
+  queryClient.clear();
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ last_seen_at: minsAgo(300) }));
+  await open();
+  await screen.findByText('It may be out of Wi-Fi range or its battery may be flat.');
+  expect(headline().color).toBe(colors.light.label);
+});
+
+test('Resume watering inserts clear_fault, then waits for the module', async () => {
   const d = dev({ fault_code: 'no_moisture_rise' });
   mocked(devices.fetchDevice).mockResolvedValue(d);
   await open();
-  await screen.findByText('Watering stopped');
+  await screen.findByText("Check the stake is in the soil and the tube isn't kinked, then resume.");
   mocked(devices.fetchDevice).mockResolvedValue({ ...d, resumePending: true });
   await press('Resume watering');
   expect(mocked(devices.resumeWatering).mock.calls[0][0]).toBe('d1');
-  const by = time(new Date(new Date(d.last_seen_at!).getTime() + 3600 * 1000).toISOString());
-  await screen.findByText(`Resumes at the next check-in, by about ${by}`);
+  await screen.findByText('Waiting for the module…');
   expect(screen.queryByRole('button', { name: 'Resume watering' })).toBeNull();
 });
 
@@ -181,30 +205,50 @@ test('a second press while resuming does not insert again', async () => {
   mocked(devices.fetchDevice).mockResolvedValue(dev({ fault_code: 'no_moisture_rise' }));
   mocked(devices.resumeWatering).mockReturnValue(new Promise(() => {}));
   await open();
-  await screen.findByText('Watering stopped');
-  const button = screen.getByRole('button', { name: 'Resume watering' });
+  const button = await screen.findByRole('button', { name: 'Resume watering' });
   await fireEvent.press(button);
+  expect(screen.getByRole('button', { name: 'Sending…' })).toBeTruthy();
   await fireEvent.press(button);
   expect(devices.resumeWatering).toHaveBeenCalledTimes(1);
+});
+
+test('a failed resume says so and the button comes back', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ fault_code: 'no_moisture_rise' }));
+  mocked(devices.resumeWatering).mockRejectedValue(new Error('x'));
+  await open();
+  await screen.findByRole('button', { name: 'Resume watering' });
+  await press('Resume watering');
+  expect(await screen.findByRole('alert')).toHaveTextContent("Couldn't send that. Try again.");
+  expect(screen.getByRole('button', { name: 'Resume watering' })).toBeTruthy();
+});
+
+test('an offline module shows no current tank reading, not its last value', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev({ last_seen_at: minsAgo(300) }));
+  await open();
+  await screen.findByText('No current reading');
+  expect(screen.queryByText('About 500 ml')).toBeNull();
 });
 
 test('sensor fault has no Resume button', async () => {
   mocked(devices.fetchDevice).mockResolvedValue(dev({ fault_code: 'sensor_fault' }));
   await open();
-  await screen.findByText('Watering stopped');
+  await screen.findByText('Check the stake is pushed into the soil. It resumes by itself.');
   expect(screen.queryByRole('button', { name: 'Resume watering' })).toBeNull();
 });
 
-test('tank low banner text', async () => {
-  mocked(devices.fetchDevice).mockResolvedValue(dev({ float_low: true }));
+test('How watering works explains the limits in plain words', async () => {
+  mocked(devices.fetchDevice).mockResolvedValue(dev());
   await open();
-  await screen.findByText("The tank needs refilling. Watering is paused until it's filled.");
+  await screen.findByText('About 500 ml');
+  await press('How watering works');
+  await screen.findByText('Fernando gets at most 40 ml at a time and 150 ml a day.');
+  expect(screen.getByText('It never pumps when the tank is low.')).toBeTruthy();
 });
 
 test('Remove module asks first, then deletes the device and invalidates', async () => {
   mocked(devices.fetchDevice).mockResolvedValue(dev());
   await open();
-  await screen.findByText('Module');
+  await screen.findByText('About 500 ml');
   await press('More options');
   await press('Remove module');
   expect(
@@ -217,40 +261,35 @@ test('Remove module asks first, then deletes the device and invalidates', async 
   await press('Remove');
   await waitFor(() => expect(devices.removeDevice).toHaveBeenCalled());
   expect(mocked(devices.removeDevice).mock.calls[0][0]).toBe('d1');
-  await screen.findByText("Setup isn't finished");
+  await screen.findByText('No module yet');
 });
 
-test('About shows description, light and watering; More expands', async () => {
+test('the ⋯ menu offers Edit and Delete {name}, which asks first', async () => {
+  mocked(api.deletePlant).mockResolvedValue(undefined);
   await open();
-  const desc = await screen.findByText(LONG.trim());
-  expect(desc.props.numberOfLines).toBe(3);
-  expect(screen.getByText('Bright, indirect light')).toBeTruthy();
-  expect(screen.getByText('Let the top soil dry out.')).toBeTruthy();
-  await press('More');
-  expect(screen.getByText(LONG.trim()).props.numberOfLines).toBeUndefined();
-  expect(screen.queryByRole('button', { name: 'More' })).toBeNull();
-  expect(screen.getByRole('button', { name: 'Less' })).toBeTruthy();
-});
-
-test('About is hidden for a custom type and for a species without facts', async () => {
-  mocked(api.fetchPlant).mockResolvedValue({ ...fern, species_id: null, custom_type: 'Cactus' });
-  await open();
-  await screen.findByText('Cactus · Kitchen');
-  expect(screen.queryByText('About this plant')).toBeNull();
-});
-
-test('About is hidden when the species has no facts', async () => {
-  mocked(api.fetchSpecies).mockResolvedValue({ ...monstera, description: null, light: null, watering: null });
-  await open();
-  await screen.findByText('Monstera · Kitchen');
-  expect(screen.queryByText('About this plant')).toBeNull();
+  await screen.findByText('Fernando');
+  await press('More options');
+  // The menu is modal for screen readers (escape closes it); the backdrop is for touch.
+  await fireEvent.press(screen.getByLabelText('Close menu', { includeHiddenElements: true }));
+  expect(screen.queryByRole('button', { name: 'Edit' })).toBeNull();
+  await press('More options');
+  await press('Edit');
+  expect(mockPush).toHaveBeenCalledWith('/plant/p1/edit');
+  await press('More options');
+  await press('Delete Fernando');
+  expect(screen.getByText('Delete Fernando and all its photos?')).toBeTruthy();
+  await press('Cancel');
+  expect(api.deletePlant).not.toHaveBeenCalled();
+  await press('Delete Fernando');
+  await press('Delete');
+  await waitFor(() => expect(api.deletePlant).toHaveBeenCalledWith('p1'));
 });
 
 test('skeletons appear after 300 ms while loading, never a spinner', async () => {
   mocked(api.fetchPlant).mockReturnValue(new Promise(() => {}));
   await open();
   await waitFor(() => expect(screen.getByLabelText('Loading')).toBeTruthy());
-  expect(screen.queryByText("Setup isn't finished")).toBeNull();
+  expect(screen.queryByText('No module yet')).toBeNull();
 });
 
 test('a failed load with no cache shows a dash, not a guessed value', async () => {
@@ -260,26 +299,6 @@ test('a failed load with no cache shows a dash, not a guessed value', async () =
   expect(StyleSheet.flatten(screen.getByTestId('plant-hero').props.style).backgroundColor).toBe(colors.light.surface);
 });
 
-test('health card shows the latest result with its date, and the Check button', async () => {
-  mocked(api.fetchLatestHealth).mockResolvedValue({
-    created_at: '2026-11-10T12:00:00Z',
-    health: { healthy: false, note: 'Some leaves look yellow.', advice: 'Often too much water.' },
-  });
-  await open();
-  const date = new Date('2026-11-10T12:00:00Z').toLocaleDateString();
-  await screen.findByText(`Checked ${date}`);
-  expect(screen.getByText('Some leaves look yellow.')).toBeTruthy();
-  expect(screen.getByText('Often too much water.')).toBeTruthy();
-  expect(screen.getByRole('button', { name: 'Check its health' })).toBeTruthy();
-});
-
-test('the "..." menu offers Edit plant', async () => {
-  await open();
-  await screen.findByText('Fernando');
-  await press('More options');
-  await press('Edit plant');
-  expect(mockPush).toHaveBeenCalledWith('/plant/p1/edit');
-});
 
 test('Check its health opens a two-card capture; Check needs the whole-plant photo, then shows the result', async () => {
   mocked(api.checkHealth).mockResolvedValue({ healthy: true, note: 'It looks healthy in this photo.', advice: null });
@@ -294,15 +313,11 @@ test('Check its health opens a two-card capture; Check needs the whole-plant pho
   await press('Take photo', 0);
   await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
   expect(api.checkHealth).not.toHaveBeenCalled();
-  mocked(api.fetchLatestHealth).mockResolvedValue({
-    created_at: '2026-11-17T12:00:00Z',
-    health: { healthy: true, note: 'It looks healthy in this photo.', advice: null },
-  });
   await press('Check');
   expect(api.checkHealth).toHaveBeenCalledWith('p1', ['u/h1.jpg']);
   await screen.findByText('It looks healthy in this photo.');
   await press('Done');
-  await screen.findByText(/^Checked /);
+  await screen.findByText('Fernando');
   // The photos belong to the scan now: nothing deleted.
   expect(photos.deletePhotos).not.toHaveBeenCalled();
 });
@@ -358,60 +373,6 @@ test('a camera that rejects shows the failure copy instead of an unhandled rejec
   await open('/plant/p1/health');
   await press('Take photo', 0);
   await screen.findByText("Couldn't add that photo. Try again.");
-});
-
-test('the detail shows "Not checked yet." with no checks, and "Looking at your plant…" while one runs', async () => {
-  mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
-  await open('/plant/p1');
-  await screen.findByText('Not checked yet.');
-  await press('Check its health');
-  await screen.findByText('Whole plant');
-  await press('Take photo', 0);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
-  await press('Check');
-  await act(async () => router.back());
-  await screen.findByText('Looking at your plant…');
-  expect(screen.queryByText('Not checked yet.')).toBeNull();
-});
-
-test('a check that failed shows one line under the button on the detail', async () => {
-  mocked(api.checkHealth).mockRejectedValue(new Error(LIMIT));
-  await open('/plant/p1');
-  await screen.findByText('Not checked yet.');
-  await press('Check its health');
-  await screen.findByText('Whole plant');
-  await press('Take photo', 0);
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Check' }).props.accessibilityState.disabled).toBe(false));
-  await press('Check');
-  await screen.findByText(LIMIT);
-  await act(async () => router.back());
-  await screen.findByText('Not checked yet.');
-  expect(screen.getAllByText(LIMIT)).toHaveLength(1);
-});
-
-test('the hero is full-bleed: 1.25 x width, capped at 460, photo covers it', async () => {
-  await open();
-  const hero = await screen.findByLabelText('Fernando photo');
-  expect(hero.props.contentFit).toBe('cover');
-  expect(StyleSheet.flatten(screen.getByTestId('plant-hero').props.style).height).toBe(460);
-});
-
-test('a plant named like its type shows the scientific name in italics, then the room', async () => {
-  mocked(api.fetchPlant).mockResolvedValue({ ...fern, name: 'monstera' });
-  await open();
-  const sub = await screen.findByText('Monstera deliciosa');
-  expect(StyleSheet.flatten(sub.props.style).fontFamily).toBe(fonts.italic);
-  expect(screen.getByText(/Kitchen/)).toBeTruthy();
-});
-
-test('About leads with Light and Watering facts; the description has an inline More / Less', async () => {
-  await open();
-  await screen.findByText('About this plant');
-  expect(screen.getByText('Light')).toBeTruthy();
-  expect(screen.getByText('Watering')).toBeTruthy();
-  await press('More');
-  await press('Less');
-  expect(screen.getByText(LONG.trim()).props.numberOfLines).toBe(3);
 });
 
 async function checkWith(result: object, photoCount = 1) {
@@ -562,7 +523,7 @@ describe('timeline', () => {
   test('Check its health runs once even on a double tap, and the card shows progress', async () => {
     mocked(api.checkHealth).mockReturnValue(new Promise(() => {}));
     await addOne();
-    const button = screen.getAllByRole('button', { name: 'Check its health' })[0];
+    const button = screen.getAllByRole('button', { name: 'Check its health' }).at(-1)!;
     await fireEvent.press(button);
     await fireEvent.press(button);
     expect(api.checkHealth).toHaveBeenCalledTimes(1);
@@ -573,7 +534,7 @@ describe('timeline', () => {
   test('at the daily limit the limit copy shows and the photo stays', async () => {
     mocked(api.checkHealth).mockRejectedValue(new Error(LIMIT));
     await addOne();
-    await fireEvent.press(screen.getAllByRole('button', { name: 'Check its health' })[0]);
+    await fireEvent.press(screen.getAllByRole('button', { name: 'Check its health' }).at(-1)!);
     await screen.findByText(LIMIT);
     expect(photos.deletePhotos).not.toHaveBeenCalled();
   });

@@ -50,9 +50,6 @@ export function useSpeciesSearch(q: string) {
   });
 }
 
-export const useLatestHealth = (plantId: string) =>
-  useQuery({ queryKey: ['health', plantId], queryFn: () => api.fetchLatestHealth(plantId) });
-
 export function useCreatePlant() {
   const userId = useUserId();
   const queryClient = useQueryClient();
@@ -87,7 +84,6 @@ export function useDeletePlant() {
         old && { ...old, pages: old.pages.map((pg) => ({ ...pg, plants: pg.plants.filter((p) => p.id !== id) })) },
       );
       queryClient.removeQueries({ queryKey: ['plant', id] });
-      queryClient.removeQueries({ queryKey: ['health', id] });
       queryClient.removeQueries({ queryKey: plantPhotosKey(id) });
     },
   });
@@ -101,8 +97,7 @@ export function useCheckHealth() {
     mutationKey: ['check-health'],
     mutationFn: ({ plantId, photoPaths }: { plantId: string; photoPaths: string[] }) =>
       api.checkHealth(plantId, photoPaths),
-    onSuccess: (_result, { plantId }) =>
-      Promise.all([['health', plantId], plantPhotosKey(plantId)].map((queryKey) => queryClient.invalidateQueries({ queryKey }))),
+    onSuccess: (_result, { plantId }) => queryClient.invalidateQueries({ queryKey: plantPhotosKey(plantId) }),
   });
 }
 

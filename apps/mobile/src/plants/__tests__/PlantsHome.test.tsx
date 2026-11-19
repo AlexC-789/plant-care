@@ -16,12 +16,21 @@ jest.mock('expo-router', () => ({
   useRouter: () => ({ push: mockPush }),
 }));
 
+jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
+  __esModule: true,
+  default: jest.fn(() => ({ width: 390, height: 844, scale: 3, fontScale: 1 })),
+}));
+// eslint-disable-next-line @typescript-eslint/no-require-imports -- mocked above
+const useWindowDimensions: jest.Mock = require('react-native/Libraries/Utilities/useWindowDimensions').default;
 const auth = supabase.auth as unknown as Record<string, jest.Mock>;
-const plant = (id: string, name: string, photo_path: string | null = null, device: unknown = null) => ({
+const plant = (id: string, name: string, photo_path: string | null = null, device: unknown = null, over: object = {}) => ({
   id,
   name,
   photo_path,
   device,
+  room: null,
+  custom_type: null,
+  ...over,
 });
 const ago = (m: number) => new Date(Date.now() - m * 60_000).toISOString();
 const module = (over: Record<string, unknown> = {}) => ({
@@ -72,7 +81,10 @@ async function openHome() {
   return view;
 }
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => {
+  jest.clearAllMocks();
+  useWindowDimensions.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 1 });
+});
 
 test('shows skeleton rows only after 300 ms of loading, never a spinner', async () => {
   state({ isPending: true });
@@ -81,82 +93,99 @@ test('shows skeleton rows only after 300 ms of loading, never a spinner', async 
   expect(screen.queryByText('No plants yet')).toBeNull();
 });
 
-test('empty state explains and the Add a pot button opens the add flow', async () => {
+test('empty state: No plants yet, and Scan a plant opens the add flow', async () => {
   loaded([]);
   await openHome();
   expect(screen.getByText('No plants yet')).toBeTruthy();
-  expect(
-    screen.getByText("Add your first pot and it'll look after its own watering from then on."),
-  ).toBeTruthy();
-  await fireEvent.press(screen.getByText('Add a pot'));
+  expect(screen.getByText('Scan a plant to add it.')).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Scan a plant' }));
   expect(mockPush).toHaveBeenCalledWith('/add/photo');
 });
 
-test('the toolbar plus opens the add flow', async () => {
+test('the toolbar + is "Add a plant" and opens the add flow', async () => {
   loaded([plant('a', 'Fern')]);
   await openHome();
-  await fireEvent.press(screen.getByLabelText('Add a pot'));
+  await fireEvent.press(screen.getByRole('button', { name: 'Add a plant' }));
   expect(mockPush).toHaveBeenCalledWith('/add/photo');
 });
 
-test('rows show name and status line, with the summary; a row opens its plant', async () => {
-  loaded([plant('a', 'Fern'), plant('b', 'Monstera', 'u/b.jpg')], {
-    'u/b.jpg': 'https://x/b.jpg',
-  });
+test('need-you rows: name, "{type}, {room}" and the status sentence; a row opens its plant', async () => {
+  loaded(
+    [plant('b', 'Monstera', 'u/b.jpg', module({ float_low: true }), { room: 'Kitchen', species: { common_names: ['Swiss cheese plant'] } })],
+    { 'u/b.jpg': 'https://x/b.jpg' },
+  );
   await openHome();
-  expect(screen.getByText('2 need you')).toBeTruthy();
-  expect(screen.getByText('Fern')).toBeTruthy();
-  expect(screen.getAllByText("Setup isn't finished · Add its module")).toHaveLength(2);
+  expect(screen.getByText('1 needs you')).toBeTruthy();
+  expect(screen.getByText('Swiss cheese plant, Kitchen')).toBeTruthy();
+  expect(screen.getByText('Tank needs refilling')).toHaveStyle({ color: colors.light.statusNow });
   await fireEvent.press(screen.getByRole('button', { name: /^Monstera/ }));
   expect(mockPush).toHaveBeenCalledWith('/plant/b');
 });
 
-test("shows each plant's status line", async () => {
-  loaded([plant('a', 'Fern', null, module({ fault_code: 'no_moisture_rise' }))]);
+test('the need-you heading is red only when a plant has a fault or an empty tank', async () => {
+  loaded([plant('a', 'Fern', null, module({ fault_code: 'no_moisture_rise' })), plant('b', 'Aloe', null, module())]);
   await openHome();
-  expect(screen.getByText('Watering stopped · Check the stake is in the soil')).toBeTruthy();
-});
-
-test('summary counts need you and doing well', async () => {
-  loaded([plant('a', 'Fern', null, module({ float_low: true })), plant('b', 'Aloe', null, module())]);
-  await openHome();
-  expect(screen.getByText('1 need you · 1 doing well')).toBeTruthy();
-  expect(screen.getByText('Needs you')).toBeTruthy();
-  expect(screen.getByText('Doing well')).toBeTruthy();
-});
-
-test('headers hidden when all are fine', async () => {
-  loaded([plant('a', 'Fern', null, module())]);
-  await openHome();
+  expect(screen.getByText('1 needs you')).toHaveStyle({ color: colors.light.statusNow });
   expect(screen.getByText('1 doing well')).toBeTruthy();
-  expect(screen.queryByText('Needs you')).toBeNull();
-  expect(screen.queryByText('Doing well')).toBeNull();
 });
 
-test('plants without a module are under Needs you', async () => {
-  loaded([plant('a', 'Fern'), plant('b', 'Aloe', null, module())]);
+test('offline and a low battery need you, in ink', async () => {
+  loaded([plant('a', 'Fern', null, module({ battery_pct: 5 })), plant('b', 'Aloe', null, module({ last_seen_at: ago(300) }))]);
   await openHome();
-  expect(screen.getByText('Needs you')).toBeTruthy();
+  expect(screen.getByText('2 need you')).toHaveStyle({ color: colors.light.label });
+  expect(screen.getByText('Battery low')).toHaveStyle({ color: colors.light.label });
 });
 
-test('headers show when every row needs you', async () => {
-  loaded([plant('a', 'Fern'), plant('b', 'Aloe')]);
+test('need you is ordered fault, tank, offline, battery', async () => {
+  loaded([
+    plant('a', 'Battery', null, module({ battery_pct: 5 })),
+    plant('b', 'Offline', null, module({ last_seen_at: ago(300) })),
+    plant('c', 'Tank', null, module({ float_low: true })),
+    plant('d', 'Fault', null, module({ fault_code: 'x' })),
+  ]);
   await openHome();
-  expect(screen.getByText('Needs you')).toBeTruthy();
+  const names = screen.getAllByRole('button', { name: /^(Battery|Offline|Tank|Fault),/ }).map((b) => b.props.accessibilityLabel.split(',')[0]);
+  expect(names).toEqual(['Fault', 'Tank', 'Offline', 'Battery']);
 });
 
-test('the dot colour follows the level', async () => {
-  loaded([plant('a', 'Fern', null, module({ float_low: true })), plant('b', 'Aloe', null, module())]);
+test('no module and very wet soil are doing well; with nobody needing you the heading says All', async () => {
+  loaded([plant('a', 'Fern'), plant('b', 'Aloe', null, module({ soil_pct: 80 }))]);
   await openHome();
-  const [now, fine] = screen.getAllByTestId('status-dot');
-  expect(now).toHaveStyle({ backgroundColor: colors.light.statusNow });
-  expect(fine).toHaveStyle({ backgroundColor: colors.light.secondaryLabel });
+  expect(screen.getByText('All 2 doing well')).toBeTruthy();
+  expect(screen.queryByText(/need/)).toBeNull();
+  expect(screen.getByText('No module')).toBeTruthy();
+  expect(screen.getByText('Soil is very wet')).toBeTruthy();
 });
 
-test('the status marker is a solid dot (the Material font has no filled circle)', async () => {
-  loaded([plant('a', 'Fern')]);
+const three = () => [plant('a', 'Fern', null, module()), plant('b', 'Aloe', null, module()), plant('c', 'Ivy', null, module())];
+
+test('doing well is a two-column grid', async () => {
+  loaded(three());
   await openHome();
-  expect(screen.getByTestId('status-dot')).toHaveStyle({ backgroundColor: colors.light.secondaryLabel });
+  expect(screen.getAllByTestId('grid-row').map((r) => r.children.length)).toEqual([2, 2]); // the last pairs with a spacer
+});
+
+test('doing well is one column at accessibility sizes', async () => {
+  useWindowDimensions.mockReturnValue({ width: 390, height: 844, scale: 3, fontScale: 3 });
+  loaded(three());
+  await openHome();
+  expect(screen.getAllByTestId('grid-row')).toHaveLength(3);
+});
+
+test('a module shows its water line under the photo; a plant without one has none', async () => {
+  loaded([plant('a', 'Fern', null, module({ water_left_ml: 350 })), plant('b', 'Aloe')]);
+  await openHome();
+  expect(screen.getAllByTestId('water-line', { includeHiddenElements: true })).toHaveLength(1);
+  // The line is hidden from screen readers, so the row says it in words.
+  expect(screen.getByRole('button', { name: 'Fern, Learning how fast it drinks, tank about 350 ml' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Aloe, No module' })).toBeTruthy();
+});
+
+test('an offline module draws no current level', async () => {
+  loaded([plant('a', 'Fern', null, module({ last_seen_at: ago(300) }))]);
+  await openHome();
+  expect(screen.getByTestId('water-none', { includeHiddenElements: true })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /^Fern, Not heard from since [^,]+, tank no current reading$/ })).toBeTruthy();
 });
 
 test('long, emoji and right-to-left names render in full (they wrap)', async () => {

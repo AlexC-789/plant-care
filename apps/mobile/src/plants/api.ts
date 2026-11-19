@@ -7,7 +7,8 @@ import { deletePhotos, type PreparedPhoto, signPhotoUrls, uploadPhoto } from './
 export type Plant = Database['public']['Tables']['plants']['Row'];
 export type Species = Database['public']['Tables']['species']['Row'];
 export type Scan = Database['public']['Tables']['scans']['Row'];
-export type PlantWithDevice = Plant & { device: Device | null };
+/** A Home row: the plant, its module and its species' common names (for "{type}, {room}"). */
+export type PlantWithDevice = Plant & { device: Device | null; species?: { common_names: string[] } | null };
 export type PlantsPage = { plants: PlantWithDevice[]; photoUrls: Record<string, string> };
 export type NewPlant = {
   name: string;
@@ -60,7 +61,7 @@ export const pickSpecies = (scientificName: string) =>
 export async function fetchPlantsPage(page: number): Promise<PlantsPage> {
   const { data, error } = await supabase
     .from('plants')
-    .select(`*, device:devices(${DEVICE_COLUMNS})`)
+    .select(`*, device:devices(${DEVICE_COLUMNS}), species(common_names)`)
     .order('created_at', { ascending: false })
     .order('id', { ascending: false })
     .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
@@ -85,20 +86,6 @@ export async function fetchSpecies(id: string): Promise<Species> {
 export async function searchLocalSpecies(q: string): Promise<Species[]> {
   const escaped = q.replace(/[\\%_]/g, '\\$&');
   const { data, error } = await supabase.from('species').select('*').ilike('search_text', `%${escaped}%`).limit(20);
-  if (error) throw error;
-  return data;
-}
-
-export async function fetchLatestHealth(plantId: string): Promise<Scan | null> {
-  const { data, error } = await supabase
-    .from('scans')
-    .select('*')
-    .eq('plant_id', plantId)
-    .eq('kind', 'health')
-    .eq('status', 'ok')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
   if (error) throw error;
   return data;
 }

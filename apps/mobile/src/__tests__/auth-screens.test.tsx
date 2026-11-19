@@ -70,7 +70,7 @@ describe('routing', () => {
     const view = await openApp('/');
     expect(view.getPathname()).toBe('/');
     expect(screen.getByText('No plants yet')).toBeTruthy();
-    expect(screen.getByText('Add a pot')).toBeTruthy();
+    expect(screen.getByText('Scan a plant')).toBeTruthy();
     expect(
       screen.getByLabelText(
         'Drawing of a pot standing on the watering saucer, with the sensor stake in the soil',

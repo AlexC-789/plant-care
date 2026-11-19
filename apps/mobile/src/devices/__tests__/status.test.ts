@@ -1,5 +1,5 @@
 import type { Device } from '@/devices/api';
-import { deviceStatus, needsYou, soilLabel, timeLabel, waterLabel } from '@/devices/status';
+import { deviceStatus, needsYou, soilLabel, timeLabel } from '@/devices/status';
 
 const now = new Date('2026-11-18T12:00:00');
 const minsAgo = (m: number) => new Date(now.getTime() - m * 60_000).toISOString();
@@ -23,13 +23,15 @@ const dev = (over: Partial<Device> = {}): Device => ({
   ...over,
 });
 
+// UX_ARCHITECTURE §6: one sentence per plant, no middle dots; red (now) only for fault and tank.
 describe('deviceStatus', () => {
-  it('setup: no module', () => {
+  it('no module is a finished state: doing well', () => {
     expect(deviceStatus(null, now)).toEqual({
       key: 'setup',
-      level: 'quiet',
-      line: "Setup isn't finished · Add its module",
-      banner: null,
+      level: 'fine',
+      line: 'No module',
+      headline: 'No module yet',
+      detail: 'Photos and health checks only. Set up a module to water it automatically.',
     });
   });
 
@@ -37,14 +39,15 @@ describe('deviceStatus', () => {
     expect(deviceStatus(dev({ fault_code: 'no_moisture_rise' }), now)).toEqual({
       key: 'fault',
       level: 'now',
-      line: 'Watering stopped · Check the stake is in the soil',
-      banner: "Watering stopped. Check the stake is in the soil and the tube isn't kinked, then resume.",
+      line: 'Watering stopped',
+      headline: 'Watering stopped',
+      detail: "Check the stake is in the soil and the tube isn't kinked, then resume.",
     });
   });
 
   it('fault sensor_out_of_range', () => {
-    expect(deviceStatus(dev({ fault_code: 'sensor_out_of_range' }), now).banner).toBe(
-      'Watering stopped. Check the stake is pushed into the soil; it resumes by itself.',
+    expect(deviceStatus(dev({ fault_code: 'sensor_out_of_range' }), now).detail).toBe(
+      'Check the stake is pushed into the soil. It resumes by itself.',
     );
   });
 
@@ -53,42 +56,42 @@ describe('deviceStatus', () => {
       key: 'tank',
       level: 'now',
       line: 'Tank needs refilling',
-      banner: "The tank needs refilling. Watering is paused until it's filled.",
+      headline: 'Tank needs refilling',
+      detail: 'Watering is paused. It starts again by itself once you top it up.',
     });
   });
 
-  it('offline', () => {
+  it('offline needs you, in ink, even with a low battery', () => {
     const seen = minsAgo(300);
-    expect(deviceStatus(dev({ last_seen_at: seen }), now)).toEqual({
+    const t = timeLabel(seen, now);
+    const expected = {
       key: 'offline',
-      level: 'quiet',
-      line: `Not heard from since ${timeLabel(seen, now)}`,
-      banner: `Not heard from since ${timeLabel(seen, now)}. It should keep watering on its last instructions.`,
-    });
+      level: 'soon',
+      line: `Not heard from since ${t}`,
+      headline: `Not heard from since ${t}`,
+      detail: 'It may be out of Wi-Fi range or its battery may be flat.',
+    };
+    expect(deviceStatus(dev({ last_seen_at: seen }), now)).toEqual(expected);
+    expect(deviceStatus(dev({ last_seen_at: seen, battery_pct: 12 }), now)).toEqual(expected);
   });
 
-  it('offline with a low battery is Now', () => {
-    const seen = minsAgo(300);
-    const s = deviceStatus(dev({ last_seen_at: seen, battery_pct: 12 }), now);
-    expect(s.level).toBe('now');
-    expect(s.line).toBe(`Not heard from since ${timeLabel(seen, now)} · Its battery was low`);
-  });
-
-  it('waiting: a claimed module without readings is waiting, not fine', () => {
+  it('waiting: a claimed module without readings is waiting, doing well', () => {
     expect(deviceStatus(dev({ reading_ts: null, soil_pct: null, battery_pct: null }), now)).toEqual({
       key: 'waiting',
-      level: 'quiet',
+      level: 'fine',
       line: 'Waiting for its first check-in',
-      banner: null,
+      headline: 'Waiting for its first check-in',
+      detail: 'This can take a few minutes after setup.',
     });
   });
 
-  it('wet', () => {
+  it('wet is doing well: the module handles it', () => {
     expect(deviceStatus(dev({ soil_pct: 70 }), now)).toEqual({
       key: 'wet',
-      level: 'soon',
-      line: 'Soil is very wet · Watering is on hold',
-      banner: null,
+      level: 'fine',
+      line: 'Soil is very wet',
+      headline: 'Soil is very wet',
+      detail: 'Watering is on hold until it dries a little.',
     });
   });
 
@@ -96,8 +99,9 @@ describe('deviceStatus', () => {
     expect(deviceStatus(dev({ battery_pct: 15 }), now)).toEqual({
       key: 'battery',
       level: 'soon',
-      line: 'Battery is low · Charge it this week',
-      banner: 'Battery is low. Charge it this week.',
+      line: 'Battery low',
+      headline: 'Battery low',
+      detail: 'Charge the module in the next few days.',
     });
   });
 
@@ -105,9 +109,23 @@ describe('deviceStatus', () => {
     expect(deviceStatus(dev(), now)).toEqual({
       key: 'fine',
       level: 'fine',
-      line: 'Doing well · Still learning how fast it drinks',
-      banner: null,
+      line: 'Learning how fast it drinks',
+      headline: 'Learning how fast it drinks',
+      detail: 'It waters itself when the soil starts to dry.',
     });
+  });
+
+  it('no copy uses a middle dot', () => {
+    const cases = [
+      null,
+      dev(),
+      dev({ fault_code: 'no_moisture_rise' }),
+      dev({ float_low: true }),
+      dev({ last_seen_at: minsAgo(300), battery_pct: 5 }),
+      dev({ soil_pct: 70 }),
+      dev({ battery_pct: 5 }),
+    ];
+    for (const d of cases) expect(JSON.stringify(deviceStatus(d, now))).not.toContain('·');
   });
 
   it('order: fault beats tank beats offline; offline beats waiting', () => {
@@ -136,24 +154,20 @@ describe('timeLabel', () => {
 });
 
 describe('labels', () => {
-  it('soilLabel by band', () => {
-    expect(soilLabel(28)).toBe('Dry · 28 %');
-    expect(soilLabel(52.9)).toBe('Damp · 53 %');
-    expect(soilLabel(35)).toBe('Damp · 35 %');
-    expect(soilLabel(55)).toBe('Damp · 55 %');
-    expect(soilLabel(70)).toBe('Very wet · 70 %');
+  it('soilLabel by band, with a comma', () => {
+    expect(soilLabel(28)).toBe('Dry, 28 %');
+    expect(soilLabel(52.9)).toBe('Damp, 53 %');
+    expect(soilLabel(35)).toBe('Damp, 35 %');
+    expect(soilLabel(55)).toBe('Damp, 55 %');
+    expect(soilLabel(70)).toBe('Very wet, 70 %');
     expect(soilLabel(null)).toBe('—');
   });
 
-  it('waterLabel rounds to 50 ml', () => {
-    expect(waterLabel(dev({ water_left_ml: 512 }))).toBe('About 500 ml left');
-    expect(waterLabel(dev({ water_left_ml: 537 }))).toBe('About 550 ml left');
-    expect(waterLabel(dev({ float_low: true }))).toBe('Needs refilling');
-    expect(waterLabel(dev({ water_left_ml: null }))).toBe('—');
-  });
-
-  it('needsYou is false only for fine', () => {
-    expect(needsYou(deviceStatus(dev(), now))).toBe(false);
-    expect(needsYou(deviceStatus(null, now))).toBe(true);
+  it('needsYou: fault, tank, offline and battery; not no module, waiting, wet or fine', () => {
+    expect(needsYou(deviceStatus(dev({ battery_pct: 5 }), now))).toBe(true);
+    expect(needsYou(deviceStatus(dev({ last_seen_at: minsAgo(300) }), now))).toBe(true);
+    for (const d of [null, dev(), dev({ soil_pct: 70 }), dev({ reading_ts: null })]) {
+      expect(needsYou(deviceStatus(d, now))).toBe(false);
+    }
   });
 });
