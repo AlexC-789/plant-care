@@ -95,8 +95,10 @@ export class Admin {
     return { id: row.id, photoPath };
   }
 
-  async seedPhoto(uid: string, plantId: string, takenAt?: string): Promise<string> {
+  /** `timeline: false` uploads the object only (no plant_photos row), like a photo referenced just by a scan. */
+  async seedPhoto(uid: string, plantId: string, takenAt?: string, o: { timeline?: boolean } = {}): Promise<string> {
     const path = await this.upload(uid);
+    if (o.timeline === false) return path;
     this.insert('plant_photos', { user_id: uid, plant_id: plantId, path, taken_at: takenAt });
     return path;
   }
