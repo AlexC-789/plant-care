@@ -48,15 +48,19 @@ T0 local setup is done (see `docs/CURRENT_STATE.md`). Left over, only when neede
 
 ## QA pipeline (findings; spec `docs/superpowers/specs/2026-11-19-qa-pipeline-design.md`)
 
-1. **P1** Offline with no cache shows skeletons forever (TanStack pauses retries offline; breaks the "—" rule) — `matrix.spec.ts` J6 `test.fail`.
+1. **P1** Offline with no cache shows skeletons forever (TanStack pauses retries offline; breaks the "—" rule) — `matrix.spec.ts` J6 is pinned to the bug (goes red when fixed).
 2. Home plant rows: axe `label-content-name-mismatch` (name "name, status" does not start with the visible text) — `matrix.spec.ts` J4 (asserted as known).
 3. Header Settings control is a link, not a button, on web (`Link asChild` overrides `accessibilityRole`).
 4. Web body background stays the Expo default (only the root View is themed): possible light flash in dark mode on web.
-5. Launch takes ~1.97 s until the redesign launch (tap to skip, no rest) lands — `speed.spec.ts` A1 `test.fail`; re-derive the A2 budget then.
+5. Launch takes ~1.97 s until the redesign launch (tap to skip, no rest) lands — `speed.spec.ts` A1 asserts it is above budget (goes red when fixed); re-derive the A2 budget then.
 6. Detail CLS 0.0853 is close to the 0.1 budget — find the shift.
 7. Revoked sessions stay usable until the 1 h JWT expiry (normal Supabase behaviour; note only).
 8. Skeleton minimum display ≈ 400 ms (`useDelayedVisible`); check `FadeIn` uses the native driver; stage 2 native tests (Maestro/Flashlight) after redesign Phase 3.
 9. After PR #14 (Direction E Phase 1+2) merges: merge `main` into `qa-pipeline` and update the specs to the new labels.
+10. B4 depends on the hook's DNS lookup (it fails open, so a flaky resolver could make it flake).
+11. Give `apps/mobile/e2e` its own tsconfig (node types are currently global to app code).
+12. A3 ignores pre-paint frames (pairs with item 4, the web body background).
+13. Jest timeouts under concurrent load (328/328 when the machine is quiet): raise or de-flake the slow tests.
 
 ## Later milestones (P3; product spec §11, in order)
 

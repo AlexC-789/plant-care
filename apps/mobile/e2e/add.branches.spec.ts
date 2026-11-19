@@ -1,26 +1,13 @@
-import { expect, test, signIn, clickVisible, FIXTURE_JPEG } from './support';
+import { expect, test, signIn, clickVisible, startAdd, addPhoto } from './support';
 import type { Page } from '@playwright/test';
 
 const FAKE = 'http://127.0.0.1:8787';
 const scenario = (s: object) => fetch(`${FAKE}/__scenario`, { method: 'POST', body: JSON.stringify(s) });
 test.afterEach(async () => void (await fetch(`${FAKE}/__reset`, { method: 'POST' })));
 
-const photoCard = async (page: Page, n: number) => {
-  const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Choose from library' }).filter({ visible: true }).nth(n).click();
-  await (await chooser).setFiles(FIXTURE_JPEG);
-};
-const addPhoto = async (page: Page, n: number, title: string) => {
-  await photoCard(page, n);
-  await expect(page.getByRole('img', { name: `${title} photo` })).toBeVisible();
-};
 const identifyStep = async (page: Page) => {
   await clickVisible(page, 'Continue');
   await expect(page.getByRole('heading', { name: 'What kind of plant is it?' })).toBeVisible();
-};
-const startAdd = async (page: Page) => {
-  await page.getByRole('button', { name: 'Add a pot' }).first().click();
-  await addPhoto(page, 0, 'Whole plant');
 };
 
 test('D5 not a plant', async ({ page, user, admin }) => {

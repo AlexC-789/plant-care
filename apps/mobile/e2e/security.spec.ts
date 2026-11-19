@@ -1,13 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { expect, test, signIn, clickVisible, hasExifGps, FIXTURE_JPEG, type TestUser } from './support';
+import { expect, test, signIn, clickVisible, hasExifGps, photoCard, FIXTURE_JPEG, type TestUser } from './support';
 import type { Page } from '@playwright/test';
-
-const photoCard = async (page: Page, n: number) => {
-  const chooser = page.waitForEvent('filechooser');
-  await page.getByRole('button', { name: 'Choose from library' }).filter({ visible: true }).nth(n).click();
-  await (await chooser).setFiles(FIXTURE_JPEG);
-};
 
 /** From Plants: open the add flow and upload the whole-plant photo (step 1). */
 async function startAdd(page: Page) {

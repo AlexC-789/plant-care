@@ -13,6 +13,33 @@ export const FIXTURE_JPEG = join(__dirname, 'fixtures/gps-plant.jpg');
 const SIM = join(__dirname, '../../../sim/sim.ts');
 const SIM_DEVICES = join(__dirname, '../../../sim/.devices');
 const json = { 'content-type': 'application/json' };
+const DB_CONTAINER = 'supabase_db_plant-care';
+
+/** Run SQL in the local DB container (service_role can't insert plants/devices or update plant_photos); returns psql's tuples-only output. */
+export const psql = (sql: string): string =>
+  execFileSync('docker', ['exec', '-i', DB_CONTAINER, 'psql', '-U', 'postgres', '-tA', '-v', 'ON_ERROR_STOP=1'], { input: sql, encoding: 'utf8' });
+
+// postgrest-js retries aborted GETs for ~7 s, so a failed load is simulated with a 500 (not retried).
+export const down = { status: 500, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: '{"message":"down"}' };
+
+export const photoCard = async (page: Page, n: number) => {
+  const chooser = page.waitForEvent('filechooser');
+  await page.getByRole('button', { name: 'Choose from library' }).filter({ visible: true }).nth(n).click();
+  await (await chooser).setFiles(FIXTURE_JPEG);
+};
+// Card order: 0 whole, 1 leaf, 2 flower, 3 problem. Waits for the upload (the card's photo) before returning.
+export const addPhoto = async (page: Page, n: number, title: string) => {
+  await photoCard(page, n);
+  await expect(page.getByRole('img', { name: `${title} photo` })).toBeVisible();
+};
+export const startAdd = async (page: Page) => {
+  await page.getByRole('button', { name: 'Add a pot' }).first().click();
+  await addPhoto(page, 0, 'Whole plant');
+};
+export const openDetail = async (page: Page, name: string) => {
+  await page.getByRole('button', { name: new RegExp(`^${name},`) }).filter({ visible: true }).click();
+  await expect(page.getByRole('heading', { name })).toBeVisible();
+};
 
 /** True when an APP1 Exif segment holds the GPS IFD pointer tag 0x8825 (either byte order). Entropy data is not scanned. */
 export function hasExifGps(buf: Buffer): boolean {
@@ -42,14 +69,11 @@ export class Admin {
     });
   }
 
-  // service_role has no INSERT on plants/plant_photos/devices (hosted-like grants), so seed through the DB container.
+  // service_role has no INSERT on plants/devices (hosted-like grants), so seed those through the DB container (plant_photos allows it, but shares this path).
   private insert(table: string, row: object): { id: string } {
     const json = JSON.stringify(row).replaceAll("'", "''");
     const cols = Object.keys(JSON.parse(json.replaceAll("''", "'"))).join(', '); // undefined values drop out, so column defaults apply
-    const out = execFileSync('docker', ['exec', '-i', 'supabase_db_plant-care', 'psql', '-U', 'postgres', '-tA', '-v', 'ON_ERROR_STOP=1'], {
-      input: `insert into public.${table} (${cols}) select ${cols} from json_populate_record(null::public.${table}, '${json}') returning id;`,
-      encoding: 'utf8',
-    });
+    const out = psql(`insert into public.${table} (${cols}) select ${cols} from json_populate_record(null::public.${table}, '${json}') returning id;`);
     return { id: out.trim().split(/\r?\n/)[0] };
   }
 
@@ -70,7 +94,8 @@ export class Admin {
 
   async deleteUser(u: TestUser): Promise<void> {
     for (const p of await this.listObjects(u.id)) await this.rest(`/storage/v1/object/plant-photos/${p}`, { method: 'DELETE' });
-    await this.rest(`/auth/v1/admin/users/${u.id}`, { method: 'DELETE' });
+    const r = await this.rest(`/auth/v1/admin/users/${u.id}`, { method: 'DELETE' });
+    if (!r.ok && r.status !== 404) throw new Error(`deleteUser: ${r.status}`);
   }
 
   async deleteMade(): Promise<void> {

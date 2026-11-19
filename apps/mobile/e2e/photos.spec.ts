@@ -1,20 +1,13 @@
-import { execFileSync } from 'node:child_process';
-import { expect, test, signIn, clickVisible, FIXTURE_JPEG, type Admin, type TestUser } from './support';
+import { expect, test, signIn, clickVisible, openDetail, psql, down, FIXTURE_JPEG, type Admin, type TestUser } from './support';
 import type { Page } from '@playwright/test';
 
 const HEALTHY = 'It looks healthy in this photo.';
 const DAY = 86_400_000;
 const daysAgo = (n: number) => new Date(Date.now() - n * DAY).toISOString();
 const json = { 'content-type': 'application/json' };
-// postgrest-js retries aborted GETs for ~7 s, so a failed load is simulated with a 500 (not retried).
-const down = { status: 500, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: '{"message":"down"}' };
 
 const dateLabel = (page: Page, iso: string) =>
   page.evaluate((d) => new Date(d).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }), iso);
-const openDetail = async (page: Page, name: string) => {
-  await page.getByRole('button', { name: new RegExp(`^${name},`) }).filter({ visible: true }).click();
-  await expect(page.getByRole('heading', { name })).toBeVisible();
-};
 const get = async <T>(admin: Admin, path: string) => (await (await admin.rest(`/rest/v1/${path}`)).json()) as T[];
 const thumbLabels = (page: Page) =>
   page.getByRole('button', { name: /^Photo from/ }).filter({ visible: true }).evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
@@ -28,9 +21,7 @@ async function seedHealth(admin: Admin, u: TestUser, plantId: string, health: ob
   });
   const [{ id }] = (await r.json()) as { id: string }[];
   if (photoPath) {
-    execFileSync('docker', ['exec', '-i', 'supabase_db_plant-care', 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1'], {
-      input: `update public.plant_photos set scan_id = '${id}' where plant_id = '${plantId}' and path = '${photoPath}';`,
-    });
+    psql(`update public.plant_photos set scan_id = '${id}' where plant_id = '${plantId}' and path = '${photoPath}';`);
   }
 }
 const chooseWhole = async (page: Page) => {

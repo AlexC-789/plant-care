@@ -1,8 +1,7 @@
-import { expect, test, signIn, clickVisible, type Admin } from './support';
+import { expect, test, signIn, clickVisible, down, type Admin } from './support';
 import type { Page } from '@playwright/test';
 
 const FERN = 'Adiantum raddianum'; // Maidenhair fern, from the seeded species table
-const down = { status: 500, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: '{"message":"down"}' };
 
 const plantRow = async (admin: Admin, id: string) =>
   ((await (await admin.rest(`/rest/v1/plants?select=name,room,species_id&id=eq.${id}`)).json()) as { name: string; room: string | null; species_id: string | null }[])[0];

@@ -93,8 +93,8 @@ test('A2 cold load to usable home <= 2.5 s', async ({ browser, user, admin }) =>
   expect(median(times)).toBeLessThanOrEqual(BUDGETS.coldLoadMs);
 });
 
-// shortcut: launch is ~1.97 s (measured) until redesign launch (PR #10) lands; remove .fail then
-test.fail('A1 launch animation <= 1 s', async ({ browser, user, admin }) => {
+// Launch is ~1.97 s (measured) until the redesign launch (PR #10) lands. Pinned to that cause: when it lands this goes red; then flip to <= BUDGETS.launchMs.
+test('A1 launch animation currently above the 1 s budget', async ({ browser, user, admin }) => {
   const { state } = await signedInState(browser, user, admin, ['Launch fern']);
   const times = await runs(browser, state, async (page) => {
     await page.addInitScript(WATCH_LAUNCH);
@@ -103,7 +103,7 @@ test.fail('A1 launch animation <= 1 s', async ({ browser, user, admin }) => {
     return (await probe(page, 'launchGone')) as number;
   });
   console.log(`A1 launch ms: ${times.map(Math.round)} median ${Math.round(median(times))}`);
-  expect(median(times)).toBeLessThanOrEqual(BUDGETS.launchMs);
+  expect(median(times), `launch median ${Math.round(median(times))} ms`).toBeGreaterThan(BUDGETS.launchMs);
 });
 
 test('C5 tap feedback <= 100 ms and next screen <= 1 s', async ({ browser, user, admin }) => {

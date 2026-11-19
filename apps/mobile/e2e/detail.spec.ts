@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { expect, test, signIn, clickVisible, type Admin } from './support';
-import type { Page } from '@playwright/test';
+import { expect, test, signIn, clickVisible, openDetail, type Admin } from './support';
 
 const POT = /Drawing of a pot/;
 const FERN = 'Adiantum raddianum'; // Maidenhair fern, from the seeded species table
@@ -9,10 +8,6 @@ async function fernId(admin: Admin): Promise<string> {
   const r = await admin.rest(`/rest/v1/species?select=id&scientific_name=eq.${encodeURIComponent(FERN)}`);
   return ((await r.json()) as { id: string }[])[0].id;
 }
-const openDetail = async (page: Page, name: string) => {
-  await page.getByRole('button', { name: new RegExp(`^${name},`) }).filter({ visible: true }).click();
-  await expect(page.getByRole('heading', { name })).toBeVisible();
-};
 const rows = async (admin: Admin, path: string) => (await (await admin.rest(`/rest/v1/${path}`)).json()) as { id: string }[];
 
 test('E1 detail shows name, type, room and a pot drawing without a photo', async ({ page, user, admin }) => {

@@ -21,8 +21,14 @@ file is the short, current summary.
     and `qa:coverage` (every inventory flow has a test).
   - Lanes: `npm run e2e:pr` (`@pr`, 29 tests, CI job `e2e` in `ci.yml`), `npm run e2e` (all), `npm run e2e:speed`
     (static build, median of 3; `nightly.yml`, 03:23 UTC + manual).
-  - Speed medians: A2 tappable ~2.03 s, A1 launch ~2.0 s (`test.fail` until the redesign launch), tap feedback
+  - Speed medians: A2 tappable ~2.03 s, A1 launch ~2.0 s (pinned: red when the redesign launch lands), tap feedback
     ~66 ms, next screen ~467 ms; CLS home 0.0095, detail 0.0853, add 0.0095.
+  - What ran: the B1 sign-up confirmation flaked on the 5 s expect timeout (hook + MX lookup + SMTP); fixed by
+    awaiting the `/auth/v1/signup` response (15 s) first and a 10 s expect timeout in CI. Jest full run: 328/328 when
+    the machine is quiet, timeouts under concurrent load (TASKS). `db:test` has a known plant_photos test 21
+    collision (fixed on `design-e-add`). CI's `e2e` job first runs on the PR. A failure in the `main` project
+    skips the 3 `plantid-branches` tests (project dependency). The guard reads PLANT_ID_BASE_URL from the running
+    Edge Runtime container, and global-setup warms the Metro bundle before the first test.
   - Specs target the M4-era UI; after PR #14 (Direction E) merges, merge `main` and update labels.
   - Open findings are in `docs/TASKS.md` "QA pipeline".
 - **M4 Devices, simulated** (branch `m4-devices`). Spec `docs/superpowers/specs/2026-11-18-m4-devices-design.md`,

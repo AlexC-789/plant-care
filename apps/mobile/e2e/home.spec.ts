@@ -1,4 +1,4 @@
-import { expect, test, signIn, clickVisible } from './support';
+import { expect, test, signIn, clickVisible, down } from './support';
 import type { Page, Route } from '@playwright/test';
 
 const ago = (ms: number) => new Date(Date.now() - ms).toISOString();
@@ -7,7 +7,6 @@ const HOUR = 3_600_000;
 // Home's list query is the only plants request that embeds devices; detail reads plants by id.
 const isList = (url: string) => /\/rest\/v1\/plants\?/.test(url) && /devices/.test(decodeURIComponent(url));
 // postgrest-js retries aborted GETs for ~7 s, so a failed load is simulated with a 500 (not retried) to keep tests fast.
-const down = { status: 500, headers: { 'access-control-allow-origin': '*' }, contentType: 'application/json', body: '{"message":"down"}' };
 
 const STATUSES = [
   { key: 'setup', device: null, line: "Setup isn't finished · Add its module" },
