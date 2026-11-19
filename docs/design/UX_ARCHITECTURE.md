@@ -88,7 +88,7 @@ flowchart TD
 ```
 
 **Rules.**
-- **Guest session.** The person gets an anonymous Supabase session when they tap "Scan a plant". A guest can run **3** identifications per install, proposed in place of the 20 a day that account holders get, and the session start is protected by a captcha. This needs the owner's approval and a security review (see roadmap).
+- **Guest session.** The person gets an anonymous Supabase session when they tap "Scan a plant". A guest can run **3** identifications per install, proposed in place of the 20 a day that account holders get, and the session start is protected by a captcha. Approved by the owner 2026-11-19; it still gets a security review when built (see roadmap).
 - **The account sheet can't be skipped while saving.** Closing it returns to Name and place with nothing lost. The plant row is written only after the account exists, or as the guest and then kept when the guest becomes an account; the implementation plan picks one.
 - **The order of the last steps is fixed.** Health runs after the account so its result is stored. Notification permission is asked only after the first module is set up, never at launch.
 - **Second way in: start from the module.** The Welcome screen may later offer "Set up a module". It runs account → Connect → Fill the tank → Capture (Model C as a branch). It's not in the first build.

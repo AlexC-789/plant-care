@@ -62,7 +62,7 @@ These are listed for the owner to decide. None has been changed in code or in th
 
 ## 4. Open decisions
 
-1. **Guest sessions (Model A).** Anonymous sign-in, a guest identify limit of 3, and a captcha on guest sign-in. This is a security-relevant change to auth and the `identify-plant` limits.
+1. **Guest sessions (Model A).** Decided 2026-11-19: yes. Anonymous sign-in, 3 identifications per install for guests, and a captcha on guest sign-in. It still gets an Opus security review when built (phase 4).
 2. **Apple and Google sign-in.** Decided 2026-11-19: deferred to M8. Launch is email only, so the account sheet shows "Continue with email" alone until then.
 3. **A guest plant when signing in to an existing account.** Decided 2026-11-19: add it. After sign-in the app saves the pending plant (re-uploading its photo from the phone) to the existing account. Guest leftovers on the server are cleaned up. The account sheet gets an "I already have an account" link.
 4. **Font asset.** Decided 2026-11-19: Archivo is approved "for now" (static TTFs).
