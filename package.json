@@ -15,7 +15,9 @@
     "db:test": "supabase test db",
     "db:types": "supabase gen types typescript --local > apps/mobile/src/lib/database.types.ts",
     "fn:test": "for d in supabase/functions/*/; do deno test --config $d/deno.json --allow-read --allow-env --allow-net=jsr.io,registry.npmjs.org $d || exit 1; done",
-    "sim:test": "node --test sim/sim_test.ts"
+    "sim:test": "node --test sim/sim_test.ts",
+    "e2e": "npm run e2e -w apps/mobile --",
+    "e2e:pr": "npm run e2e:pr -w apps/mobile --"
   },
   "devDependencies": {
     "deno": "^2.9.6",
