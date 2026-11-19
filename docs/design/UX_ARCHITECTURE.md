@@ -132,7 +132,7 @@ Each plant shows **one** sentence. The first rule that matches wins, in the same
 | 5 | waiting | Doing well | Waiting for its first check-in | the same text / "This can take a few minutes after setup." |
 | 6 | wet | Doing well (changed) | Soil is very wet | "Soil is very wet" / "Watering is on hold until it dries a little." |
 | 7 | battery | Needs you (ink) | Battery low | "Battery low" / "Charge the module in the next few days." |
-| 8 | fine | Doing well | Next drink in about {n} days, or "Learning how fast it drinks" | "Water left for about {n} days" / "Next drink in about {n} days." |
+| 8 | fine | Doing well | Next drink in about {n} days, or "Learning how fast it drinks" | "Water left for about {n} days" / "Next drink in about {n} days." Before there is drink-rate data: "Learning how fast it drinks" / "It waters itself when the soil starts to dry." |
 
 **Changes from M4:**
 - "no module" moves from Needs you to Doing well.

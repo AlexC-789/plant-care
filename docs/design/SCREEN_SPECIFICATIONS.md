@@ -195,9 +195,9 @@ _Status: approved by the owner 2026-11-19. Visuals: [flow-e.html](flow-e.html), 
 
 **Header:** large title "Plants"; ink round "+" button (label "Add a plant") on the right; a Settings button (person icon) to its left.
 
-**Section "{n} need you":**
+**Section "{n} need you"** ("1 needs you" for one):
 - Headline in red if any member is fault or tank, otherwise in ink.
-- Rows: 96 × 112 photo with its `WaterLine` under it, then the condensed name, the subhead "{species common name}, {room}" and the status sentence (red for fault and tank).
+- Rows: 96 × 112 photo with its `WaterLine` under it, then the condensed name, the subhead "{species common name}, {room}" and the status sentence (red for fault and tank). A plant with no module has no `WaterLine`.
 - Ordered by the status order (UX_ARCHITECTURE §6).
 
 **Section "{m} doing well":**
@@ -221,11 +221,11 @@ _Status: approved by the owner 2026-11-19. Visuals: [flow-e.html](flow-e.html), 
 ## 12. Plant page (change: `plant/[id]/index`)
 
 **Top to bottom:**
-1. **Hero photo,** full width, about 290 pt high from the top of the screen. Its top dissolves softly into the page (no edge), so the status bar and Dynamic Island float on page colour and the photo flows out from under them. Frosted back and more (⋯) buttons. White pills on the photo bottom left: room and, when it applies, the red state.
+1. **Hero photo,** full width, about 290 pt high from the top of the screen. Its top dissolves softly into the page (no edge), so the status bar and Dynamic Island float on page colour and the photo flows out from under them. Frosted back and more (⋯) buttons. White pills on the photo bottom left: room and, when it applies, the red state. In dark mode the pills use the surface colour.
 2. **Name** in display type.
 3. **Subhead:** "_{Latin}_, {room}".
 4. **Headline + line** from the status table (UX_ARCHITECTURE §6).
-5. **Tank bar** with "About {n} ml" on the left and "of 705 ml" on the right. Omitted when there's no module. Dashed with "No current reading" when offline.
+5. **Tank bar** with "About {n} ml" on the left and "of 705 ml" on the right. Omitted when there's no module. Dashed with "No current reading" when offline. When the tank is low the left label reads "Nearly empty".
 6. **Rows:**
    - "Soil": "{Dry/Damp/Very wet}, {n} %"
    - "Last drink": "{ml} ml at {time}" or "{ml} ml yesterday"
